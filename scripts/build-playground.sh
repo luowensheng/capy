@@ -16,7 +16,14 @@ echo "[playground] building capy.wasm…"
 GOOS=js GOARCH=wasm go build -ldflags="-s -w" -o "$OUT/capy.wasm" ./cmd/capy-wasm
 
 echo "[playground] copying wasm_exec.js…"
-cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" "$OUT/wasm_exec.js"
+GOROOT=$(go env GOROOT)
+if [ -f "$GOROOT/lib/wasm/wasm_exec.js" ]; then
+  cp "$GOROOT/lib/wasm/wasm_exec.js" "$OUT/wasm_exec.js"
+elif [ -f "$GOROOT/misc/wasm/wasm_exec.js" ]; then
+  cp "$GOROOT/misc/wasm/wasm_exec.js" "$OUT/wasm_exec.js"
+else
+  echo "wasm_exec.js not found under $GOROOT"; exit 1
+fi
 
 echo "[playground] bundling samples.json…"
 go run ./cmd/playground-bundle > "$OUT/samples.json"

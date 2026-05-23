@@ -33,7 +33,7 @@ jobs:
 
       - uses: actions/setup-go@v6
         with:
-          go-version: '1.23'
+          go-version: '1.24'
           cache: true
 
       - name: Install MkDocs Material
@@ -44,8 +44,19 @@ jobs:
         # wasm_exec.js + samples.json. Build them fresh from main so the
         # deployed playground tracks the current engine.
         run: |
+          set -euxo pipefail
           GOOS=js GOARCH=wasm go build -ldflags="-s -w" -o docs/assets/playground/capy.wasm ./cmd/capy-wasm
-          cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" docs/assets/playground/wasm_exec.js
+          # wasm_exec.js moved between Go releases: lib/wasm/ in 1.24+,
+          # misc/wasm/ in earlier versions. Try both so the build doesn't
+          # break when CI updates its toolchain.
+          GOROOT=$(go env GOROOT)
+          if [ -f "$GOROOT/lib/wasm/wasm_exec.js" ]; then
+            cp "$GOROOT/lib/wasm/wasm_exec.js" docs/assets/playground/wasm_exec.js
+          elif [ -f "$GOROOT/misc/wasm/wasm_exec.js" ]; then
+            cp "$GOROOT/misc/wasm/wasm_exec.js" docs/assets/playground/wasm_exec.js
+          else
+            echo "wasm_exec.js not found under $GOROOT"; exit 1
+          fi
           go run ./cmd/playground-bundle > docs/assets/playground/samples.json
           ls -lh docs/assets/playground/
 
