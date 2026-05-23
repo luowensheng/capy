@@ -117,6 +117,21 @@ func (l *Library) Run(scriptSrc string) (string, error) {
 	return l.eval.Run(prog, l.lib)
 }
 
+// RunMulti is like Run but also returns the rendered multi-file map for
+// libraries that declared `file "path":` blocks. The map is empty for
+// libraries that don't use multi-file output.
+func (l *Library) RunMulti(scriptSrc string) (string, map[string]string, error) {
+	toks, err := l.lex.Tokenize(scriptSrc)
+	if err != nil {
+		return "", nil, err
+	}
+	prog, err := l.parser.Parse(toks, l.lib)
+	if err != nil {
+		return "", nil, err
+	}
+	return l.eval.RunMulti(prog, l.lib)
+}
+
 // Extension reports the library's declared `extension:` field — useful
 // when you want to write the output to a file with the correct suffix.
 func (l *Library) Extension() string { return l.lib.Extension }

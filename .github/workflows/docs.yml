@@ -31,8 +31,23 @@ jobs:
           # or **/pyproject.toml". Our docs reqs live at the repo root.
           cache-dependency-path: requirements-docs.txt
 
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.23'
+          cache: true
+
       - name: Install MkDocs Material
         run: pip install -r requirements-docs.txt
+
+      - name: Build wasm bundle for playground
+        # The playground at docs/assets/playground/ needs capy.wasm +
+        # wasm_exec.js + samples.json. Build them fresh from main so the
+        # deployed playground tracks the current engine.
+        run: |
+          GOOS=js GOARCH=wasm go build -ldflags="-s -w" -o docs/assets/playground/capy.wasm ./cmd/capy-wasm
+          cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" docs/assets/playground/wasm_exec.js
+          go run ./cmd/playground-bundle > docs/assets/playground/samples.json
+          ls -lh docs/assets/playground/
 
       - name: Configure Pages
         uses: actions/configure-pages@v5

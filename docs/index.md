@@ -15,7 +15,8 @@ hide:
 
 <iframe src="assets/hero/hero.html" width="100%" height="540" style="border: 0; border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.18); display: block; margin: 8px 0 28px;" title="Capy in action"></iframe>
 
-[Try it in 5 minutes :material-rocket-launch:](getting-started.md){ .md-button .md-button--primary }
+[Open the playground :material-play-box-outline:](playground.md){ .md-button .md-button--primary }
+[Get started in 5 min :material-rocket-launch:](getting-started.md){ .md-button }
 [For everyone :material-account-multiple:](for-everyone.md){ .md-button }
 [Live demos :material-play-circle:](showcase.md){ .md-button }
 [Browse all samples :material-folder-open:](https://github.com/luowensheng/capy/tree/main/samples){ .md-button }
@@ -41,6 +42,13 @@ in about thirty minutes.
 ## What Capy gives you
 
 <div class="grid cards" markdown>
+
+- :material-play-box-outline: **Try Capy in your browser — no install**
+
+    The compiler runs natively in your browser via WebAssembly.
+    Six curated samples (recipe / invite / meal plan / reading log
+    / Breakout / Snake), live editor, preview, and download.
+    [Open the playground →](playground.md)
 
 - :material-file-cog: **Generate any target text**
 

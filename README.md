@@ -121,6 +121,11 @@ go get github.com/luowensheng/capy
 # MCP server for AI agents (Claude Desktop, Claude Code, Cursor, Zed)
 go install github.com/luowensheng/capy/cmd/capy-mcp@latest
 
+# Or: try it in your browser, no install — playground runs Capy compiled
+# to WebAssembly with six curated samples (recipe / invite / meal plan /
+# reading log / Breakout / Snake). Live editor, preview, download:
+# https://luowensheng.github.io/capy/playground/
+
 # macOS / Linux (binary, no Go required)
 curl -fsSL https://raw.githubusercontent.com/luowensheng/capy/main/scripts/install.sh | sh
 

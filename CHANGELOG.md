@@ -8,6 +8,59 @@ may break between minor versions** (see `CONTRIBUTING.md`).
 
 ## [Unreleased]
 
+## [0.9.0] — 2026-05-24
+
+The Capy compiler now runs in the browser via WebAssembly. The
+documentation site ships a playground at `/playground/` where
+visitors can edit a curated DSL, preview the output, and download
+the generated content — no install required.
+
+### Added — WebAssembly compiler
+
+- **`cmd/capy-wasm/main.go`** — the entry point compiled with
+  `GOOS=js GOARCH=wasm`. Exposes a single global function
+  `capyRun(libSrc, format, scriptSrc)` that returns
+  `{ok, output, files, extension}` on success or
+  `{ok:false, error, hint, line, col, pretty}` on failure.
+- **`capy.Library.RunMulti(scriptSrc)`** — sibling of `Run` that
+  also returns the multi-file map. Used by the wasm entry to
+  expose multi-file libraries to the browser.
+
+### Added — browser playground
+
+- **`docs/assets/playground/index.html`** — self-contained playground
+  UI with a sample picker (6 curated DSLs), live script editor,
+  collapsible library editor for tinkering, preview area (renders
+  HTML output in a sandboxed iframe), and a Download button that
+  produces either a single file or a zip archive (via JSZip CDN).
+- **`docs/playground.md`** — MkDocs wrapper page embedding the
+  playground via iframe; exposed in the top nav as "Playground".
+- **`docs/index.md`** — Homepage CTA reorder: "Open the
+  playground" is now the primary button. New feature card
+  highlights browser execution.
+
+### Added — build infrastructure
+
+- **`cmd/playground-bundle/main.go`** — bakes six curated samples
+  (recipe / event-invite / weekly-meal-plan / reading-log /
+  interactive-breakout / interactive-snake) into a single JSON
+  file the playground fetches on load.
+- **`scripts/build-playground.sh`** — one command that builds
+  capy.wasm + copies wasm_exec.js + generates samples.json. Run
+  locally before `python3 -m http.server -d docs/assets/playground`.
+- **`.github/workflows/docs.yml`** now runs the playground build
+  step before MkDocs, so every deploy ships fresh wasm + samples.
+- **`.gitignore`** — the three build artifacts
+  (capy.wasm, wasm_exec.js, samples.json) are gitignored and
+  rebuilt from source on every CI deploy.
+
+### Browser limitations
+
+- `@import "..."` source-file directives don't work in the
+  browser (no filesystem). The samples baked into the picker are
+  single-file scripts; multi-file libraries still produce the
+  full file map but can't load external files via @import.
+
 ## [0.8.0] — 2026-05-24
 
 Multi-file generation matures: a `--zip` flag bundles output to a
