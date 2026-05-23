@@ -1,0 +1,6 @@
+section "Drinks"
+    item "Espresso"        "$3"
+    item "Cappuccino"      "$4.50"
+    item "Cold brew"       "$5"
+    item "Mint lemonade"   "$5"
+end

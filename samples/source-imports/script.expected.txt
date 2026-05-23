@@ -1,0 +1,25 @@
+# Capy Cafe — Spring 2026
+
+## Mains
+
+- **House pasta** — $16
+- **Sheet-pan salmon** — $22
+- **Black bean tacos (3)** — $14
+
+
+## Drinks
+
+- **Espresso** — $3
+- **Cappuccino** — $4.50
+- **Cold brew** — $5
+- **Mint lemonade** — $5
+
+
+## Desserts
+
+- **Olive oil cake** — $8
+- **Chocolate mousse** — $9
+- **Affogato** — $7
+
+> All dishes are made fresh. Please tell us about allergies.
+

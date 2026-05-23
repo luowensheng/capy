@@ -8,6 +8,68 @@ may break between minor versions** (see `CONTRIBUTING.md`).
 
 ## [Unreleased]
 
+## [0.7.0] — 2026-05-24
+
+Two complementary features: **actionable errors** with did-you-mean
+hints throughout, and **source-file `@import`** for splicing
+authored content across files.
+
+### Added — actionable errors
+
+- `domain.CapyError` gains `Hint string` and `File string` fields.
+  `FormatWithSource` renders both alongside the caret-pointed
+  source line.
+- `domain.SuggestClosest(target, candidates, maxDist)` — Levenshtein
+  lookup powering "did you mean X?" hints throughout the engine.
+- **Upgraded error sites**:
+  - **Parser** (no library function matches): suggests the closest
+    function name, or lists what's available if no close match.
+  - **Type validation** (pattern mismatch): hint shows the offending
+    regex so authors can see what's wrong without opening the lib.
+  - **Type validation** (options mismatch): hint lists every valid
+    option, plus did-you-mean when close.
+  - **Library loader** (unknown type): suggests closest type from
+    built-ins + library-declared types.
+- Error format changed to `file:line:col: message` (was `line N, col
+  M: ...`). Editor-clickable. The richer `FormatWithSource` output
+  with caret + hint is unchanged.
+
+### Added — source-file `@import`
+
+- `infra.Preprocess(source, dir)` is a line-level preprocessor that
+  expands `@import "path"` / `@include "path"` directives at the
+  start of a line into the contents of the referenced file.
+- **Indentation auto-tracks**: a `    @import "x"` line inlines the
+  imported content with each non-blank line prefixed by the same 4
+  spaces. Imports nest naturally in surrounding blocks.
+- Path resolution is relative to the file containing the directive.
+- Cycles detected by absolute path.
+- `@import` and `@include` are synonyms.
+- `orchestrator.RunMulti` runs the preprocessor over the script
+  before the lexer, so this works for every entry point (CLI,
+  embedding API, MCP server).
+
+### Added — sample + docs
+
+- **`samples/source-imports/`** — a menu DSL that `@import`s
+  shared drinks and desserts sections from `shared/`.
+- **`docs/errors-and-debugging.md`** — full reference for the error
+  format with worked examples.
+- **`docs/multi-file-and-imports.md`** — extended with a
+  source-imports section and a comparison table.
+- **`infra/preprocessor_test.go`** — 7 tests covering basic import,
+  nested imports, indentation preservation, cycle detection, missing
+  file, `@include` synonym, malformed directives.
+- **`domain/errors_test.go`** — tests for `SuggestClosest`,
+  `FormatWithSource` rendering, and the new error format.
+
+### Changed
+
+- Homepage gains an "Errors that tell you how to fix them" card.
+- Live showcase opens with two new tabbed sections: error walkthrough
+  and source-imports menu sample.
+- MkDocs nav exposes `errors-and-debugging.md`.
+
 ## [0.6.0] — 2026-05-24
 
 Two structural features: libraries can now declare **multiple

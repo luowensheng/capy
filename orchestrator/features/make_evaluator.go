@@ -149,6 +149,15 @@ func (e *outerEval) validateArgs(c domain.FuncCall) error {
 			}
 		}
 		if err := e.checkType(a.Type, cap.Text); err != nil {
+			// Preserve the inner CapyError's hint when wrapping with the
+			// function + argument context.
+			if ce, ok := err.(*domain.CapyError); ok {
+				wrap := &domain.CapyError{
+					Msg:  fmt.Sprintf("function %q arg %q: %s", c.Func.Name, a.Name, ce.Msg),
+					Hint: ce.Hint,
+				}
+				return wrap
+			}
 			return fmt.Errorf("function %q arg %q: %v", c.Func.Name, a.Name, err)
 		}
 	}
@@ -211,7 +220,9 @@ func (e *outerEval) checkType(t string, text string) error {
 			return fmt.Errorf("type %q has bad regex: %v", td.Name, err)
 		}
 		if !rx.MatchString(probe) {
-			return fmt.Errorf("value %q does not match pattern for type %q", probe, td.Name)
+			ce := &domain.CapyError{Msg: fmt.Sprintf("value %q does not match pattern for type %q", probe, td.Name)}
+			ce.Hint = fmt.Sprintf("type %q requires the value to match regex /%s/", td.Name, td.Pattern)
+			return ce
 		}
 	}
 	if len(td.Options) > 0 {
@@ -223,7 +234,13 @@ func (e *outerEval) checkType(t string, text string) error {
 			}
 		}
 		if !ok {
-			return fmt.Errorf("value %q is not in options for type %q", probe, td.Name)
+			ce := &domain.CapyError{Msg: fmt.Sprintf("value %q is not in options for type %q", probe, td.Name)}
+			if best := domain.SuggestClosest(probe, td.Options, 2); best != "" {
+				ce.Hint = fmt.Sprintf("did you mean %q? valid options: %s", best, strings.Join(td.Options, ", "))
+			} else {
+				ce.Hint = fmt.Sprintf("valid options: %s", strings.Join(td.Options, ", "))
+			}
+			return ce
 		}
 	}
 	return nil

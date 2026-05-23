@@ -24,6 +24,12 @@ func RunMulti(libraryPath, scriptPath string) (string, map[string]string, error)
 	if err != nil {
 		return "", nil, err
 	}
+	// Expand any @import / @include preprocessor directives. Path
+	// resolution is relative to the script's directory.
+	expanded, err := infra.Preprocess(string(src), filepath.Dir(scriptPath))
+	if err != nil {
+		return "", nil, err
+	}
 	yp := infra.YamlParser{}
 	tplE := infra.TemplateEngine{}
 	lex := orchfeatures.MakeLexer()
@@ -36,7 +42,7 @@ func RunMulti(libraryPath, scriptPath string) (string, map[string]string, error)
 	if err != nil {
 		return "", nil, err
 	}
-	toks, err := lex.Tokenize(string(src))
+	toks, err := lex.Tokenize(expanded)
 	if err != nil {
 		return "", nil, err
 	}

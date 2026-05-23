@@ -95,11 +95,20 @@ in about thirty minutes.
     later. Golden snapshots in CI prove the contract holds.
     [Pattern docs →](grammar-as-contract.md)
 
+- :material-alert-circle: **Errors that tell you how to fix them**
+
+    Every error includes a caret-pointed source line, an actionable
+    hint (did-you-mean suggestions for typos, regex shown for
+    pattern violations, full options list for enum mismatches), and
+    a `file:line:col` location editors can jump to.
+    [Errors guide →](errors-and-debugging.md)
+
 - :material-file-tree: **Multi-file projects + library imports**
 
     Declare any number of `file "src/main.py":` blocks in one library
     and `capy run --out-dir generated …` writes the whole project
-    tree. Libraries can `import` other libraries — share types and
+    tree. Libraries can `import` other libraries — and source files
+    can `@import` other source files — share types and
     syntax helpers across many DSLs. [Multi-file docs →](multi-file-and-imports.md)
 
 - :material-rocket-launch: **Supercharge an existing syntax**

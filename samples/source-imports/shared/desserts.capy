@@ -1,0 +1,5 @@
+section "Desserts"
+    item "Olive oil cake"        "$8"
+    item "Chocolate mousse"      "$9"
+    item "Affogato"              "$7"
+end

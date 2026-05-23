@@ -133,6 +133,146 @@ do more than twice.
 
 ---
 
+## 🩺 Errors that tell you how to fix them
+
+Every Capy error names what went wrong, hints at how to fix it,
+and points at the exact column with a caret. Did-you-mean
+suggestions cover typos in DSL keywords, type names, and enum
+values.
+
+=== "Typo in a DSL keyword"
+
+    Source:
+
+    ```
+    endpiont GET "/users"
+    ```
+
+    Capy output:
+
+    ```
+    error: no library function matches token "endpiont"
+      hint: did you mean "endpoint"?
+      1 │ endpiont GET "/users"
+        │ ^
+    ```
+
+    Levenshtein-distance lookup against every library function
+    name. When no close match exists, the hint lists what *is*
+    available.
+
+=== "Value violates an enum"
+
+    Library declares:
+
+    ```
+    type LogLevel
+        options "trace" "debug" "info" "warn" "error" "fatal"
+    end
+    ```
+
+    Source: `log_level verbose`
+
+    Capy output:
+
+    ```
+    error: function "log_level" arg "lvl": value "verbose" is not in options for type "LogLevel"
+      hint: valid options: trace, debug, info, warn, error, fatal
+    ```
+
+    Or, when the value is close to a real option:
+
+    ```
+    error: function "env" arg "stage": value "prudo" is not in options for type "Env"
+      hint: did you mean "prod"? valid options: dev, staging, prod
+    ```
+
+=== "Value violates a regex"
+
+    ```
+    owner "not-an-email"
+    ```
+
+    ```
+    error: function "owner" arg "who": value "not-an-email" does not match pattern for type "Email"
+      hint: type "Email" requires the value to match regex /^[^@]+@[^@]+\.[^@]+$/
+    ```
+
+    The hint includes the regex so authors can see what's wrong
+    without opening the library.
+
+[Full guide → `errors-and-debugging.md`](errors-and-debugging.md)
+
+---
+
+## 🔗 Source-file imports — `@import` for content reuse
+
+Inside a `script.capy`, the `@import "path"` directive splices the
+contents of another `.capy` file into place. Indentation auto-tracks
+so imported content nests inside the surrounding block.
+
+=== "Source with @import"
+
+    ```
+    menu "Capy Cafe — Spring 2026"
+
+        section "Mains"
+            item "House pasta"               "$16"
+            item "Sheet-pan salmon"          "$22"
+            item "Black bean tacos (3)"      "$14"
+        end
+
+        @import "shared/drinks.capy"
+        @import "shared/desserts.capy"
+
+        note "All dishes are made fresh."
+    end
+    ```
+
+=== "shared/drinks.capy"
+
+    ```
+    section "Drinks"
+        item "Espresso"        "$3"
+        item "Cappuccino"      "$4.50"
+        item "Cold brew"       "$5"
+        item "Mint lemonade"   "$5"
+    end
+    ```
+
+=== "Generated Markdown"
+
+    ```markdown
+    # Capy Cafe — Spring 2026
+
+    ## Mains
+    - **House pasta** — $16
+    - **Sheet-pan salmon** — $22
+    - **Black bean tacos (3)** — $14
+
+    ## Drinks
+    - **Espresso** — $3
+    - **Cappuccino** — $4.50
+    - **Cold brew** — $5
+    - **Mint lemonade** — $5
+
+    ## Desserts
+    - **Olive oil cake** — $8
+    - **Chocolate mousse** — $9
+    - **Affogato** — $7
+
+    > All dishes are made fresh.
+    ```
+
+**Use it for:** shared sections of authored content (price lists,
+menu sections, footers, author bios), splitting long sources for
+readability, multi-environment configs. Cycles are detected by
+absolute path. `@include` is a synonym of `@import`.
+
+[Full sample → `samples/source-imports/`](https://github.com/luowensheng/capy/tree/main/samples/source-imports)
+
+---
+
 ## 🌳 Multi-file projects — one source, a whole project tree
 
 A single Capy library can declare any number of output files. Run

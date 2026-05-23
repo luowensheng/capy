@@ -171,7 +171,18 @@ func mapLibrary(r infra.RawLibrary, tokenize func(string) ([]domain.Token, error
 	for _, fd := range lib.Functions {
 		for _, a := range fd.Args {
 			if a.Kind == "capture" && !validType(a.Type, lib.Types) {
-				return lib, fmt.Errorf("function %q: capture %q has unknown type %q", fd.Name, a.Name, a.Type)
+				ce := &domain.CapyError{Msg: fmt.Sprintf("function %q: capture %q has unknown type %q", fd.Name, a.Name, a.Type)}
+				// Suggest the closest known type (built-ins + library-declared).
+				cands := []string{"any", "ident", "raw", "string", "int", "float", "bool"}
+				for n := range lib.Types {
+					cands = append(cands, n)
+				}
+				if best := domain.SuggestClosest(a.Type, cands, 2); best != "" {
+					ce.Hint = fmt.Sprintf("did you mean %q?", best)
+				} else {
+					ce.Hint = fmt.Sprintf("built-in types: any, ident, raw, string, int, float, bool; declared types: %v", typeNames(lib.Types))
+				}
+				return lib, ce
 			}
 		}
 		if fd.Block != nil {
@@ -307,6 +318,16 @@ func splitLiteral(lit string) []domain.PatternElement {
 	out := make([]domain.PatternElement, 0, len(parts))
 	for _, p := range parts {
 		out = append(out, domain.PatternElement{Literal: p})
+	}
+	return out
+}
+
+// typeNames returns the sorted list of declared type names; used in error
+// hints when a capture references an unknown type.
+func typeNames(types map[string]domain.TypeDef) []string {
+	out := make([]string, 0, len(types))
+	for n := range types {
+		out = append(out, n)
 	}
 	return out
 }

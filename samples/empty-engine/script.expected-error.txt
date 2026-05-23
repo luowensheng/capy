@@ -1,1 +1,1 @@
-line 1, col 1: no library function matches token "x"
+1:1: no library function matches token "x"

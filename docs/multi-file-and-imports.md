@@ -154,6 +154,60 @@ loader stops with `import cycle detected at ...`. Cycles are
 tracked by absolute path so symlinks and `..` shortcuts don't fool
 it.
 
+## Source-file imports (`@import "path"`)
+
+The library-import mechanism above is for the LIBRARY file. There's
+a parallel mechanism for SCRIPT files — `@import "path"` (or its
+synonym `@include "path"`) is a line-level preprocessor directive
+that splices the contents of another `.capy` file into the current
+source before tokenization.
+
+```
+menu "Capy Cafe — Spring 2026"
+
+    section "Mains"
+        item "House pasta"               "$16"
+        item "Sheet-pan salmon"          "$22"
+    end
+
+    @import "shared/drinks.capy"
+    @import "shared/desserts.capy"
+
+    note "All dishes are made fresh."
+end
+```
+
+Each `@import` is replaced with the contents of the referenced
+file, with the same leading indentation as the `@import` line —
+so imported content nests naturally inside the surrounding block.
+
+### Rules
+
+- **Path resolution** is relative to the file containing the
+  `@import` directive.
+- **Indentation auto-tracks**: a `    @import "x"` (4 spaces of
+  indent) inlines the imported content with 4 spaces prepended to
+  each non-blank line.
+- **Cycles** are detected by absolute path.
+- **`@import` and `@include`** are synonyms; pick whichever reads
+  better in context.
+- **Library-agnostic**: the preprocessor runs before the lexer, so
+  no library declaration is required. Authors can use it with any
+  library.
+
+### When to reach for source vs. library imports
+
+|                                | Library `import`           | Source `@import`               |
+|--------------------------------|----------------------------|--------------------------------|
+| Where it appears               | Top of `lib.capy`          | Inside `script.capy`, any indent |
+| What it imports                | Functions, types, context  | Verbatim source statements     |
+| Processing stage               | Library load               | Source preprocessing           |
+| Conflict rule                  | Importer-wins merge        | n/a (text inclusion)           |
+| Typical use                    | Share DSL building blocks  | Share pieces of authored content |
+
+See [`samples/source-imports/`](https://github.com/luowensheng/capy/tree/main/samples/source-imports)
+for a worked menu example.
+
 ## When to split a library
 
 Split when…

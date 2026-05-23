@@ -1,0 +1,47 @@
+# A tiny menu DSL — illustrates source-file imports.
+extension md
+
+context
+    name ""
+    sections []
+end
+
+function menu
+    arg literal "menu"
+    arg capture name string
+    block_closer end
+    template:
+        # {{ .name | unquote }}
+        {{ .body }}
+    run:
+        set context.name name
+end
+
+function section
+    arg literal "section"
+    arg capture name string
+    block_closer end
+    template:
+
+        ## {{ .name | unquote }}
+
+        {{ .body }}
+end
+
+function item
+    arg literal "item"
+    arg capture name string
+    arg capture price string
+    template_str "- **{{ .name | unquote }}** — {{ .price | unquote }}\n"
+end
+
+function note
+    arg literal "note"
+    arg capture text string
+    template:
+        > {{ .text | unquote }}
+
+end
+
+function end
+end

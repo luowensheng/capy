@@ -1,0 +1,17 @@
+menu "Capy Cafe — Spring 2026"
+
+    section "Mains"
+        item "House pasta"               "$16"
+        item "Sheet-pan salmon"          "$22"
+        item "Black bean tacos (3)"      "$14"
+    end
+
+    # Pull in the drinks list from a shared file. Multiple menus can
+    # @import the same file — keep the canonical list in one place.
+    @import "shared/drinks.capy"
+
+    # And the desserts.
+    @import "shared/desserts.capy"
+
+    note "All dishes are made fresh. Please tell us about allergies."
+end

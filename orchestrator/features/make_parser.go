@@ -3,6 +3,7 @@ package orchfeatures
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/luowensheng/capy/domain"
 	"github.com/luowensheng/capy/features"
@@ -150,7 +151,26 @@ func (p *outerP) parseStmt() (domain.FuncCall, error) {
 		}
 		return inst, nil
 	}
-	return domain.FuncCall{}, domain.NewError(startLine, startCol, "no library function matches token %q", startTok.Text)
+	// Build a "did you mean…?" hint: the closest literal-starting
+	// function name to the unrecognized token.
+	err := domain.NewError(startLine, startCol, "no library function matches token %q", startTok.Text)
+	literals := make([]string, 0, len(p.fns))
+	for _, fn := range p.fns {
+		if len(fn.Elements) > 0 && !fn.Elements[0].IsCapture {
+			literals = append(literals, fn.Elements[0].Literal)
+		}
+	}
+	if best := domain.SuggestClosest(startTok.Text, literals, 2); best != "" {
+		err.Hint = fmt.Sprintf("did you mean %q?", best)
+	} else if len(literals) > 0 {
+		// Show what IS valid as a fallback hint.
+		shown := literals
+		if len(shown) > 6 {
+			shown = shown[:6]
+		}
+		err.Hint = fmt.Sprintf("library functions start with one of: %s", strings.Join(shown, ", "))
+	}
+	return domain.FuncCall{}, err
 }
 
 // matchesDelim peeks-and-consumes a single-token delimiter (typically `{`).
