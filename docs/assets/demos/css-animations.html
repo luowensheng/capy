@@ -1,0 +1,43 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>
+body{font-family:-apple-system,sans-serif;background:#fafafa;margin:0;padding:2rem;}
+/* generated CSS — 2 keyframes, 2 classes */
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+
+}
+@keyframes slide_in {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(0); }
+
+}
+.card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,.1);
+  animation: slide_in 0.4s ease-out infinite;
+
+}
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  background: #4dd;
+  color: #fff;
+  animation: pulse 1.2s ease-in-out infinite;
+
+}
+</style></head>
+<body>
+<div class="card">
+  <h2>Card with slide-in animation</h2>
+  <span class="badge">PULSING BADGE</span>
+  <p style="margin-top:1rem;color:#555;">
+    The card slides in from the left on page load. The badge pulses
+    on a 1.2s loop. Both animations are generated from
+    <code>samples/transpile-css-animations/script.capy</code>.
+  </p>
+</div>
+</body></html>

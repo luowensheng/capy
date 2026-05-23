@@ -12,8 +12,9 @@ hide:
 > Markdown, your custom DSL. 50 worked demos in the repo.
 
 [Get started in 5 minutes :material-rocket-launch:](getting-started.md){ .md-button .md-button--primary }
-[Browse 50 demos :material-folder-open:](https://github.com/luowensheng/capy/tree/main/samples){ .md-button }
+[Live demos :material-play-circle:](showcase.md){ .md-button }
 [Use cases :material-lightbulb:](use-cases.md){ .md-button }
+[Browse 50 samples :material-folder-open:](https://github.com/luowensheng/capy/tree/main/samples){ .md-button }
 
 ---
 

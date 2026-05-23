@@ -47,6 +47,7 @@ theme:
 nav:
   - Home: index.md
   - Getting started: getting-started.md
+  - Live demos: showcase.md
   - Use cases: use-cases.md
   - For AI agents:
     - Overview & patterns: ai-agents.md
