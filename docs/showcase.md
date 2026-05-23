@@ -655,6 +655,181 @@ the generated file, run it.
 
 ---
 
+## 🌍 One source → five programming languages
+
+The same 10-line `script.capy` compiled to **five different
+programming languages** by five different libraries. Each output is a
+real, runnable program that prints `12`.
+
+=== "Source (`script.capy`)"
+
+    ```
+    fn add(a, b)
+        return a + b
+    end
+
+    main
+        let x = 5
+        let y = 7
+        let z = add(x, y)
+        print z
+    end
+    ```
+
+    Ten lines. Defines a function, calls it, prints the result. The
+    grammar (`fn`, `return`, `main`, `let`, `print`) is defined by the
+    libraries — not by Capy itself.
+
+=== "→ Python"
+
+    ```python
+    def add(a, b):
+        return a + b
+
+
+    if __name__ == "__main__":
+        x = 5
+        y = 7
+        z = add(x, y)
+        print(z)
+    ```
+
+=== "→ JavaScript"
+
+    ```javascript
+    function add(a, b) {
+      return a + b;
+    }
+
+
+    (function main() {
+      const x = 5;
+      const y = 7;
+      const z = add(x, y);
+      console.log(z);
+    })();
+    ```
+
+=== "→ Go"
+
+    ```go
+    package main
+
+    import "fmt"
+
+
+    func add(a int, b int) int {
+        return a + b
+    }
+
+
+    func main() {
+        x := 5
+        y := 7
+        z := add(x, y)
+        fmt.Println(z)
+    }
+    ```
+
+=== "→ Rust"
+
+    ```rust
+    fn add(a: i32, b: i32) -> i32 {
+        return a + b;
+    }
+
+
+    fn main() {
+        let x: i32 = 5;
+        let y: i32 = 7;
+        let z: i32 = add(x, y);
+        println!("{}", z);
+    }
+    ```
+
+=== "→ C"
+
+    ```c
+    #include <stdio.h>
+
+    int add(int a, int b) {
+        return a + b;
+    }
+
+
+    int main(void) {
+        int x = 5;
+        int y = 7;
+        int z = add(x, y);
+        printf("%d\n", z);
+        return 0;
+    }
+    ```
+
+**Why this matters.** Maintaining the "same logic in N languages"
+problem is real: client SDKs that drift, an algorithm needed in
+Python *and* C++, a validator that runs in the browser *and* on the
+server. With Capy you write the logic **once**; adding a sixth target
+is a ~50-line library file. The next time you change the algorithm,
+all five (or six, or ten) outputs regenerate.
+
+[Full sample → `samples/multi-language-demo/`](https://github.com/luowensheng/capy/tree/main/samples/multi-language-demo)
+
+### Bonus: the library itself, in Capy syntax
+
+Every library in this demo ships in **two forms**. Pick whichever you
+prefer — they produce byte-identical output:
+
+=== "`lib_c.yaml` (YAML)"
+
+    ```yaml
+    extension: c
+
+    functions:
+      fn:
+        args:
+          - { kind: literal, value: "fn" }
+          - { kind: capture, name: name, type: ident }
+          - { kind: literal, value: "(" }
+          - { kind: capture, name: a, type: ident }
+          - { kind: literal, value: "," }
+          - { kind: capture, name: b, type: ident }
+          - { kind: literal, value: ")" }
+        block: { closer: end }
+        template: |
+          int {{ .name }}(int {{ .a }}, int {{ .b }}) {
+          {{ .body | indent 4 }}
+          }
+      # ...
+    ```
+
+=== "`lib_c.capy` (Capy-native)"
+
+    ```
+    extension c
+
+    function fn
+        arg literal "fn"
+        arg capture name ident
+        arg literal "("
+        arg capture a ident
+        arg literal ","
+        arg capture b ident
+        arg literal ")"
+        block_closer end
+        template:
+            int {{ .name }}(int {{ .a }}, int {{ .b }}) {
+            {{ .body | indent 4 }}
+            }
+    end
+    ```
+
+Capy supports **both formats** for libraries — the loader dispatches
+on file extension. See [`.capy` libraries](capy-libraries.md) for the
+full grammar and trade-offs.
+
+---
+
 ## 🔀 Same source, three targets
 
 The clearest demonstration of "the library is the grammar". One

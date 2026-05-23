@@ -136,6 +136,7 @@ go build -o capy ./cmd/capy
 |---|---|
 | [docs/getting-started.md](docs/getting-started.md) | Five-minute tour |
 | [docs/library-authoring.md](docs/library-authoring.md) | Writing your own `lib.yaml` |
+| [docs/capy-libraries.md](docs/capy-libraries.md) | Writing libraries in Capy's own syntax (`.capy` format) |
 | [docs/language-reference.md](docs/language-reference.md) | Surface grammar + lexer behavior |
 | [docs/inner-dsl.md](docs/inner-dsl.md) | The `run:` operations |
 | [docs/types.md](docs/types.md) | `base` / `pattern` / `options` |

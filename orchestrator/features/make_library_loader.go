@@ -9,14 +9,25 @@ import (
 	"github.com/luowensheng/capy/infra"
 )
 
-// MakeLibraryLoader compiles raw YAML into a domain.Library:
+// MakeLibraryLoader compiles a library file into a domain.Library. It accepts
+// either YAML (`.yaml`, `.yml`) or Capy-native (`.capy`) library files; both
+// formats produce the same in-memory RawLibrary DTO and are mapped via
+// mapLibrary.
+//
 //   - args list → []ArgEntry → []PatternElement
 //   - run: snippet → InnerBlock AST (parsed via the outer lexer + inner parser)
 //   - types/context/file_template carried through
 func MakeLibraryLoader(yp infra.YamlParser, tokenize func(string) ([]domain.Token, error)) features.LibraryLoader {
+	cp := infra.CapyLibParser{}
 	return features.LibraryLoader{
 		Load: func(path string) (domain.Library, error) {
-			raw, err := yp.ParseFile(path)
+			var raw infra.RawLibrary
+			var err error
+			if strings.HasSuffix(strings.ToLower(path), ".capy") {
+				raw, err = cp.ParseFile(path)
+			} else {
+				raw, err = yp.ParseFile(path)
+			}
 			if err != nil {
 				return domain.Library{}, err
 			}

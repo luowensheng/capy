@@ -85,3 +85,33 @@ seven patterns above translated to X's idioms, and that target lights
 up without touching the source.
 
 That's the point.
+
+## Same library, two formats
+
+Every library in this directory ships **twice**:
+
+```
+lib_python.yaml      lib_python.capy
+lib_javascript.yaml  lib_javascript.capy
+lib_go.yaml          lib_go.capy
+lib_rust.yaml        lib_rust.capy
+lib_c.yaml           lib_c.capy
+```
+
+Both formats produce byte-identical output. Capy's loader dispatches
+on file extension:
+
+```sh
+# YAML form
+../../capy run lib_c.yaml script.capy
+
+# Capy-native form
+../../capy run lib_c.capy script.capy
+
+# Diff — empty, they match exactly
+diff <(../../capy run lib_c.yaml script.capy) <(../../capy run lib_c.capy script.capy)
+```
+
+YAML wins on tooling (yq, JSON schema, every editor). `.capy` wins on
+ergonomics — one syntax to learn, native multi-line templates, no
+YAML escape gotchas. Pick whichever fits your workflow.

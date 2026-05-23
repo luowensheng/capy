@@ -1,0 +1,72 @@
+# Same Capy source → C — written in Capy's native library syntax.
+extension c
+
+function fn
+    arg literal "fn"
+    arg capture name ident
+    arg literal "("
+    arg capture a ident
+    arg literal ","
+    arg capture b ident
+    arg literal ")"
+    block_closer end
+    template:
+        int {{ .name }}(int {{ .a }}, int {{ .b }}) {
+        {{ .body | indent 4 }}
+        }
+end
+
+function return
+    arg literal "return"
+    arg capture l any
+    arg literal "+"
+    arg capture r any
+    template_str "return {{ .l }} + {{ .r }};\n"
+end
+
+function main
+    arg literal "main"
+    block_closer end
+    template:
+
+        int main(void) {
+        {{ .body | indent 4 }}
+            return 0;
+        }
+end
+
+function let_call
+    priority 100
+    arg literal "let"
+    arg capture name ident
+    arg literal "="
+    arg capture fn ident
+    arg literal "("
+    arg capture a any
+    arg literal ","
+    arg capture b any
+    arg literal ")"
+    template_str "int {{ .name }} = {{ .fn }}({{ .a }}, {{ .b }});\n"
+end
+
+function let
+    arg literal "let"
+    arg capture name ident
+    arg literal "="
+    arg capture value any
+    template_str "int {{ .name }} = {{ .value }};\n"
+end
+
+function print
+    arg literal "print"
+    arg capture value any
+    template_str "printf(\"%d\\n\", {{ .value }});\n"
+end
+
+function end
+end
+
+file_template:
+    #include <stdio.h>
+
+    {{ .body }}

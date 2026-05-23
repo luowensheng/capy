@@ -34,11 +34,13 @@ hide:
     becomes SQL + JSON + Markdown (or any other format). Add a new
     target by writing a new library; never touch the source.
 
-- :material-format-list-bulleted-type: **A YAML library beats a hand-rolled generator**
+- :material-format-list-bulleted-type: **A declarative library beats a hand-rolled generator**
 
     Easier to read than 800 lines of string-builder code in Go or
     Python. Easier to diff, audit, and review. Non-engineers can
-    follow what's possible by reading the library.
+    follow what's possible by reading the library. Write libraries
+    in **YAML** or in **[Capy's own syntax](capy-libraries.md)** —
+    same engine, same output.
 
 - :material-robot: **AI on either side, on your terms**
 

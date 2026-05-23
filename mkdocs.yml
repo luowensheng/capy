@@ -54,6 +54,7 @@ nav:
     - Single-page brief: CAPY_FOR_LLMS.md
   - Guide:
     - Library authoring: library-authoring.md
+    - ".capy libraries": capy-libraries.md
     - Language reference: language-reference.md
     - Inner DSL: inner-dsl.md
     - Types: types.md

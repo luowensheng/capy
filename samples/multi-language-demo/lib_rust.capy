@@ -1,0 +1,66 @@
+# Same Capy source → Rust — written in Capy's native library syntax.
+extension rs
+
+function fn
+    arg literal "fn"
+    arg capture name ident
+    arg literal "("
+    arg capture a ident
+    arg literal ","
+    arg capture b ident
+    arg literal ")"
+    block_closer end
+    template:
+        fn {{ .name }}({{ .a }}: i32, {{ .b }}: i32) -> i32 {
+        {{ .body | indent 4 }}
+        }
+end
+
+function return
+    arg literal "return"
+    arg capture l any
+    arg literal "+"
+    arg capture r any
+    template_str "return {{ .l }} + {{ .r }};\n"
+end
+
+function main
+    arg literal "main"
+    block_closer end
+    template:
+
+        fn main() {
+        {{ .body | indent 4 }}
+        }
+end
+
+function let_call
+    priority 100
+    arg literal "let"
+    arg capture name ident
+    arg literal "="
+    arg capture fn ident
+    arg literal "("
+    arg capture a any
+    arg literal ","
+    arg capture b any
+    arg literal ")"
+    template_str "let {{ .name }}: i32 = {{ .fn }}({{ .a }}, {{ .b }});\n"
+end
+
+function let
+    arg literal "let"
+    arg capture name ident
+    arg literal "="
+    arg capture value any
+    template_str "let {{ .name }}: i32 = {{ .value }};\n"
+end
+
+function print
+    arg literal "print"
+    arg capture value any
+    template_str "println!(\"{}\", {{ .value }});\n"
+end
+
+function end
+end
