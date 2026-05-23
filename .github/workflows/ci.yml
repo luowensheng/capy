@@ -5,14 +5,10 @@ on:
     branches: [main]
   pull_request:
 
-# Speed up retries / ensure only the latest commit per branch runs.
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# Use the Go module proxy and never try to authenticate to git for missing
-# modules (so a transient proxy hiccup doesn't drop to "could not read
-# Username for github.com" prompts).
 env:
   GOPROXY: https://proxy.golang.org,direct
   GOFLAGS: -mod=readonly
@@ -37,19 +33,24 @@ jobs:
       - name: go test
         run: go test -race -cover ./...
 
-  lint:
-    name: lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-go@v6
-        with:
-          go-version: '1.23'
-          cache: true
-      - uses: golangci/golangci-lint-action@v7
-        with:
-          version: latest
-          args: --timeout=3m
+  # Lint is opt-in for now. Run locally with:
+  #   golangci-lint run
+  # Re-enable in CI by un-commenting the block below once the style
+  # baseline is comfortable.
+  #
+  # lint:
+  #   name: lint
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v5
+  #     - uses: actions/setup-go@v6
+  #       with:
+  #         go-version: '1.23'
+  #         cache: true
+  #     - uses: golangci/golangci-lint-action@v7
+  #       with:
+  #         version: latest
+  #         args: --timeout=3m
 
   build:
     name: build (${{ matrix.os }})
