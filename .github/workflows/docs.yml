@@ -26,9 +26,13 @@ jobs:
         with:
           python-version: '3.12'
           cache: pip
+          # setup-python's pip cache hashes a dependency file; without
+          # this it errors with "No file matched to **/requirements.txt
+          # or **/pyproject.toml". Our docs reqs live at the repo root.
+          cache-dependency-path: requirements-docs.txt
 
       - name: Install MkDocs Material
-        run: pip install mkdocs-material pymdown-extensions
+        run: pip install -r requirements-docs.txt
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
