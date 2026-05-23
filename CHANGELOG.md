@@ -8,6 +8,77 @@ may break between minor versions** (see `CONTRIBUTING.md`).
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-05-24
+
+A substantial feature release. Two new entry points (Capy-native
+library files and embedding-as-Go-library), seven new showcase
+samples including playable HTML5 games, and several engine fixes.
+
+### Added
+
+- **`.capy` library format**: libraries can now be written in Capy's
+  own native syntax in addition to YAML. Loader dispatches on file
+  extension; same DTO, same engine, byte-identical output. `.capy`
+  libraries support `extension`, `output_file`, `function`, `type`,
+  and `file_template` top-level blocks. See [`docs/capy-libraries.md`](docs/capy-libraries.md).
+
+- **Embedding API** — top-level `github.com/luowensheng/capy` Go
+  package lets programs define DSLs inline and transpile in-memory
+  with no separate binary. Public API:
+
+  ```go
+  capy.NewLibrary(src) / NewLibraryYAML(src) / NewLibraryFromFile(path)
+  (*Library).Run(scriptSrc) (string, error)
+  (*Library).Extension() / OutputFile() / FunctionNames()
+  ```
+
+  Runnable example at [`examples/embed-html-dsl/`](examples/embed-html-dsl).
+  Guide: [`docs/embedding.md`](docs/embedding.md).
+
+- **`type NAME ... end` blocks in `.capy` libraries** with `base`,
+  `pattern`, and `options` directives — full parity with the YAML
+  `types:` section.
+
+- **Seven new showcase samples**:
+  - `samples/multi-language-demo/` — one source → Python, JavaScript,
+    Go, Rust, and C (every library ships in BOTH .yaml and .capy form).
+  - `samples/3d-tools-demo/` — one scene → Blender, SketchUp, Rhino,
+    Unity, Unreal scripts.
+  - `samples/typed-config-dsl/` — named typed captures + custom types
+    with pattern/options/base; valid + invalid input both committed.
+  - `samples/interactive-breakout/` — event-driven Breakout DSL with
+    `on_key` / `on_event` primitives; 18-line DSL → 226-line working
+    game with playable iframe in the docs.
+  - `samples/interactive-snake/` — event-driven Snake with dual key
+    bindings (arrows + WASD), event handlers, localStorage scoring.
+
+### Changed
+
+- Outer parser now recursively dispatches library types with `base:`
+  to the base type's token rules. Without this, `type Port { base: int }`
+  + `port 8443` failed because the lib-type path only accepted
+  ident/string tokens.
+
+- `file_template:` in `.capy` libraries now captures to EOF and uses
+  the first non-blank line's indent as the strip width — so authors
+  can place template actions (e.g. `{{ .body | indent 8 }}`) at
+  column 0 for clean nested indentation.
+
+- Golden test harness now picks up samples whose library is either
+  `lib.yaml` or `lib.capy`, and skips `lib.capy` from the script glob.
+
+- Infra parsers gain `ParseBytes` methods for in-memory parsing.
+  New public `orchfeatures.LoadLibraryFromBytes(format, src, tokenize)`
+  used by the embedding API.
+
+### Docs
+
+- New showcase sections: playable games (event-driven DSL), named
+  variables & type checking, one scene → five 3D tools, one source
+  → five programming languages, `.capy` library format.
+- New pages: `docs/embedding.md`, `docs/capy-libraries.md`.
+- Homepage feature grid expanded.
+
 ## [0.1.0] — 2026-05-23
 
 Initial public release.
