@@ -1,3 +1,22 @@
-game  "Snake"  400 400
-grid  20 20
-speed 110
+game "Snake" 400 400
+grid cols 20 rows 20
+tick every 110
+
+on_key "ArrowUp"    turn_up
+on_key "ArrowDown"  turn_down
+on_key "ArrowLeft"  turn_left
+on_key "ArrowRight" turn_right
+on_key "w"          turn_up
+on_key "s"          turn_down
+on_key "a"          turn_left
+on_key "d"          turn_right
+on_key " "          pause_toggle
+on_key "r"          reset
+
+on_event eat_food    grow add_score 10
+on_event hit_wall    game_over
+on_event hit_self    game_over
+
+snake_color "#9fa"
+food_color  "#f44"
+save_best   "snake_best"

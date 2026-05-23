@@ -1,6 +1,6 @@
-# Capy → fully playable Breakout. The DSL is 4 lines of config; the
-# library emits a 200-line HTML+JS game with collision detection,
-# scoring, win/lose, and a restart loop.
+# Event-driven Breakout DSL. Users declare entities, key bindings, AND
+# event handlers. The library compiles those declarations into a complete
+# HTML5 canvas game with input dispatch and event routing.
 extension: html
 output_file: ""
 
@@ -11,14 +11,19 @@ context:
   paddle_w: 80
   paddle_h: 10
   paddle_speed: 7
+  paddle_color: "#3df"
   ball_r: 6
-  ball_vx: 4
-  ball_vy: 4
+  ball_speed: 4
+  ball_color: "#fff"
   rows: 5
   cols: 8
   brick_w: 56
   brick_h: 14
   brick_gap: 4
+  brick_colors: []   # filled by `brick_color N "color"`
+  key_bindings: []   # filled by `on_key`
+  event_handlers: [] # filled by `on_event`
+  lives: 3
 
 functions:
   game:
@@ -36,42 +41,104 @@ functions:
   paddle:
     args:
       - { kind: literal, value: "paddle" }
+      - { kind: literal, value: "width" }
       - { kind: capture, name: w, type: int }
+      - { kind: literal, value: "height" }
       - { kind: capture, name: h, type: int }
+      - { kind: literal, value: "color" }
+      - { kind: capture, name: color, type: any }
+      - { kind: literal, value: "speed" }
       - { kind: capture, name: speed, type: int }
     template: ""
     run: |
       set context.paddle_w w
       set context.paddle_h h
+      set context.paddle_color color
       set context.paddle_speed speed
 
   ball:
     args:
       - { kind: literal, value: "ball" }
+      - { kind: literal, value: "radius" }
       - { kind: capture, name: r, type: int }
-      - { kind: capture, name: vx, type: int }
-      - { kind: capture, name: vy, type: int }
+      - { kind: literal, value: "color" }
+      - { kind: capture, name: color, type: any }
+      - { kind: literal, value: "speed" }
+      - { kind: capture, name: speed, type: int }
     template: ""
     run: |
       set context.ball_r r
-      set context.ball_vx vx
-      set context.ball_vy vy
+      set context.ball_color color
+      set context.ball_speed speed
 
   bricks:
     args:
       - { kind: literal, value: "bricks" }
+      - { kind: literal, value: "rows" }
       - { kind: capture, name: rows, type: int }
+      - { kind: literal, value: "cols" }
       - { kind: capture, name: cols, type: int }
-      - { kind: capture, name: bw, type: int }
-      - { kind: capture, name: bh, type: int }
+      - { kind: literal, value: "width" }
+      - { kind: capture, name: w, type: int }
+      - { kind: literal, value: "height" }
+      - { kind: capture, name: h, type: int }
+      - { kind: literal, value: "gap" }
       - { kind: capture, name: gap, type: int }
     template: ""
     run: |
       set context.rows rows
       set context.cols cols
-      set context.brick_w bw
-      set context.brick_h bh
+      set context.brick_w w
+      set context.brick_h h
       set context.brick_gap gap
+
+  brick_color:
+    args:
+      - { kind: literal, value: "brick_color" }
+      - { kind: capture, name: idx, type: int }
+      - { kind: capture, name: color, type: any }
+    template: ""
+    run: |
+      append context.brick_colors {idx: idx, color: color}
+
+  on_key:
+    args:
+      - { kind: literal, value: "on_key" }
+      - { kind: capture, name: key, type: any }
+      - { kind: capture, name: action, type: ident }
+    template: ""
+    run: |
+      append context.key_bindings {key: key, action: action}
+
+  on_event:
+    args:
+      - { kind: literal, value: "on_event" }
+      - { kind: capture, name: ev, type: ident }
+      - { kind: capture, name: action1, type: ident }
+    template: ""
+    run: |
+      append context.event_handlers {ev: ev, action1: action1, action2: "", value: 0}
+
+  # Optional second action + value form: `on_event brick_hit destroy_brick add_score 10`
+  on_event_two:
+    priority: 100
+    args:
+      - { kind: literal, value: "on_event" }
+      - { kind: capture, name: ev, type: ident }
+      - { kind: capture, name: action1, type: ident }
+      - { kind: capture, name: action2, type: ident }
+      - { kind: capture, name: value, type: int }
+    template: ""
+    run: |
+      append context.event_handlers {ev: ev, action1: action1, action2: action2, value: value}
+
+  lives:
+    args:
+      - { kind: literal, value: "lives" }
+      - { kind: capture, name: n, type: int }
+    template: ""
+    run: |
+      set context.lives n
 
 file_template: |
   <!doctype html>
@@ -90,25 +157,94 @@ file_template: |
   </head>
   <body>
     <div class="wrap">
-      <div class="hud">{{ .context.title | unquote }} · score <span id="score">0</span> · lives <span id="lives">3</span></div>
+      <div class="hud">{{ .context.title | unquote }} · score <span id="score">0</span> · lives <span id="lives">{{ .context.lives }}</span></div>
       <canvas id="c" width="{{ .context.width }}" height="{{ .context.height }}"></canvas>
-      <div class="hint">← / → to move · space to launch · R to restart</div>
+      <div class="hint">arrow keys to move · space to launch · R to restart</div>
     </div>
     <script>
       (() => {
         const W = {{ .context.width }}, H = {{ .context.height }};
         const PW = {{ .context.paddle_w }}, PH = {{ .context.paddle_h }}, PSPD = {{ .context.paddle_speed }};
-        const BR = {{ .context.ball_r }};
+        const PCOLOR = "{{ .context.paddle_color }}";
+        const BR = {{ .context.ball_r }}, BSPD = {{ .context.ball_speed }};
+        const BCOLOR = "{{ .context.ball_color }}";
         const ROWS = {{ .context.rows }}, COLS = {{ .context.cols }};
         const BW = {{ .context.brick_w }}, BH = {{ .context.brick_h }}, GAP = {{ .context.brick_gap }};
-        const ROW_COLORS = ["#f55", "#fa4", "#ff4", "#4f6", "#4af"];
+        const START_LIVES = {{ .context.lives }};
+        const ROW_COLORS = [
+          {{- range .context.brick_colors }} "{{ .color }}",{{ end }}
+        ];
 
         const c = document.getElementById("c"), ctx = c.getContext("2d");
         const scoreEl = document.getElementById("score"), livesEl = document.getElementById("lives");
 
-        let paddle, ball, bricks, score, lives, launched, keys, raf, gameOver;
+        let paddle, ball, bricks, score, lives, launched, keys, gameOver;
 
-        function reset() {
+        // -----------------------------------------------------------------
+        // Action implementations. Names here MUST match the action idents
+        // declared in the DSL via `on_key ... <action>` and `on_event ...
+        // <action>`. Library authors add to this table when extending the DSL.
+        // -----------------------------------------------------------------
+        const ACTIONS = {
+          paddle_left()       { paddle.x = Math.max(0, paddle.x - PSPD); },
+          paddle_right()      { paddle.x = Math.min(W - PW, paddle.x + PSPD); },
+          launch_ball()       {
+            if (launched || gameOver) return;
+            ball.vx = (Math.random() > 0.5 ? 1 : -1) * BSPD;
+            ball.vy = -BSPD;
+            launched = true;
+          },
+          reset()             { resetGame(); },
+
+          destroy_brick(b)    { b.alive = false; },
+          add_score(_b, value){
+            score += value;
+            scoreEl.textContent = score;
+          },
+          bounce_with_spin()  {
+            ball.y = paddle.y - BR;
+            ball.vy = -Math.abs(ball.vy);
+            const off = (ball.x - (paddle.x + PW / 2)) / (PW / 2);
+            ball.vx = off * (BSPD + 2);
+          },
+          lose_life()         {
+            lives--;
+            livesEl.textContent = lives;
+            if (lives <= 0) { gameOver = "lose"; return; }
+            ball.x = paddle.x + PW / 2;
+            ball.y = paddle.y - BR - 1;
+            ball.vx = 0; ball.vy = 0;
+            launched = false;
+          },
+          win()               { gameOver = "win"; },
+        };
+
+        // -----------------------------------------------------------------
+        // Generated bindings from the DSL.
+        // -----------------------------------------------------------------
+        const KEY_BINDINGS = {
+          {{- range .context.key_bindings }}
+          "{{ .key }}": "{{ .action }}",
+          {{- end }}
+        };
+
+        const EVENT_HANDLERS = {
+          {{- range .context.event_handlers }}
+          {{ .ev }}: (arg) => {
+            ACTIONS["{{ .action1 }}"] && ACTIONS["{{ .action1 }}"](arg);
+            {{- if .action2 }}
+            ACTIONS["{{ .action2 }}"] && ACTIONS["{{ .action2 }}"](arg, {{ .value }});
+            {{- end }}
+          },
+          {{- end }}
+        };
+
+        function emit(event, arg) {
+          const h = EVENT_HANDLERS[event];
+          if (h) h(arg);
+        }
+
+        function resetGame() {
           paddle = { x: (W - PW) / 2, y: H - PH - 8 };
           ball = { x: W / 2, y: paddle.y - BR - 1, vx: 0, vy: 0 };
           launched = false;
@@ -129,32 +265,19 @@ file_template: |
             }
           }
           score = 0;
-          lives = 3;
-          gameOver = false;
+          lives = START_LIVES;
+          gameOver = null;
           scoreEl.textContent = score;
           livesEl.textContent = lives;
         }
 
-        function launch() {
-          if (launched || gameOver) return;
-          ball.vx = (Math.random() > 0.5 ? 1 : -1) * {{ .context.ball_vx }};
-          ball.vy = -{{ .context.ball_vy }};
-          launched = true;
-        }
-
-        function loseLife() {
-          lives--;
-          livesEl.textContent = lives;
-          if (lives <= 0) { gameOver = true; return; }
-          ball.x = paddle.x + PW / 2;
-          ball.y = paddle.y - BR - 1;
-          ball.vx = 0; ball.vy = 0;
-          launched = false;
-        }
-
         function step() {
-          if (keys["ArrowLeft"])  paddle.x = Math.max(0, paddle.x - PSPD);
-          if (keys["ArrowRight"]) paddle.x = Math.min(W - PW, paddle.x + PSPD);
+          // Held-key actions: dispatch every frame for movement.
+          for (const k in KEY_BINDINGS) {
+            if (keys[k] && (k === "ArrowLeft" || k === "ArrowRight")) {
+              ACTIONS[KEY_BINDINGS[k]] && ACTIONS[KEY_BINDINGS[k]]();
+            }
+          }
 
           if (!launched) {
             ball.x = paddle.x + PW / 2;
@@ -166,17 +289,14 @@ file_template: |
           if (ball.x - BR < 0)  { ball.x = BR; ball.vx = -ball.vx; }
           if (ball.x + BR > W)  { ball.x = W - BR; ball.vx = -ball.vx; }
           if (ball.y - BR < 0)  { ball.y = BR; ball.vy = -ball.vy; }
-          if (ball.y - BR > H)  loseLife();
+          if (ball.y - BR > H)  emit("ball_lost");
 
           if (
             launched &&
             ball.x > paddle.x && ball.x < paddle.x + PW &&
             ball.y + BR > paddle.y && ball.y + BR < paddle.y + PH + 8
           ) {
-            ball.y = paddle.y - BR;
-            ball.vy = -Math.abs(ball.vy);
-            const off = (ball.x - (paddle.x + PW / 2)) / (PW / 2);
-            ball.vx = off * (Math.abs({{ .context.ball_vx }}) + 2);
+            emit("paddle_hit");
           }
 
           for (const b of bricks) {
@@ -185,64 +305,58 @@ file_template: |
               ball.x + BR > b.x && ball.x - BR < b.x + b.w &&
               ball.y + BR > b.y && ball.y - BR < b.y + b.h
             ) {
-              b.alive = false;
               const fromLeft = ball.x < b.x, fromRight = ball.x > b.x + b.w;
               if (fromLeft || fromRight) ball.vx = -ball.vx;
               else ball.vy = -ball.vy;
-              score += b.value;
-              scoreEl.textContent = score;
+              emit("brick_hit", b);
               break;
             }
           }
 
-          if (bricks.every(b => !b.alive)) gameOver = true;
+          if (bricks.every(b => !b.alive)) emit("all_cleared");
         }
 
         function draw() {
           ctx.clearRect(0, 0, W, H);
-
           for (const b of bricks) {
             if (!b.alive) continue;
             ctx.fillStyle = b.color;
             ctx.fillRect(b.x, b.y, b.w, b.h);
           }
-
-          ctx.fillStyle = "#3df";
+          ctx.fillStyle = PCOLOR;
           ctx.fillRect(paddle.x, paddle.y, PW, PH);
-
           ctx.beginPath();
           ctx.arc(ball.x, ball.y, BR, 0, Math.PI * 2);
-          ctx.fillStyle = "#fff";
+          ctx.fillStyle = BCOLOR;
           ctx.fill();
-
           if (gameOver) {
             ctx.fillStyle = "rgba(10, 10, 20, 0.7)";
             ctx.fillRect(0, 0, W, H);
             ctx.fillStyle = "#cfd";
             ctx.font = "bold 22px ui-monospace, monospace";
             ctx.textAlign = "center";
-            const won = bricks.every(b => !b.alive);
-            ctx.fillText(won ? "YOU WIN" : "GAME OVER", W / 2, H / 2 - 6);
+            ctx.fillText(gameOver === "win" ? "YOU WIN" : "GAME OVER", W / 2, H / 2 - 6);
             ctx.font = "13px ui-monospace, monospace";
             ctx.fillText("press R to restart", W / 2, H / 2 + 18);
           }
         }
 
-        function loop() {
-          if (!gameOver) step();
-          draw();
-          raf = requestAnimationFrame(loop);
-        }
+        function loop() { if (!gameOver) step(); draw(); requestAnimationFrame(loop); }
 
         keys = {};
         document.addEventListener("keydown", (e) => {
           keys[e.key] = true;
-          if (e.key === " ") { e.preventDefault(); launch(); }
-          if (e.key === "r" || e.key === "R") reset();
+          const action = KEY_BINDINGS[e.key];
+          // One-shot actions fire on keydown; held-direction actions are
+          // dispatched every frame in step(). Discriminate by key.
+          if (action && e.key !== "ArrowLeft" && e.key !== "ArrowRight") {
+            ACTIONS[action] && ACTIONS[action]();
+            e.preventDefault();
+          }
         });
         document.addEventListener("keyup", (e) => { keys[e.key] = false; });
 
-        reset();
+        resetGame();
         loop();
       })();
     </script>

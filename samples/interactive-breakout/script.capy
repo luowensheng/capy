@@ -1,4 +1,23 @@
-game     "Breakout"  480 320
-paddle   80 10  7
-ball     6 4 4
-bricks   5 8 56 14 4
+game "Breakout" 480 320
+
+paddle width 80 height 10 color "#3df" speed 7
+ball   radius 6 color "#fff" speed 4
+
+bricks rows 5 cols 8 width 56 height 14 gap 4
+brick_color 0 "#f55"
+brick_color 1 "#fa4"
+brick_color 2 "#ff4"
+brick_color 3 "#4f6"
+brick_color 4 "#4af"
+
+on_key "ArrowLeft"  paddle_left
+on_key "ArrowRight" paddle_right
+on_key " "          launch_ball
+on_key "r"          reset
+
+on_event brick_hit   destroy_brick add_score 10
+on_event paddle_hit  bounce_with_spin
+on_event ball_lost   lose_life
+on_event all_cleared win
+
+lives 3

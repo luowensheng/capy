@@ -147,27 +147,47 @@ becoming a silent no-op in production.
 
 ---
 
-## 🕹️ Playable games — Capy is not a toy
+## 🕹️ Event-driven game DSL — bindings & handlers, not just config
 
-The next two tabs are **fully playable HTML5 games** generated from
-3–4 lines of Capy DSL. Click into a canvas and play — keys are
-captured locally to the iframe.
+The Capy source for these games isn't a list of constants — it
+declares **entities, key bindings, AND event handlers**. The library
+compiles those declarations into a JS dispatch table + action
+implementations. Rebind a key, change a scoring rule, or delete a
+game-over condition by editing one line. The library never changes.
 
-=== "Breakout (4 lines of DSL)"
+=== "Breakout — entities + keys + events"
 
     **Source** (`script.capy`):
 
     ```
-    game     "Breakout"  480 320
-    paddle   80 10  7
-    ball     6 4 4
-    bricks   5 8 56 14 4
+    game "Breakout" 480 320
+
+    paddle width 80 height 10 color "#3df" speed 7
+    ball   radius 6 color "#fff" speed 4
+
+    bricks rows 5 cols 8 width 56 height 14 gap 4
+    brick_color 0 "#f55"
+    brick_color 1 "#fa4"
+    brick_color 2 "#ff4"
+    brick_color 3 "#4f6"
+    brick_color 4 "#4af"
+
+    on_key "ArrowLeft"  paddle_left
+    on_key "ArrowRight" paddle_right
+    on_key " "          launch_ball
+    on_key "r"          reset
+
+    on_event brick_hit   destroy_brick add_score 10
+    on_event paddle_hit  bounce_with_spin
+    on_event ball_lost   lose_life
+    on_event all_cleared win
+
+    lives 3
     ```
 
-    Four lines. The library generates a **174-line working game**:
-    paddle/ball physics, collision with spin off the paddle, 5×8
-    brick wall with per-row colors and score values, lives, win/lose
-    screens, restart.
+    The four `on_event` lines are **the entire game-logic glue**.
+    Want bricks worth 50 points instead of 10? Change one number.
+    Want the ball to NOT bounce off the paddle? Delete one line.
 
     <iframe src="../assets/demos/breakout.html" width="100%" height="400" style="border: 1px solid #444; background: #0a0a14;"></iframe>
 
@@ -175,29 +195,79 @@ captured locally to the iframe.
 
     [Library + source → `samples/interactive-breakout/`](https://github.com/luowensheng/capy/tree/main/samples/interactive-breakout)
 
-=== "Snake (3 lines of DSL)"
+=== "Snake — bindings, events, dual-mapped keys"
 
     **Source**:
 
     ```
-    game  "Snake"  400 400
-    grid  20 20
-    speed 110
+    game "Snake" 400 400
+    grid cols 20 rows 20
+    tick every 110
+
+    on_key "ArrowUp"    turn_up
+    on_key "ArrowDown"  turn_down
+    on_key "ArrowLeft"  turn_left
+    on_key "ArrowRight" turn_right
+    on_key "w"          turn_up
+    on_key "s"          turn_down
+    on_key "a"          turn_left
+    on_key "d"          turn_right
+    on_key " "          pause_toggle
+    on_key "r"          reset
+
+    on_event eat_food   grow add_score 10
+    on_event hit_wall   game_over
+    on_event hit_self   game_over
+
+    snake_color "#9fa"
+    food_color  "#f44"
+    save_best   "snake_best"
     ```
 
-    Three lines. **131-line working Snake**: arrow + WASD controls,
-    anti-reverse, growing snake with per-segment gradient, food
-    spawning that avoids the body, best-score saved to
-    `localStorage`, pause (space), restart (R).
+    Both arrow keys AND WASD map to the same actions — two
+    `on_key` lines per direction. Delete `on_event hit_self` and
+    the snake passes through itself. Change `add_score 10` to
+    `add_score 25` for double points.
 
     <iframe src="../assets/demos/snake.html" width="100%" height="460" style="border: 1px solid #2a3; background: #0a140a;"></iframe>
 
-    [Library + source → `samples/interactive-snake/`](https://github.com/luowensheng/capy/tree/main/samples/interactive-snake)
+=== "What the library generates"
 
-These two demos prove Capy can produce real interactive artifacts —
-not just toy "hello world" code. The DSL is configuration; the
-*library* contains the game logic, written once, reused with
-different parameters per game.
+    The DSL above compiles to a JS dispatch table that looks like:
+
+    ```javascript
+    const KEY_BINDINGS = {
+      "ArrowLeft":  "paddle_left",
+      "ArrowRight": "paddle_right",
+      " ":          "launch_ball",
+      "r":          "reset",
+    };
+
+    const EVENT_HANDLERS = {
+      brick_hit: (arg) => {
+        ACTIONS["destroy_brick"](arg);
+        ACTIONS["add_score"](arg, 10);   // ← the number from the DSL
+      },
+      paddle_hit:  (arg) => { ACTIONS["bounce_with_spin"](arg); },
+      ball_lost:   (arg) => { ACTIONS["lose_life"](arg); },
+      all_cleared: (arg) => { ACTIONS["win"](arg); },
+    };
+
+    document.addEventListener("keydown", (e) => {
+      const a = KEY_BINDINGS[e.key];
+      if (a) ACTIONS[a]();
+    });
+    ```
+
+    `ACTIONS` is a table of named JS functions baked into the
+    library's `file_template` — `paddle_left`, `launch_ball`,
+    `bounce_with_spin`, `lose_life`, etc. The user's DSL never
+    contains JS; it just names which action runs for which input
+    or which event.
+
+This is the pattern: Capy DSLs can carry **behavior**, not just
+configuration. The library provides primitives; the source composes
+them.
 
 ---
 

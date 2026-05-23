@@ -1,4 +1,6 @@
-# Capy → playable Snake. 3 lines of DSL → ~140-line HTML+JS game.
+# Event-driven Snake DSL. The user declares key bindings and event
+# handlers; the library compiles them into a complete HTML5 canvas
+# game with input dispatch, game-state events, and localStorage scoring.
 extension: html
 output_file: ""
 
@@ -9,6 +11,11 @@ context:
   cols: 20
   rows: 20
   speed_ms: 110
+  snake_color: "#9fa"
+  food_color: "#f44"
+  best_key: ""
+  key_bindings: []
+  event_handlers: []
 
 functions:
   game:
@@ -26,20 +33,77 @@ functions:
   grid:
     args:
       - { kind: literal, value: "grid" }
+      - { kind: literal, value: "cols" }
       - { kind: capture, name: cols, type: int }
+      - { kind: literal, value: "rows" }
       - { kind: capture, name: rows, type: int }
     template: ""
     run: |
       set context.cols cols
       set context.rows rows
 
-  speed:
+  tick:
     args:
-      - { kind: literal, value: "speed" }
+      - { kind: literal, value: "tick" }
+      - { kind: literal, value: "every" }
       - { kind: capture, name: ms, type: int }
     template: ""
     run: |
       set context.speed_ms ms
+
+  on_key:
+    args:
+      - { kind: literal, value: "on_key" }
+      - { kind: capture, name: key, type: any }
+      - { kind: capture, name: action, type: ident }
+    template: ""
+    run: |
+      append context.key_bindings {key: key, action: action}
+
+  on_event:
+    args:
+      - { kind: literal, value: "on_event" }
+      - { kind: capture, name: ev, type: ident }
+      - { kind: capture, name: action1, type: ident }
+    template: ""
+    run: |
+      append context.event_handlers {ev: ev, action1: action1, action2: "", value: 0}
+
+  on_event_two:
+    priority: 100
+    args:
+      - { kind: literal, value: "on_event" }
+      - { kind: capture, name: ev, type: ident }
+      - { kind: capture, name: action1, type: ident }
+      - { kind: capture, name: action2, type: ident }
+      - { kind: capture, name: value, type: int }
+    template: ""
+    run: |
+      append context.event_handlers {ev: ev, action1: action1, action2: action2, value: value}
+
+  snake_color:
+    args:
+      - { kind: literal, value: "snake_color" }
+      - { kind: capture, name: c, type: any }
+    template: ""
+    run: |
+      set context.snake_color c
+
+  food_color:
+    args:
+      - { kind: literal, value: "food_color" }
+      - { kind: capture, name: c, type: any }
+    template: ""
+    run: |
+      set context.food_color c
+
+  save_best:
+    args:
+      - { kind: literal, value: "save_best" }
+      - { kind: capture, name: k, type: any }
+    template: ""
+    run: |
+      set context.best_key k
 
 file_template: |
   <!doctype html>
@@ -68,13 +132,65 @@ file_template: |
         const COLS = {{ .context.cols }}, ROWS = {{ .context.rows }};
         const SPD = {{ .context.speed_ms }};
         const CW = W / COLS, CH = H / ROWS;
+        const SNAKE_COLOR = "{{ .context.snake_color }}";
+        const FOOD_COLOR = "{{ .context.food_color }}";
+        const BEST_KEY = "{{ .context.best_key }}";
 
         const c = document.getElementById("c"), ctx = c.getContext("2d");
         const scoreEl = document.getElementById("score"), bestEl = document.getElementById("best");
-        let best = parseInt(localStorage.getItem("snake_best") || "0", 10);
+        let best = parseInt(localStorage.getItem(BEST_KEY) || "0", 10);
         bestEl.textContent = best;
 
         let snake, dir, queuedDir, food, score, alive, paused, timer;
+
+        // -----------------------------------------------------------------
+        // Action implementations — names must match DSL action idents.
+        // -----------------------------------------------------------------
+        const ACTIONS = {
+          turn_up()    { queuedDir = { x: 0,  y: -1 }; },
+          turn_down()  { queuedDir = { x: 0,  y:  1 }; },
+          turn_left()  { queuedDir = { x: -1, y:  0 }; },
+          turn_right() { queuedDir = { x: 1,  y:  0 }; },
+          pause_toggle() {
+            paused = !paused;
+            if (!paused) schedule(); else draw();
+          },
+          reset()        { resetGame(); },
+
+          grow()         { /* growth is inherent: step() skips pop() on the eat-food tick */ },
+          add_score(_arg, value) {
+            score += value;
+            scoreEl.textContent = score;
+            if (score > best) {
+              best = score;
+              bestEl.textContent = best;
+              if (BEST_KEY) localStorage.setItem(BEST_KEY, String(best));
+            }
+          },
+          game_over()    { alive = false; },
+        };
+
+        const KEY_BINDINGS = {
+          {{- range .context.key_bindings }}
+          "{{ .key }}": "{{ .action }}",
+          {{- end }}
+        };
+
+        const EVENT_HANDLERS = {
+          {{- range .context.event_handlers }}
+          {{ .ev }}: (arg) => {
+            ACTIONS["{{ .action1 }}"] && ACTIONS["{{ .action1 }}"](arg);
+            {{- if .action2 }}
+            ACTIONS["{{ .action2 }}"] && ACTIONS["{{ .action2 }}"](arg, {{ .value }});
+            {{- end }}
+          },
+          {{- end }}
+        };
+
+        function emit(event, arg) {
+          const h = EVENT_HANDLERS[event];
+          if (h) h(arg);
+        }
 
         function spawnFood() {
           while (true) {
@@ -83,9 +199,9 @@ file_template: |
           }
         }
 
-        function reset() {
+        function resetGame() {
           snake = [
-            { x: Math.floor(COLS / 2), y: Math.floor(ROWS / 2) },
+            { x: Math.floor(COLS / 2),     y: Math.floor(ROWS / 2) },
             { x: Math.floor(COLS / 2) - 1, y: Math.floor(ROWS / 2) },
             { x: Math.floor(COLS / 2) - 2, y: Math.floor(ROWS / 2) },
           ];
@@ -109,18 +225,12 @@ file_template: |
           if (queuedDir.x !== -dir.x || queuedDir.y !== -dir.y) dir = queuedDir;
 
           const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
-          if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS) { alive = false; return; }
-          if (snake.some(s => s.x === head.x && s.y === head.y)) { alive = false; return; }
+          if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS) { emit("hit_wall"); return; }
+          if (snake.some(s => s.x === head.x && s.y === head.y))            { emit("hit_self"); return; }
 
           snake.unshift(head);
           if (head.x === food.x && head.y === food.y) {
-            score += 10;
-            scoreEl.textContent = score;
-            if (score > best) {
-              best = score;
-              bestEl.textContent = best;
-              localStorage.setItem("snake_best", String(best));
-            }
+            emit("eat_food");      // event fires grow + add_score per DSL
             spawnFood();
           } else {
             snake.pop();
@@ -131,13 +241,13 @@ file_template: |
           ctx.fillStyle = "#142014";
           ctx.fillRect(0, 0, W, H);
 
-          ctx.fillStyle = "#f44";
+          ctx.fillStyle = FOOD_COLOR;
           ctx.fillRect(food.x * CW + 1, food.y * CH + 1, CW - 2, CH - 2);
 
           for (let i = 0; i < snake.length; i++) {
             const s = snake[i];
             const t = i / Math.max(1, snake.length - 1);
-            ctx.fillStyle = i === 0 ? "#9fa" : `rgb(${64 + 80 * (1 - t)}, ${200 - 60 * t}, ${96 + 40 * (1 - t)})`;
+            ctx.fillStyle = i === 0 ? SNAKE_COLOR : `rgb(${64 + 80 * (1 - t)}, ${200 - 60 * t}, ${96 + 40 * (1 - t)})`;
             ctx.fillRect(s.x * CW + 1, s.y * CH + 1, CW - 2, CH - 2);
           }
 
@@ -153,21 +263,15 @@ file_template: |
           }
         }
 
-        const KEYMAP = {
-          ArrowUp:    { x: 0,  y: -1 },
-          ArrowDown:  { x: 0,  y:  1 },
-          ArrowLeft:  { x: -1, y:  0 },
-          ArrowRight: { x: 1,  y:  0 },
-          w: { x: 0, y: -1 }, s: { x: 0, y: 1 }, a: { x: -1, y: 0 }, d: { x: 1, y: 0 },
-        };
         document.addEventListener("keydown", (e) => {
-          const m = KEYMAP[e.key];
-          if (m) { queuedDir = m; e.preventDefault(); return; }
-          if (e.key === " ") { paused = !paused; if (!paused) schedule(); else draw(); e.preventDefault(); }
-          if (e.key === "r" || e.key === "R") reset();
+          const action = KEY_BINDINGS[e.key];
+          if (action) {
+            ACTIONS[action] && ACTIONS[action]();
+            e.preventDefault();
+          }
         });
 
-        reset();
+        resetGame();
         draw();
       })();
     </script>
