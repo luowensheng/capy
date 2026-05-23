@@ -8,11 +8,12 @@ hide:
 
 > **A transpiler engine with zero default grammar.** Define a tiny
 > source language in YAML; the engine turns input into any target
-> output you describe. 50 worked demos in the repo.
+> text you describe — Python, SQL, JSON, Kubernetes manifests,
+> Markdown, your custom DSL. 50 worked demos in the repo.
 
 [Get started in 5 minutes :material-rocket-launch:](getting-started.md){ .md-button .md-button--primary }
-[For AI agents :material-robot:](ai-agents.md){ .md-button }
 [Browse 50 demos :material-folder-open:](https://github.com/luowensheng/capy/tree/main/samples){ .md-button }
+[Use cases :material-lightbulb:](use-cases.md){ .md-button }
 
 ---
 
@@ -20,33 +21,32 @@ hide:
 
 <div class="grid cards" markdown>
 
-- :material-shield-lock: **Sandbox AI output**
+- :material-file-cog: **Generate any target text**
 
-    The library *is* the grammar. An agent can only emit shapes
-    you defined. No way to write `DROP TABLE`, no way to call
-    unauthorised hosts, no way to escape into arbitrary code.
+    Python, SQL, k8s YAML, Terraform HCL, Markdown, your custom
+    format. Define what you want in YAML; Capy produces the target
+    deterministically. Same engine, any output.
 
-- :material-coins: **5–10× fewer output tokens**
+- :material-sync: **One source, many targets**
 
-    Agents emit short structured DSL; the engine deterministically
-    expands it into long boilerplate-heavy code. The library is
-    reusable across hundreds of calls.
+    The library *is* the grammar. Swap it and the same source file
+    becomes SQL + JSON + Markdown (or any other format). Add a new
+    target by writing a new library; never touch the source.
 
-- :material-brain: **Lower task complexity**
+- :material-format-list-bulleted-type: **A YAML library beats a hand-rolled generator**
 
-    The agent reasons about *intent*, not syntax. Imports,
-    indentation, types, scaffolding, framework idioms — all
-    encoded in the library, hidden from the agent.
+    Easier to read than 800 lines of string-builder code in Go or
+    Python. Easier to diff, audit, and review. Non-engineers can
+    follow what's possible by reading the library.
 
-- :material-shield-check: **Fewer failure points**
+- :material-robot: **AI on either side, on your terms**
 
-    Parser rejects malformed input before the agent's output
-    reaches any system. Type validation catches semantic errors
-    at parse time. Output is by construction syntactically valid.
+    Let an AI **write the library** so you skip parser design and
+    get a friendly DSL for free. Let an AI **write the source**
+    against the library — sandboxed, deterministic, 5–10× fewer
+    tokens. Or both. [Read the AI guide →](ai-agents.md)
 
 </div>
-
-[Read the full AI agents guide →](ai-agents.md)
 
 ---
 
@@ -400,17 +400,18 @@ Source is short and declarative; targets are real, runnable artifacts.
 
 ## Where Capy shines
 
-Capy fits **anywhere you'd hand-roll a tiny parser to drive code
-generation**. The pattern shows up in a lot of places once you start
-noticing it.
+Capy fits **anywhere you'd hand-roll a tiny parser or a hairy
+Python/Go script to drive code generation**. The pattern shows up
+in a lot of places once you start noticing it.
 
 <div class="grid cards" markdown>
 
-- :material-robot: **AI agents & LLM copilots**
+- :material-server: **Config-as-code at scale**
 
-    Sandbox + token compression + complexity reduction. The most
-    valuable use case Capy enables, and the one that's hard to do
-    with any other tool. [Read the full guide →](ai-agents.md)
+    50 services × 3 environments × k8s + Terraform + CI + Datadog
+    monitors = boilerplate explosion. With Capy, each service is
+    a 6-line file; the library encodes the policy. Bump a setting
+    once, regenerate everything.
 
 - :material-package-variant: **Internal scaffolding & generators**
 
@@ -424,12 +425,6 @@ noticing it.
     types, Pydantic, Zod, GraphQL — from the same source. Drift
     becomes impossible.
 
-- :material-server: **Config-as-code at scale**
-
-    50 services × 3 environments × k8s + Terraform + CI = boilerplate
-    explosion. With Capy, each service is a 6-line file; the library
-    encodes the policy.
-
 - :material-account-tie: **DSLs for domain experts**
 
     Give finance / legal / healthcare experts a notation that's
@@ -439,13 +434,27 @@ noticing it.
 - :material-file-document-multiple: **Documentation generation**
 
     Stop letting README, OpenAPI, changelog, and release notes
-    drift. One source produces all of them; CI re-runs when source
-    changes.
+    drift. One source produces all of them; CI re-runs when the
+    source changes.
 
 - :material-history: **Migration / refactor tools**
 
     Old format → new format. Library parses the old, emits the new.
     Self-documenting, type-checked, beats a one-off Python script.
+
+- :material-robot: **AI builds the library FOR you**
+
+    Don't want to learn parser design? Describe what you want; AI
+    writes the YAML library. You then use the library to generate
+    complex outputs — without ever asking AI to think about syntax.
+    Capy becomes "easy mode" for custom DSLs.
+
+- :material-shield-lock: **AI uses the library SAFELY**
+
+    Have an agent that emits code? Make it emit Capy source against
+    your library instead. Output is sandboxed (no `DROP TABLE`, no
+    unauthorised hosts), 5–10× shorter (fewer tokens), and grammar-
+    checked before reaching any system.
 
 - :material-school: **Education & DSL design**
 
@@ -459,7 +468,7 @@ noticing it.
 
 </div>
 
-[See all 14 use cases with concrete scenarios → `docs/use-cases.md`](use-cases.md)
+[See all 14 use cases with concrete scenarios →](use-cases.md)
 
 ---
 
@@ -494,10 +503,66 @@ doesn't need them.
 
 ---
 
-## Why Capy fits AI workflows
+## Capy and AI — both directions
 
-The same model that makes Capy a good DSL substrate makes it
-genuinely useful for AI agents and copilots. Four properties:
+Capy is a developer tool. People write libraries; people write
+source; people generate output. Everything works without ever
+involving AI.
+
+But the same model makes Capy *unusually well-suited* to AI
+workflows — in **both directions**:
+
+### Direction 1: AI builds the library, humans use it
+
+You want a custom DSL for your domain but don't want to learn parser
+design? Describe it to an LLM:
+
+> "I want a small language where my designers can declare game
+> levels with rooms, exits, and items, and I want it to compile to
+> a JSON file the engine eats."
+
+The LLM emits a `lib.yaml`. Your designers write `script.capy`
+files; Capy compiles them. **You never have to teach the LLM your
+target format at use time** — the library encodes it once.
+
+This is the pattern that quietly unlocks the most value: AI does
+the **one-time** parser design (which is hard); humans do the
+**every-time** content writing (which is easy). The library is
+the friendly, predictable interface between them.
+
+### Direction 2: AI emits source, the library sandboxes it
+
+Have a code-generating agent? Point it at a Capy library instead
+of letting it emit raw code. The agent can only produce shapes the
+library defined — by construction:
+
+- A SQL DSL whose `TableName` is an enum **cannot** emit
+  `DROP TABLE`.
+- A shell DSL whose `Command` whitelists `ls`/`cat`/`grep`
+  **cannot** invoke `rm`.
+- An HTTP DSL whose `Host` is a regex **cannot** call
+  `evil-corp.example.com`.
+
+Plus the agent emits 5–10× fewer output tokens (no boilerplate to
+write), with deterministic output (same source → same target every
+time).
+
+### The combination
+
+You can use both directions in the same workflow. AI designs the
+library; agents use it. Humans write source occasionally; the rest
+of the time agents do. Everyone — humans and machines — talks to
+the system through the same friendly DSL.
+
+[Full AI agents guide → token cost math, sandboxing patterns,
+Claude Code skill, Cursor / Continue / Aider integration](ai-agents.md)
+
+---
+
+## Why Capy fits AI workflows (the details)
+
+If you want the deep version: four properties unique to Capy that
+matter for AI workflows.
 
 ### 1. Sandboxing — the grammar is the boundary
 

@@ -1,9 +1,17 @@
 # Where Capy is useful
 
+Capy is a **developer tool**. People write libraries; people write
+source; people generate output. Most of these use cases involve no
+AI at all.
+
+That said, Capy is also unusually well-suited to AI workflows — in
+both directions (AI as library author OR AI as library user). The
+AI patterns live in their own section near the bottom.
+
 Capy isn't a general-purpose programming language and it isn't a
 general-purpose templating engine. It lives in a specific design
-space: **anything where you would otherwise hand-roll a tiny parser
-to drive code generation**.
+space: **anything where you'd otherwise hand-roll a tiny parser or
+a hairy Python script to drive code generation**.
 
 Inside that space, it's genuinely useful. Outside it, reach for
 something else.
@@ -13,24 +21,70 @@ scenarios for each.
 
 ---
 
-## 1. AI agents and LLM-driven workflows
+## 1. Configuration generation at scale
 
-Already covered in depth on the dedicated page, but it bears the
-top spot here because the leverage is uniquely large. Four
-properties:
+This is the bread-and-butter Capy use case and the one most teams
+will hit first. When you have:
 
-| Property | What it means |
-|----------|---------------|
-| **Sandboxing** | The library is the grammar. An agent literally cannot emit shapes you didn't define. No `DROP TABLE`, no unauthorised hosts, no shell escapes. |
-| **Token compression** | Agents emit short DSL; engine deterministically expands. 5–10× output-token reduction per call; the library is reusable across thousands of calls. |
-| **Complexity reduction** | The agent reasons about *intent*, not syntax. Imports, indentation, framework idioms — all in the library, hidden from the agent. |
-| **Failure-point reduction** | Parser rejects malformed input before it reaches your system. Type validation catches semantic errors. Output is by construction syntactically valid. |
+- 50+ services, each with k8s manifests for 3 environments
+- Plus Terraform modules for each service
+- Plus CI workflows
+- Plus monitoring rules (Prometheus, Datadog)
+- Plus Ansible playbooks for the legacy stuff
 
-[Read the full AI agents guide →](ai-agents.md)
+…you have an explosion of nearly-identical configuration files.
+Existing solutions: Helm (text templates), Cue (typed config),
+Dhall (functional config), Jsonnet (programmatic config), or
+hand-rolled Go binaries.
 
-**Use it for**: agent-tool integrations, LLM scaffolders, customer-
-facing prompts that produce code/config, in-product copilots,
-sandbox-required code generation.
+Capy fits the same niche differently:
+
+- ➕ **Lower barrier**: YAML library + a small surface DSL is
+  easier to adopt than a typed config language. Anyone who reads
+  YAML can read a Capy library.
+- ➕ **Multi-target**: same source generates k8s + Terraform + CI
+  + monitors with one library per target.
+- ➕ **No new query language**: it's just `args + template + run`.
+- ➖ **Less typed than Cue/Dhall**: you give up algebraic types
+  for friendliness.
+
+**Scenario.** Each service has a 6-line `service.capy`:
+
+```
+service api
+team    payments
+runtime nodejs
+port    8080
+replicas
+    prod    6
+    staging 2
+    dev     1
+```
+
+CI runs `capy run kubernetes.lib.yaml service.capy > deploy.yaml`
+for each environment. Same source produces a Terraform module via
+a different library, a Datadog monitor via a third.
+
+**Why it wins**: the diff for "bump replicas in prod" is one line
+in one file, not three identical edits across three manifests.
+Adding a new service is one new file, not 12.
+
+Concrete sub-cases:
+
+- **Kubernetes manifests** with per-environment overrides
+- **Terraform modules** generated from a service catalogue
+- **GitHub Actions / GitLab CI** pipelines
+- **systemd unit files** for self-hosted servers
+- **nginx / Caddy config** per project
+- **`.env` files** with type-validated values
+- **Dockerfile + docker-compose** for repeatable dev environments
+- **Helm value files** if you're already on Helm
+
+The [transpile-kubernetes](https://github.com/luowensheng/capy/tree/main/samples/transpile-kubernetes),
+[transpile-terraform](https://github.com/luowensheng/capy/tree/main/samples/transpile-terraform),
+[transpile-nginx](https://github.com/luowensheng/capy/tree/main/samples/transpile-nginx),
+and [transpile-systemd](https://github.com/luowensheng/capy/tree/main/samples/transpile-systemd)
+samples show this pattern.
 
 ---
 
@@ -65,7 +119,67 @@ changes in one PR that touches one file.
 
 ---
 
-## 3. One-source-of-truth for multi-target generation
+## 3. AI builds the library, humans use it
+
+This is the use case most people miss. The setup:
+
+You want a custom DSL for your domain — say a level-design language
+for game designers, or a check-list-rule language for compliance
+officers, or a "service spec" DSL for your platform team. Writing
+the parser is hard if you've never built one.
+
+**Instead, let an AI write the library YAML for you.** Then your
+team uses the library to author content. The AI is involved in the
+one-time, hard part (parser design) but is **not in the loop** when
+content gets written.
+
+The shape:
+
+```
+You + AI                You + your team
+        ↓                        ↓
+   lib.yaml ────► Capy ◄──── script.capy
+                  │
+                  ▼
+              target output
+```
+
+**Scenario.** A small game studio has 3 designers and 2 engineers.
+The engineers want designers to author levels without learning JSON
++ the engine's API. Instead of writing a parser:
+
+1. Engineer prompts Claude: "Build me a Capy library where designers
+   declare rooms, exits, items, and NPCs. Output should be the JSON
+   our engine expects."
+2. Claude emits `lib.yaml` (~80 lines). Engineer reviews, tweaks
+   one or two patterns.
+3. Designers now write `room kitchen contains key, knife exits door:hall`
+   in `.capy` files. Capy generates the engine JSON.
+4. Iterating on the DSL is one library edit. The designers never see
+   it; their files keep working as long as the patterns stay the
+   same.
+
+**Why it wins**:
+
+- Designers (or analysts, or lawyers, or whoever) get a friendly,
+  domain-natural notation without an engineer hand-writing a parser.
+- The engineer reviews and tests the library *once* and is then
+  out of the loop.
+- The AI's involvement is bounded to the library design. There's
+  no per-invocation prompt; no token cost at use time; no
+  hallucination risk in the content pipeline.
+- The library becomes the documented contract between AI, engineer,
+  and end user.
+
+**This is Capy's quiet superpower.** Most "let AI generate code"
+patterns put AI in the per-invocation loop. Capy lets you move AI
+to the *one-time* library-design loop, then never invoke it again
+for content. It turns AI from a runtime dependency into a build-
+time author.
+
+---
+
+## 4. One-source-of-truth for multi-target generation
 
 The same conceptual data often gets expressed in 4–6 places:
 
@@ -103,43 +217,6 @@ is the one file that changed.
 
 **Why it wins**: the "did we keep these in sync?" question becomes
 a CI assertion.
-
----
-
-## 4. Configuration-as-code at scale
-
-When you have 50+ services, each with k8s manifests for 3 environments,
-plus Terraform, plus CI workflows, you have an explosion of nearly-
-identical YAML. The current state-of-the-art is Cue, Dhall, Jsonnet, or
-hand-rolled Helm templates. They all work; they're all hard to learn.
-
-Capy fits the same niche with two trade-offs:
-
-- ➕ **Lower barrier**: YAML library + a small surface DSL is easier
-  to adopt than a typed config language.
-- ➕ **Multi-target**: same source can generate k8s + Terraform + CI
-  with three libraries.
-- ➖ **Less typed**: no algebraic-data-type-level guarantees.
-
-**Scenario.** Each service has a 6-line `service.capy`:
-
-```
-service api
-team    payments
-runtime nodejs
-port    8080
-replicas
-    prod    6
-    staging 2
-    dev     1
-```
-
-CI runs `capy run kubernetes.lib.yaml service.capy > deploy.yaml` for
-each environment. Same source produces a Terraform module via a
-different library, a Datadog monitor via a third.
-
-**Why it wins**: the diff for "bump replicas in prod" is one line in
-one file, not three identical edits across three manifests.
 
 ---
 
