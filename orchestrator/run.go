@@ -12,15 +12,39 @@ import (
 // output as a string. Intended for embedding Capy programmatically (and for
 // tests).
 func Run(libraryPath, scriptPath string) (string, error) {
+	out, _, err := RunMulti(libraryPath, scriptPath)
+	return out, err
+}
+
+// RunMulti is like Run but also returns the rendered multi-file map for
+// libraries that declared `file "path":` blocks. The map is empty for
+// libraries that don't use multi-file output.
+func RunMulti(libraryPath, scriptPath string) (string, map[string]string, error) {
 	src, err := os.ReadFile(scriptPath)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
-	libSrc, err := os.ReadFile(libraryPath)
+	yp := infra.YamlParser{}
+	tplE := infra.TemplateEngine{}
+	lex := orchfeatures.MakeLexer()
+	parser := orchfeatures.MakeParser()
+	tpl := orchfeatures.MakeTemplateRenderer(tplE)
+	eval := orchfeatures.MakeEvaluator(tpl)
+
+	libLoader := orchfeatures.MakeLibraryLoader(yp, lex.Tokenize)
+	lib, err := libLoader.Load(libraryPath)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
-	return RunStrings(string(libSrc), libraryPath, string(src))
+	toks, err := lex.Tokenize(string(src))
+	if err != nil {
+		return "", nil, err
+	}
+	prog, err := parser.Parse(toks, lib)
+	if err != nil {
+		return "", nil, err
+	}
+	return eval.RunMulti(prog, lib)
 }
 
 // RunStrings is like Run but takes the library and script contents directly.

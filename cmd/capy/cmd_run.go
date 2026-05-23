@@ -4,6 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
+	"sort"
 
 	"github.com/luowensheng/capy/domain"
 	"github.com/luowensheng/capy/orchestrator"
@@ -12,6 +14,7 @@ import (
 func cmdRun(args []string) error {
 	fs := flag.NewFlagSet("run", flag.ContinueOnError)
 	out := fs.String("out", "", "override library's output_file (write to this path instead of stdout)")
+	outDir := fs.String("out-dir", "", "write multi-file output here. Required when the library declares `file \"...\":` blocks.")
 	debug := fs.Bool("debug", false, "enable verbose engine tracing (currently a no-op)")
 	noColor := fs.Bool("no-color", false, "disable colored output (reserved)")
 	// Legacy compatibility:
@@ -32,23 +35,45 @@ func cmdRun(args []string) error {
 		libPath = pos[0]
 		scriptPath = pos[1]
 	default:
-		return fmt.Errorf("usage: capy run <library.yaml> <script.capy>")
+		return fmt.Errorf("usage: capy run [--out-dir DIR] <library> <script.capy>")
 	}
 
 	// Read source for nice error formatting.
 	src, _ := os.ReadFile(scriptPath)
 
-	output, err := orchestrator.Run(libPath, scriptPath)
+	output, files, err := orchestrator.RunMulti(libPath, scriptPath)
 	if err != nil {
 		return fmt.Errorf("%s", domain.FormatWithSource(err, string(src)))
 	}
-	// `output` is already the rendered file. If --out provided, write there.
+
+	// Multi-file output: write every declared file under --out-dir.
+	if len(files) > 0 {
+		if *outDir == "" {
+			return fmt.Errorf("library declared %d `file \"...\":` block(s); pass --out-dir to write them", len(files))
+		}
+		// Sort paths for deterministic logging.
+		paths := make([]string, 0, len(files))
+		for p := range files {
+			paths = append(paths, p)
+		}
+		sort.Strings(paths)
+		for _, rel := range paths {
+			full := filepath.Join(*outDir, rel)
+			if err := os.MkdirAll(filepath.Dir(full), 0755); err != nil {
+				return fmt.Errorf("mkdir %s: %v", filepath.Dir(full), err)
+			}
+			if err := os.WriteFile(full, []byte(files[rel]), 0644); err != nil {
+				return fmt.Errorf("write %s: %v", full, err)
+			}
+			fmt.Fprintf(os.Stderr, "wrote %s (%d bytes)\n", full, len(files[rel]))
+		}
+		return nil
+	}
+
+	// Single-output: --out takes precedence over the library's output_file:
 	if *out != "" {
 		return os.WriteFile(*out, []byte(output), 0644)
 	}
-	// Otherwise the library may have set output_file: but we already wrote via the orchestrator? No — the
-	// orchestrator's Run uses the orchestrator package's MakeRunScript only for the CLI flow; Run() here
-	// bypasses that and returns the string. Print to stdout if no --out given.
 	fmt.Print(output)
 	return nil
 }

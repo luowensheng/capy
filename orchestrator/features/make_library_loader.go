@@ -2,6 +2,7 @@ package orchfeatures
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/luowensheng/capy/domain"
@@ -39,21 +40,93 @@ func LoadLibraryFromBytes(format string, src []byte, tokenize func(string) ([]do
 }
 
 func MakeLibraryLoader(yp infra.YamlParser, tokenize func(string) ([]domain.Token, error)) features.LibraryLoader {
-	cp := infra.CapyLibParser{}
 	return features.LibraryLoader{
 		Load: func(path string) (domain.Library, error) {
-			var raw infra.RawLibrary
-			var err error
-			if strings.HasSuffix(strings.ToLower(path), ".capy") {
-				raw, err = cp.ParseFile(path)
-			} else {
-				raw, err = yp.ParseFile(path)
-			}
+			raw, err := loadRawWithImports(path, map[string]bool{}, yp, infra.CapyLibParser{})
 			if err != nil {
 				return domain.Library{}, err
 			}
 			return mapLibrary(raw, tokenize)
 		},
+	}
+}
+
+// loadRawWithImports parses one library file and recursively pulls in any
+// `import` directives, merging them into the result. The IMPORTING file
+// wins on conflict (so local overrides shadow imports). Cycles error.
+//
+// Import paths are resolved relative to the file containing the `import`.
+func loadRawWithImports(path string, visited map[string]bool, yp infra.YamlParser, cp infra.CapyLibParser) (infra.RawLibrary, error) {
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return infra.RawLibrary{}, err
+	}
+	if visited[abs] {
+		return infra.RawLibrary{}, fmt.Errorf("import cycle detected at %s", path)
+	}
+	visited[abs] = true
+
+	var raw infra.RawLibrary
+	if strings.HasSuffix(strings.ToLower(path), ".capy") {
+		raw, err = cp.ParseFile(path)
+	} else {
+		raw, err = yp.ParseFile(path)
+	}
+	if err != nil {
+		return raw, err
+	}
+
+	if len(raw.Imports) == 0 {
+		return raw, nil
+	}
+
+	// Start from a merged-imports base; the local raw overrides at the end.
+	dir := filepath.Dir(abs)
+	merged := infra.RawLibrary{
+		Functions: map[string]infra.RawFunction{},
+		Types:     map[string]infra.RawType{},
+		Context:   map[string]any{},
+		Files:     map[string]string{},
+	}
+	for _, imp := range raw.Imports {
+		impPath := imp
+		if !filepath.IsAbs(impPath) {
+			impPath = filepath.Join(dir, imp)
+		}
+		impRaw, err := loadRawWithImports(impPath, visited, yp, cp)
+		if err != nil {
+			return raw, fmt.Errorf("import %q: %v", imp, err)
+		}
+		mergeRaw(&merged, impRaw)
+	}
+	// Local raw wins on conflict.
+	mergeRaw(&merged, raw)
+	return merged, nil
+}
+
+// mergeRaw copies entries from src into dst. Existing keys in dst are
+// OVERRIDDEN — call order determines precedence (last-write-wins).
+func mergeRaw(dst *infra.RawLibrary, src infra.RawLibrary) {
+	if src.Extension != "" {
+		dst.Extension = src.Extension
+	}
+	if src.OutputFile != "" {
+		dst.OutputFile = src.OutputFile
+	}
+	if src.FileTemplate != "" {
+		dst.FileTemplate = src.FileTemplate
+	}
+	for k, v := range src.Functions {
+		dst.Functions[k] = v
+	}
+	for k, v := range src.Types {
+		dst.Types[k] = v
+	}
+	for k, v := range src.Context {
+		dst.Context[k] = v
+	}
+	for k, v := range src.Files {
+		dst.Files[k] = v
 	}
 }
 
@@ -65,6 +138,10 @@ func mapLibrary(r infra.RawLibrary, tokenize func(string) ([]domain.Token, error
 		Types:        map[string]domain.TypeDef{},
 		Context:      r.Context,
 		FileTemplate: r.FileTemplate,
+		Files:        r.Files,
+	}
+	if lib.Files == nil {
+		lib.Files = map[string]string{}
 	}
 	if lib.Context == nil {
 		lib.Context = map[string]any{}

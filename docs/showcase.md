@@ -133,6 +133,165 @@ do more than twice.
 
 ---
 
+## 🌳 Multi-file projects — one source, a whole project tree
+
+A single Capy library can declare any number of output files. Run
+with `--out-dir generated` and Capy writes the entire tree
+(subdirectories included).
+
+=== "Source (9 lines)"
+
+    ```
+    project "todo-api"
+        description "A tiny TODO REST service"
+        author "you@example.com"
+
+        route GET    "/health"     health_check
+        route GET    "/todos"      list_todos
+        route POST   "/todos"      create_todo
+        route GET    "/todos/{id}" get_todo
+        route DELETE "/todos/{id}" delete_todo
+    end
+    ```
+
+=== "Generated tree"
+
+    ```
+    generated/
+    ├── README.md
+    ├── pyproject.toml
+    ├── .gitignore
+    ├── src/
+    │   ├── main.py            ← FastAPI app with 5 routes mounted
+    │   └── handlers.py        ← Handler stubs
+    └── tests/
+        └── test_smoke.py      ← Smoke tests
+    ```
+
+    Add a `route` line to the source, re-run, and every file that
+    mentions routes regenerates. The other files (.gitignore,
+    pyproject.toml) stay identical.
+
+=== "Library snippet"
+
+    The library has six `file "..."` blocks at the top level:
+
+    ```
+    file "README.md":
+        # {{ .context.name | unquote }}
+        {{ .context.description | unquote }}
+
+    file "src/main.py":
+        """Generated FastAPI app for {{ .context.name | unquote }}."""
+        from fastapi import FastAPI
+        from . import handlers
+
+        app = FastAPI(title={{ .context.name | toQuoted }})
+
+        {{ range .context.routes -}}
+        @app.{{ .method | lower }}({{ .path | toQuoted }})
+        async def {{ .handler }}_endpoint(*args, **kwargs):
+            return await handlers.{{ .handler }}(*args, **kwargs)
+
+        {{ end }}
+
+    file "tests/test_smoke.py":
+        ...
+    ```
+
+    Each block has a path (subdirectories OK) and a Go template
+    rendered against `.context` and `.body`.
+
+[Full sample → `samples/multi-file-project/`](https://github.com/luowensheng/capy/tree/main/samples/multi-file-project) ·
+[Pattern docs → multi-file & imports](multi-file-and-imports.md)
+
+---
+
+## 🧩 Library composition — split shared types & syntax
+
+Libraries can `import` other libraries. Use this to keep validators
+(Email, URL, Semver) and shared syntax helpers (`tag`, `note`,
+`meta`) in one canonical place that every project imports.
+
+=== "Layout"
+
+    ```
+    lib-composition/
+    ├── lib.capy                ← main: imports + project-specific functions
+    ├── common/
+    │   ├── types.capy          ← shared types
+    │   └── syntax.capy         ← shared functions
+    └── script.capy
+    ```
+
+=== "Main library"
+
+    ```
+    import "common/types.capy"
+    import "common/syntax.capy"
+
+    extension md
+
+    function post
+        arg literal "post"
+        arg capture title string
+        block_closer end
+        template:
+            # {{ .title | unquote }}
+
+            *By {{ .context.meta.author | unquote }}*
+
+            Tags: {{ range $i, $t := .context.tags }}{{ if $i }}, {{ end }}#{{ $t }}{{ end }}
+
+            ---
+
+            {{ .body }}
+    end
+    ```
+
+=== "Imported types (common/types.capy)"
+
+    ```
+    type Email
+        pattern "^[^@]+@[^@]+\\.[^@]+$"
+    end
+
+    type URL
+        pattern "^https?://[^ ]+$"
+    end
+
+    type Semver
+        pattern "^[0-9]+\\.[0-9]+\\.[0-9]+(-[a-zA-Z0-9.]+)?$"
+    end
+    ```
+
+=== "Imported functions (common/syntax.capy)"
+
+    ```
+    function tag
+        arg literal "tag"
+        arg capture name ident
+        template_str ""
+        run:
+            append context.tags name
+    end
+
+    function note
+        arg literal "note"
+        arg capture text string
+        template:
+            > **Note:** {{ .text | unquote }}
+    end
+    ```
+
+After `capy check lib.capy`: **6 functions, 4 types** — three
+functions and all four types come from imports, three functions
+are local. Conflicts resolve importer-wins; cycles are detected.
+
+[Full sample → `samples/lib-composition/`](https://github.com/luowensheng/capy/tree/main/samples/lib-composition)
+
+---
+
 ## 📜 Grammar as contract — one source, many consumers
 
 A Capy grammar isn't just a parser definition — it's a **machine-

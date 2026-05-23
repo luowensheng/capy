@@ -8,4 +8,8 @@ import "github.com/luowensheng/capy/domain"
 // with the accumulated context+body to produce the final output.
 type Evaluator struct {
 	Run func(program domain.Block, lib domain.Library) (string, error)
+	// RunMulti returns BOTH the file_template-rendered single output AND
+	// a map of every `file "path":` template rendered against the same
+	// final context+body. Used for multi-file project generation.
+	RunMulti func(program domain.Block, lib domain.Library) (string, map[string]string, error)
 }

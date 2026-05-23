@@ -52,6 +52,7 @@ nav:
   - Use cases: use-cases.md
   - Grammar as contract: grammar-as-contract.md
   - Supercharge existing syntax: extending-existing-syntax.md
+  - Multi-file output & imports: multi-file-and-imports.md
   - Embed in Go: embedding.md
   - For AI agents:
     - Overview & patterns: ai-agents.md

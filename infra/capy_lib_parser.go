@@ -117,6 +117,7 @@ func (p *capyLibParser) parseTop() (RawLibrary, error) {
 		Functions: map[string]RawFunction{},
 		Types:     map[string]RawType{},
 		Context:   map[string]any{},
+		Files:     map[string]string{},
 	}
 
 	for {
@@ -175,6 +176,37 @@ func (p *capyLibParser) parseTop() (RawLibrary, error) {
 			if err := p.parseContext(lib.Context); err != nil {
 				return lib, err
 			}
+		case "import":
+			p.nextLine()
+			if len(tokens) != 2 {
+				return lib, p.errf("import requires one path string")
+			}
+			lib.Imports = append(lib.Imports, tokens[1])
+		case "file":
+			// `file "path":` declares one of many output files.
+			// Multiple `file` blocks may appear.
+			if len(tokens) < 2 || !strings.HasSuffix(tokens[len(tokens)-1], ":") {
+				if len(tokens) == 2 {
+					return lib, p.errf("expected `file \"path\":`, got %q (missing colon?)", strings.TrimSpace(line))
+				}
+			}
+			path := tokens[1]
+			// Sanity: the last token must be ":" or path-then-":" combined.
+			// Authors write `file "x.html":` so tokens are ["file", "x.html:"]
+			// or ["file", "x.html", ":"]. Normalize.
+			if strings.HasSuffix(path, ":") {
+				path = strings.TrimSuffix(path, ":")
+			} else if len(tokens) >= 3 && tokens[2] == ":" {
+				// ok
+			} else {
+				return lib, p.errf("expected `file \"path\":` got %v", tokens)
+			}
+			p.nextLine()
+			body, err := p.parseFileBlockBody()
+			if err != nil {
+				return lib, err
+			}
+			lib.Files[path] = body
 		case "file_template:":
 			p.nextLine()
 			// file_template is always the last top-level item; capture
@@ -352,6 +384,56 @@ func (p *capyLibParser) parseIndentedBlock(parentIndent int) (string, error) {
 		out.WriteString("\n")
 	}
 	// trim trailing blank lines to one
+	res := out.String()
+	for strings.HasSuffix(res, "\n\n") {
+		res = res[:len(res)-1]
+	}
+	return res, nil
+}
+
+// parseFileBlockBody captures the indented body of a `file "..."` block —
+// every subsequent line whose indent is greater than zero, with the first
+// non-blank line's indent used as the strip width. Stops at the next
+// top-level (column-zero) line.
+func (p *capyLibParser) parseFileBlockBody() (string, error) {
+	var raws []string
+	var indents []int
+	stripWidth := -1
+
+	for p.lineNo < len(p.lines) {
+		raw := p.lines[p.lineNo]
+		stripped := strings.TrimSpace(raw)
+		if stripped == "" {
+			raws = append(raws, "")
+			indents = append(indents, -1)
+			p.lineNo++
+			continue
+		}
+		ind := indentOf(raw)
+		if ind == 0 {
+			break
+		}
+		p.lineNo++
+		raws = append(raws, raw)
+		indents = append(indents, ind)
+		if stripWidth == -1 {
+			stripWidth = ind
+		}
+	}
+
+	if stripWidth == -1 {
+		return "", nil
+	}
+
+	var out strings.Builder
+	for i, raw := range raws {
+		if indents[i] == -1 {
+			out.WriteString("\n")
+			continue
+		}
+		out.WriteString(stripIndent(raw, stripWidth))
+		out.WriteString("\n")
+	}
 	res := out.String()
 	for strings.HasSuffix(res, "\n\n") {
 		res = res[:len(res)-1]

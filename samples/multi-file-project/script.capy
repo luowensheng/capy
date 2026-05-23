@@ -1,0 +1,10 @@
+project "todo-api"
+    description "A tiny TODO REST service"
+    author "you@example.com"
+
+    route GET    "/health"     health_check
+    route GET    "/todos"      list_todos
+    route POST   "/todos"      create_todo
+    route GET    "/todos/{id}" get_todo
+    route DELETE "/todos/{id}" delete_todo
+end

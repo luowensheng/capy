@@ -1,0 +1,19 @@
+# Shared types — imported by any library that handles emails / URLs /
+# semver strings. Keep validation rules in one place; many libraries
+# import them.
+
+type Email
+    pattern "^[^@]+@[^@]+\\.[^@]+$"
+end
+
+type URL
+    pattern "^https?://[^ ]+$"
+end
+
+type Semver
+    pattern "^[0-9]+\\.[0-9]+\\.[0-9]+(-[a-zA-Z0-9.]+)?$"
+end
+
+type Slug
+    pattern "^[a-z][a-z0-9-]*$"
+end

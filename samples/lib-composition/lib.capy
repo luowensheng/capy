@@ -1,0 +1,48 @@
+# Main library — imports common types and common syntax helpers,
+# then declares the project-specific functions on top.
+#
+# This is how Capy libraries scale: share the boring bits, customize
+# the interesting bits.
+
+import "common/types.capy"
+import "common/syntax.capy"
+
+extension md
+
+context
+    title ""
+    meta {}
+    tags []
+end
+
+# Project-specific function: declare the post itself.
+function post
+    arg literal "post"
+    arg capture title string
+    block_closer end
+    template:
+        # {{ .title | unquote }}
+
+        {{- if .context.meta.author }}
+        *By {{ .context.meta.author | unquote }}*
+        {{- end }}
+
+        Tags: {{ range $i, $t := .context.tags }}{{ if $i }}, {{ end }}#{{ $t }}{{ end }}
+
+        ---
+
+        {{ .body }}
+    run:
+        set context.title title
+end
+
+function para
+    arg literal "para"
+    arg capture text string
+    template:
+        {{ .text | unquote }}
+
+end
+
+function end
+end

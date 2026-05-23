@@ -8,6 +8,71 @@ may break between minor versions** (see `CONTRIBUTING.md`).
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-05-24
+
+Two structural features: libraries can now declare **multiple
+output files** (with subdirectories) in one run, and one library
+can **import** others to compose shared types and syntax helpers.
+
+### Added — multi-file output
+
+- **`file "path":` blocks** at the top level of a library. Multiple
+  blocks may appear; each declares one output file. Paths may
+  contain `/` for subdirectories — the engine creates them as
+  needed.
+
+- **`capy run --out-dir DIR`** flag. When the library declares any
+  `file:` blocks, --out-dir is required; every block is rendered
+  against the same final context+body and written under the dir.
+
+- **Public Go API**: `orchestrator.RunMulti(lib, script)` returns
+  both the single-output string and the map of `file:`-block
+  outputs. `(*capy.Library).Run` continues to return just the
+  string for callers that don't need multi-file.
+
+- **`samples/multi-file-project/`** — 9-line route declaration
+  becomes a 6-file FastAPI project tree (README, pyproject.toml,
+  .gitignore, src/main.py, src/handlers.py, tests/test_smoke.py).
+  Committed under `expected/` as the golden tree; CI test diffs
+  every file on every commit.
+
+### Added — library imports
+
+- **`import "path"`** directive at the top of a library. Path is
+  relative to the importing file. Imported types, functions,
+  context entries, and `file:` blocks are merged in BEFORE the
+  importer's declarations. The importer wins on conflict.
+
+- Cycle detection: imports are tracked by absolute path; an
+  import cycle is a clean error.
+
+- Format mixing: a `.capy` library can import a `.yaml` library
+  and vice versa (the loader sniffs each by file extension).
+
+- **`samples/lib-composition/`** — main `lib.capy` imports
+  `common/types.capy` (Email/URL/Semver/Slug) and
+  `common/syntax.capy` (tag/note/meta). The merged library
+  exposes 6 functions and 4 types.
+
+### Added — docs
+
+- **`docs/multi-file-and-imports.md`** — full reference for both
+  features with worked examples and the conflict-resolution rules.
+- Homepage gains a "Multi-file projects + library imports" card.
+- Live showcase opens with two new tabbed sections:
+  "Multi-file projects" and "Library composition."
+
+### Changed
+
+- `domain.Library` gains `Files map[string]string`.
+- `infra.RawLibrary` (YAML + Capy parsers) gain `Files` and
+  `Imports` fields.
+- `features.Evaluator` gains `RunMulti` returning both the single
+  output and the per-file map.
+- `usecases.RunResult` and `cli.RunOutcome` gain a `Files` field.
+- `orchestrator.Run` is preserved for backwards compatibility; new
+  callers should prefer `orchestrator.RunMulti`.
+
 ## [0.5.0] — 2026-05-24
 
 Repositioning release. Capy is reframed as a tool **anyone** can

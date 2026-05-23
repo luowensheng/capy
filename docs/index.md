@@ -95,6 +95,13 @@ in about thirty minutes.
     later. Golden snapshots in CI prove the contract holds.
     [Pattern docs →](grammar-as-contract.md)
 
+- :material-file-tree: **Multi-file projects + library imports**
+
+    Declare any number of `file "src/main.py":` blocks in one library
+    and `capy run --out-dir generated …` writes the whole project
+    tree. Libraries can `import` other libraries — share types and
+    syntax helpers across many DSLs. [Multi-file docs →](multi-file-and-imports.md)
+
 - :material-rocket-launch: **Supercharge an existing syntax**
 
     You don't have to invent a new language. Take SQL, Markdown,

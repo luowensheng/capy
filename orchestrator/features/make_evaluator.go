@@ -24,27 +24,39 @@ import (
 // Once the program block is fully rendered, the orchestrator (RunScript)
 // renders `file_template:` with .body=(top-level body) and .context=(final).
 func MakeEvaluator(tpl features.TemplateRenderer) features.Evaluator {
+	runMulti := func(program domain.Block, lib domain.Library) (string, map[string]string, error) {
+		ctx := deepCopyMap(lib.Context)
+		ev := &outerEval{
+			lib:   lib,
+			tpl:   tpl,
+			inner: &InnerEvaluator{Context: ctx},
+		}
+		body, err := ev.renderBlock(program)
+		if err != nil {
+			return "", nil, err
+		}
+		data := map[string]any{"body": body, "context": ctx}
+
+		out, err := tpl.Render(lib.FileTemplate, data)
+		if err != nil {
+			return "", nil, fmt.Errorf("file_template: %v", err)
+		}
+		files := map[string]string{}
+		for path, t := range lib.Files {
+			rendered, err := tpl.Render(t, data)
+			if err != nil {
+				return "", nil, fmt.Errorf("file %q: %v", path, err)
+			}
+			files[path] = rendered
+		}
+		return out, files, nil
+	}
 	return features.Evaluator{
 		Run: func(program domain.Block, lib domain.Library) (string, error) {
-			ctx := deepCopyMap(lib.Context)
-			ev := &outerEval{
-				lib:   lib,
-				tpl:   tpl,
-				inner: &InnerEvaluator{Context: ctx},
-			}
-			body, err := ev.renderBlock(program)
-			if err != nil {
-				return "", err
-			}
-			out, err := tpl.Render(lib.FileTemplate, map[string]any{
-				"body":    body,
-				"context": ctx,
-			})
-			if err != nil {
-				return "", fmt.Errorf("file_template: %v", err)
-			}
-			return out, nil
+			out, _, err := runMulti(program, lib)
+			return out, err
 		},
+		RunMulti: runMulti,
 	}
 }
 

@@ -15,6 +15,16 @@ type Library struct {
 	Types        map[string]TypeDef
 	Context      map[string]any // initial context values (lists, maps, scalars)
 	FileTemplate string
+
+	// Files is a multi-output declaration: each entry is a relative path
+	// (may include slashes for subdirs) → a Go template rendered with
+	// `.context` and `.body` exactly like FileTemplate.
+	//
+	// When non-empty AND the CLI is invoked with an --out-dir, the engine
+	// writes every entry to disk and ignores FileTemplate/OutputFile.
+	// When empty, behavior is unchanged: FileTemplate goes to stdout (or
+	// OutputFile if set).
+	Files map[string]string
 }
 
 // FuncDef is a single library-defined source-language construct.

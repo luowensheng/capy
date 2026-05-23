@@ -23,6 +23,14 @@ type RawLibrary struct {
 	Context      map[string]interface{} `yaml:"context"`
 	Functions    map[string]RawFunction `yaml:"functions"`
 	FileTemplate string                 `yaml:"file_template"`
+
+	// Multi-file output. Map of relative-path → Go template body.
+	Files map[string]string `yaml:"files,omitempty"`
+
+	// Imports — relative paths to other library files whose functions,
+	// types, and context get merged in before this library's own
+	// declarations (which take precedence on conflict).
+	Imports []string `yaml:"import,omitempty"`
 }
 
 type RawFunction struct {

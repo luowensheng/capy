@@ -1,0 +1,32 @@
+# Shared SYNTAX helpers — common DSL building blocks any library can
+# import. Define a project's grammar building-blocks once.
+
+# A `meta KEY VALUE` line attaches metadata to whatever the parent
+# block is. Many DSLs need this (author, version, tags, description).
+function meta
+    arg literal "meta"
+    arg capture key ident
+    arg capture value string
+    template_str ""
+    run:
+        set context.meta[key] value
+end
+
+# `tag NAME` adds a string to the context.tags list. Standard across
+# every authoring DSL (recipes, blog posts, API specs).
+function tag
+    arg literal "tag"
+    arg capture name ident
+    template_str ""
+    run:
+        append context.tags name
+end
+
+# `note "text"` adds a note to the rendered output.
+function note
+    arg literal "note"
+    arg capture text string
+    template:
+        > **Note:** {{ .text | unquote }}
+
+end

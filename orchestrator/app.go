@@ -20,11 +20,12 @@ func (AppOrchestrator) RunCLI(scriptPath, libraryPath string) int {
 	eval := orchfeatures.MakeEvaluator(tpl)
 	libLoader := orchfeatures.MakeLibraryLoader(yamlP, lex.Tokenize)
 
-	rs := orchusecases.MakeRunScript(
+	rs := orchusecases.MakeRunScriptMulti(
 		files.Read,
 		lex.Tokenize,
 		parser.Parse,
 		eval.Run,
+		eval.RunMulti,
 		libLoader.Load,
 		files.Write,
 	)
