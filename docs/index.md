@@ -351,6 +351,71 @@ Source is short and declarative; targets are real, runnable artifacts.
 
 ---
 
+## Where Capy shines
+
+Capy fits **anywhere you'd hand-roll a tiny parser to drive code
+generation**. The pattern shows up in a lot of places once you start
+noticing it.
+
+<div class="grid cards" markdown>
+
+- :material-robot: **AI agents & LLM copilots**
+
+    Sandbox + token compression + complexity reduction. The most
+    valuable use case Capy enables, and the one that's hard to do
+    with any other tool. [Read the full guide →](ai-agents.md)
+
+- :material-package-variant: **Internal scaffolding & generators**
+
+    Replace Yeoman / Plop / Hygen / custom Go binaries that emit
+    template files. The library is the conventions; the source is
+    five lines. New generators ship by editing one YAML file.
+
+- :material-sync: **One source → many targets**
+
+    Define a user model once; generate Postgres DDL, TypeScript
+    types, Pydantic, Zod, GraphQL — from the same source. Drift
+    becomes impossible.
+
+- :material-server: **Config-as-code at scale**
+
+    50 services × 3 environments × k8s + Terraform + CI = boilerplate
+    explosion. With Capy, each service is a 6-line file; the library
+    encodes the policy.
+
+- :material-account-tie: **DSLs for domain experts**
+
+    Give finance / legal / healthcare experts a notation that's
+    natural for their domain and compiles to runnable code. The
+    grammar becomes an audit boundary.
+
+- :material-file-document-multiple: **Documentation generation**
+
+    Stop letting README, OpenAPI, changelog, and release notes
+    drift. One source produces all of them; CI re-runs when source
+    changes.
+
+- :material-history: **Migration / refactor tools**
+
+    Old format → new format. Library parses the old, emits the new.
+    Self-documenting, type-checked, beats a one-off Python script.
+
+- :material-school: **Education & DSL design**
+
+    Build a calculator language in 30 lines of YAML. Teach grammar
+    + semantics + output without inflicting yacc on students.
+
+- :material-shield-check: **Audit & compliance**
+
+    Every artifact has a Capy-source lineage. "What's the policy
+    for X?" = read function X. The grammar IS the policy.
+
+</div>
+
+[See all 14 use cases with concrete scenarios → `docs/use-cases.md`](use-cases.md)
+
+---
+
 ## How it works
 
 ```mermaid

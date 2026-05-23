@@ -47,6 +47,7 @@ theme:
 nav:
   - Home: index.md
   - Getting started: getting-started.md
+  - Use cases: use-cases.md
   - For AI agents:
     - Overview & patterns: ai-agents.md
     - Single-page brief: CAPY_FOR_LLMS.md
