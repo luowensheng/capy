@@ -31,8 +31,9 @@ hide:
 - :material-sync: **One source, many targets**
 
     The library *is* the grammar. Swap it and the same source file
-    becomes SQL + JSON + Markdown (or any other format). Add a new
-    target by writing a new library; never touch the source.
+    becomes SQL + JSON + Markdown, **or Python for Blender + Ruby for
+    SketchUp + C# for Unity + C++/C# for Rhino + Python for Unreal**.
+    Add a target by writing a library; never touch the source.
 
 - :material-format-list-bulleted-type: **A declarative library beats a hand-rolled generator**
 

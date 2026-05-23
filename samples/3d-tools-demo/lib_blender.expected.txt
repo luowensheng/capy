@@ -1,0 +1,27 @@
+import bpy
+
+_COLORS = {
+    "red":   (1.0, 0.1, 0.1, 1.0),
+    "blue":  (0.1, 0.3, 1.0, 1.0),
+    "green": (0.1, 0.8, 0.2, 1.0),
+    "gray":  (0.6, 0.6, 0.6, 1.0),
+}
+
+def _paint(obj, color):
+    mat = bpy.data.materials.new(name=color)
+    mat.diffuse_color = _COLORS.get(color, (1, 1, 1, 1))
+    obj.data.materials.append(mat)
+
+bpy.context.scene.name = "Studio"
+# cube (red)
+bpy.ops.mesh.primitive_cube_add(location=(0, 0, 0), size=2)
+_paint(bpy.context.active_object, "red")
+# sphere (blue)
+bpy.ops.mesh.primitive_uv_sphere_add(location=(4, 0, 0), radius=1)
+_paint(bpy.context.active_object, "blue")
+# plane (gray)
+bpy.ops.mesh.primitive_plane_add(location=(0, 0, 0), size=10)
+_paint(bpy.context.active_object, "gray")
+bpy.ops.object.light_add(type='POINT', location=(5, 5, 5))
+bpy.ops.object.camera_add(location=(7, 7, 3))
+

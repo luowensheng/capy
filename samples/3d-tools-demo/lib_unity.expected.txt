@@ -1,0 +1,48 @@
+using UnityEngine;
+using System.Collections.Generic;
+
+public class CapyScene : MonoBehaviour
+{
+    static readonly Dictionary<string, Color> COLORS = new Dictionary<string, Color> {
+        { "red",   new Color(0.86f, 0.16f, 0.16f) },
+        { "blue",  new Color(0.16f, 0.31f, 0.86f) },
+        { "green", new Color(0.16f, 0.78f, 0.31f) },
+        { "gray",  new Color(0.59f, 0.59f, 0.59f) },
+    };
+
+    void Spawn(PrimitiveType kind, Vector3 pos, Vector3 scale, string color)
+    {
+        var go = GameObject.CreatePrimitive(kind);
+        go.transform.position = pos;
+        go.transform.localScale = scale;
+        var c = COLORS.TryGetValue(color, out var v) ? v : Color.white;
+        go.GetComponent<Renderer>().material.color = c;
+    }
+
+    void Start()
+    {
+        gameObject.name = "Studio";
+        // cube (red)
+        Spawn(PrimitiveType.Cube, new Vector3(0, 0, 0), Vector3.one * 2, "red");
+        // sphere (blue)
+        Spawn(PrimitiveType.Sphere, new Vector3(4, 0, 0), Vector3.one * 1 * 2f, "blue");
+        // plane (gray)
+        Spawn(PrimitiveType.Plane, new Vector3(0, 0, 0), Vector3.one * 10 * 0.1f, "gray");
+        // point light
+        {
+            var go = new GameObject("PointLight");
+            go.transform.position = new Vector3(5, 5, 5);
+            var lt = go.AddComponent<Light>();
+            lt.type = LightType.Point;
+            lt.intensity = 2f;
+        }
+        // camera
+        {
+            var go = new GameObject("Camera");
+            go.transform.position = new Vector3(7, 7, 3);
+            go.transform.LookAt(Vector3.zero);
+            go.AddComponent<Camera>();
+        }
+
+    }
+}

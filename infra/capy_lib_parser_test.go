@@ -117,6 +117,37 @@ func TestCapyLib_TokenizerQuotes(t *testing.T) {
 	}
 }
 
+func TestCapyLib_FileTemplate_KeepsActionAtColumnZero(t *testing.T) {
+	// An author writes `{{ .body | indent 4 }}` at column 0 so the
+	// rendered output has clean nested indentation. The parser must
+	// NOT shift that line right when it strips the file_template's
+	// base indent.
+	src := `
+extension py
+
+function noop
+    arg literal "noop"
+    template_str ""
+end
+
+file_template:
+    void Start()
+    {
+{{ .body | indent 8 }}
+    }
+`
+	lib, err := parseCapyLib(src)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if !strings.Contains(lib.FileTemplate, "\n{{ .body | indent 8 }}\n") {
+		t.Errorf("action at col 0 was shifted:\n%s", lib.FileTemplate)
+	}
+	if !strings.Contains(lib.FileTemplate, "void Start()\n") {
+		t.Errorf("base indent was not stripped:\n%s", lib.FileTemplate)
+	}
+}
+
 func TestCapyLib_RejectsUnknownTop(t *testing.T) {
 	_, err := parseCapyLib("nonsense foo\n")
 	if err == nil || !strings.Contains(err.Error(), "unknown") {

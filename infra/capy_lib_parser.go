@@ -150,7 +150,11 @@ func (p *capyLibParser) parseTop() (RawLibrary, error) {
 			lib.Functions[name] = fn
 		case "file_template:":
 			p.nextLine()
-			body, err := p.parseIndentedBlock(0)
+			// file_template is always the last top-level item; capture
+			// everything to EOF so authors can put template actions
+			// (e.g. `{{ .body | indent 4 }}`) at column 0 — that's the
+			// standard Go-template idiom for clean nested indentation.
+			body, err := p.parseFileTemplateToEOF()
 			if err != nil {
 				return lib, err
 			}
@@ -321,6 +325,54 @@ func (p *capyLibParser) parseIndentedBlock(parentIndent int) (string, error) {
 		out.WriteString("\n")
 	}
 	// trim trailing blank lines to one
+	res := out.String()
+	for strings.HasSuffix(res, "\n\n") {
+		res = res[:len(res)-1]
+	}
+	return res, nil
+}
+
+// parseFileTemplateToEOF captures every remaining line of the file as the
+// file_template body. The first non-blank line's indent is used as the
+// strip width — lines that are dedented below that (e.g. a `{{ .body }}`
+// action at column 0 for clean nested indentation) keep whatever leading
+// whitespace they have, since stripIndent is bounded by actual whitespace.
+func (p *capyLibParser) parseFileTemplateToEOF() (string, error) {
+	var raws []string
+	var indents []int
+	stripWidth := -1
+
+	for p.lineNo < len(p.lines) {
+		raw := p.lines[p.lineNo]
+		stripped := strings.TrimSpace(raw)
+		p.lineNo++
+		if stripped == "" {
+			raws = append(raws, "")
+			indents = append(indents, -1)
+			continue
+		}
+		ind := indentOf(raw)
+		raws = append(raws, raw)
+		indents = append(indents, ind)
+		if stripWidth == -1 {
+			stripWidth = ind
+		}
+	}
+
+	if stripWidth == -1 {
+		return "", nil
+	}
+	minIndent := stripWidth
+
+	var out strings.Builder
+	for i, raw := range raws {
+		if indents[i] == -1 {
+			out.WriteString("\n")
+			continue
+		}
+		out.WriteString(stripIndent(raw, minIndent))
+		out.WriteString("\n")
+	}
 	res := out.String()
 	for strings.HasSuffix(res, "\n\n") {
 		res = res[:len(res)-1]

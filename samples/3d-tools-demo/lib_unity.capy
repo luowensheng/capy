@@ -1,0 +1,104 @@
+# Capy → Unity C# MonoBehaviour. Drop the output into Assets/Scripts/
+# and attach to an empty GameObject.
+extension cs
+
+function scene
+    arg literal "scene"
+    arg capture name string
+    template_str "gameObject.name = {{ .name }};\n"
+end
+
+function cube
+    arg literal "cube"
+    arg capture color ident
+    arg capture x any
+    arg capture y any
+    arg capture z any
+    arg capture size any
+    template:
+        // cube ({{ .color }})
+        Spawn(PrimitiveType.Cube, new Vector3({{ .x }}, {{ .y }}, {{ .z }}), Vector3.one * {{ .size }}, "{{ .color }}");
+end
+
+function sphere
+    arg literal "sphere"
+    arg capture color ident
+    arg capture x any
+    arg capture y any
+    arg capture z any
+    arg capture radius any
+    template:
+        // sphere ({{ .color }})
+        Spawn(PrimitiveType.Sphere, new Vector3({{ .x }}, {{ .y }}, {{ .z }}), Vector3.one * {{ .radius }} * 2f, "{{ .color }}");
+end
+
+function plane
+    arg literal "plane"
+    arg capture color ident
+    arg capture x any
+    arg capture y any
+    arg capture z any
+    arg capture size any
+    template:
+        // plane ({{ .color }})
+        Spawn(PrimitiveType.Plane, new Vector3({{ .x }}, {{ .y }}, {{ .z }}), Vector3.one * {{ .size }} * 0.1f, "{{ .color }}");
+end
+
+function light
+    arg literal "light"
+    arg capture x any
+    arg capture y any
+    arg capture z any
+    template:
+        // point light
+        {
+            var go = new GameObject("PointLight");
+            go.transform.position = new Vector3({{ .x }}, {{ .y }}, {{ .z }});
+            var lt = go.AddComponent<Light>();
+            lt.type = LightType.Point;
+            lt.intensity = 2f;
+        }
+end
+
+function camera
+    arg literal "camera"
+    arg capture x any
+    arg capture y any
+    arg capture z any
+    template:
+        // camera
+        {
+            var go = new GameObject("Camera");
+            go.transform.position = new Vector3({{ .x }}, {{ .y }}, {{ .z }});
+            go.transform.LookAt(Vector3.zero);
+            go.AddComponent<Camera>();
+        }
+end
+
+file_template:
+    using UnityEngine;
+    using System.Collections.Generic;
+
+    public class CapyScene : MonoBehaviour
+    {
+        static readonly Dictionary<string, Color> COLORS = new Dictionary<string, Color> {
+            { "red",   new Color(0.86f, 0.16f, 0.16f) },
+            { "blue",  new Color(0.16f, 0.31f, 0.86f) },
+            { "green", new Color(0.16f, 0.78f, 0.31f) },
+            { "gray",  new Color(0.59f, 0.59f, 0.59f) },
+        };
+
+        void Spawn(PrimitiveType kind, Vector3 pos, Vector3 scale, string color)
+        {
+            var go = GameObject.CreatePrimitive(kind);
+            go.transform.position = pos;
+            go.transform.localScale = scale;
+            var c = COLORS.TryGetValue(color, out var v) ? v : Color.white;
+            go.GetComponent<Renderer>().material.color = c;
+        }
+
+        void Start()
+        {
+{{ .body | indent 8 }}
+        }
+    }

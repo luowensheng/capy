@@ -1,0 +1,112 @@
+# Capy → Rhino C# (RhinoCommon). Drop the output into a Grasshopper C#
+# scripting component, or compile as a Rhino plugin command.
+extension cs
+
+function scene
+    arg literal "scene"
+    arg capture name string
+    template_str "// scene: {{ .name }}\n"
+end
+
+function cube
+    arg literal "cube"
+    arg capture color ident
+    arg capture x any
+    arg capture y any
+    arg capture z any
+    arg capture size any
+    template:
+        // cube ({{ .color }})
+        {
+            var c = new Point3d({{ .x }}, {{ .y }}, {{ .z }});
+            double s = {{ .size }} / 2.0;
+            var box = new Box(new Plane(c, Vector3d.ZAxis), new Interval(-s, s), new Interval(-s, s), new Interval(-s, s));
+            doc.Objects.AddBox(box, Attr("{{ .color }}"));
+        }
+end
+
+function sphere
+    arg literal "sphere"
+    arg capture color ident
+    arg capture x any
+    arg capture y any
+    arg capture z any
+    arg capture radius any
+    template:
+        // sphere ({{ .color }})
+        {
+            var sph = new Sphere(new Point3d({{ .x }}, {{ .y }}, {{ .z }}), {{ .radius }});
+            doc.Objects.AddSphere(sph, Attr("{{ .color }}"));
+        }
+end
+
+function plane
+    arg literal "plane"
+    arg capture color ident
+    arg capture x any
+    arg capture y any
+    arg capture z any
+    arg capture size any
+    template:
+        // plane ({{ .color }})
+        {
+            var c = new Point3d({{ .x }}, {{ .y }}, {{ .z }});
+            double s = {{ .size }} / 2.0;
+            var rect = new Rectangle3d(new Plane(c, Vector3d.ZAxis), new Interval(-s, s), new Interval(-s, s));
+            doc.Objects.AddRectangle(rect, Attr("{{ .color }}"));
+        }
+end
+
+function light
+    arg literal "light"
+    arg capture x any
+    arg capture y any
+    arg capture z any
+    template:
+        // point light
+        {
+            var lt = new Light { LightStyle = LightStyle.WorldPoint, Location = new Point3d({{ .x }}, {{ .y }}, {{ .z }}) };
+            doc.Lights.Add(lt);
+        }
+end
+
+function camera
+    arg literal "camera"
+    arg capture x any
+    arg capture y any
+    arg capture z any
+    template:
+        // camera
+        doc.Views.ActiveView.ActiveViewport.SetCameraLocation(new Point3d({{ .x }}, {{ .y }}, {{ .z }}), true);
+        doc.Views.ActiveView.ActiveViewport.SetCameraTarget(new Point3d(0, 0, 0), true);
+end
+
+file_template:
+    using System.Drawing;
+    using Rhino;
+    using Rhino.DocObjects;
+    using Rhino.Geometry;
+    using Rhino.Geometry.Light;
+
+    public static class CapyScene
+    {
+        static readonly System.Collections.Generic.Dictionary<string, Color> COLORS =
+            new System.Collections.Generic.Dictionary<string, Color> {
+                { "red", Color.FromArgb(220, 40, 40) },
+                { "blue", Color.FromArgb(40, 80, 220) },
+                { "green", Color.FromArgb(40, 200, 80) },
+                { "gray", Color.FromArgb(150, 150, 150) },
+            };
+
+        static ObjectAttributes Attr(string color)
+        {
+            var a = new ObjectAttributes { ColorSource = ObjectColorSource.ColorFromObject };
+            a.ObjectColor = COLORS.TryGetValue(color, out var c) ? c : Color.White;
+            return a;
+        }
+
+        public static void Build(RhinoDoc doc)
+        {
+{{ .body | indent 8 }}
+        }
+    }

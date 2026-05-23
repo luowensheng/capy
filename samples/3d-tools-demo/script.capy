@@ -1,0 +1,8 @@
+scene "Studio"
+
+cube   red    0 0 0   2
+sphere blue   4 0 0   1
+plane  gray   0 0 0   10
+
+light   5 5 5
+camera  7 7 3
