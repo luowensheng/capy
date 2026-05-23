@@ -142,6 +142,9 @@ func normalize(s string) string {
 	// CRLF and lone CR → LF
 	s = strings.ReplaceAll(s, "\r\n", "\n")
 	s = strings.ReplaceAll(s, "\r", "\n")
+	// Strip trailing whitespace. A golden file may have a final LF
+	// that an in-memory output lacks (or vice versa). We do not care.
+	s = strings.TrimRight(s, " \t\n")
 	return s
 }
 
