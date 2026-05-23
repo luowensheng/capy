@@ -15,7 +15,8 @@ import (
 // successful runs) or <basename>.expected-error.txt (for runs that must error).
 //
 // To regenerate goldens after intentional behavior changes:
-//   go test ./cmd/capy/... -update
+//
+//	go test ./cmd/capy/... -update
 func TestGolden(t *testing.T) {
 	root := findSamplesRoot(t)
 	entries, err := os.ReadDir(root)
@@ -147,9 +148,6 @@ func normalize(s string) string {
 	s = strings.TrimRight(s, " \t\n")
 	return s
 }
-
-// kept for backwards compatibility / readability elsewhere
-func normalizeLF(s string) string { return normalize(s) }
 
 // diffSummary returns a short description of the first byte that differs
 // between want and got, plus a few bytes of surrounding context. This is

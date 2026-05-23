@@ -1,15 +1,17 @@
 // Capy CLI.
 //
 // Subcommands:
-//   capy run <library.yaml> <script.capy>
-//   capy check <library.yaml>
-//   capy init [<dir>]
-//   capy version
-//   capy help [<command>]
+//
+//	capy run <library.yaml> <script.capy>
+//	capy check <library.yaml>
+//	capy init [<dir>]
+//	capy version
+//	capy help [<command>]
 //
 // Top-level invocation styles also supported for ergonomics:
-//   capy <library.yaml> <script.capy>     (run shorthand)
-//   capy -lib <library.yaml> <script.capy> (legacy flag form)
+//
+//	capy <library.yaml> <script.capy>     (run shorthand)
+//	capy -lib <library.yaml> <script.capy> (legacy flag form)
 package main
 
 import (

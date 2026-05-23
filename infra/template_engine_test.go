@@ -47,9 +47,7 @@ func TestTemplate_ToPyLit(t *testing.T) {
 		{[]any{int64(1), int64(2)}, "[1, 2]"},
 	}
 	for _, c := range cases {
-		out, err := TemplateEngine{}.Render(`{{ . | toPyLit }}`, map[string]any{"_": c.in})
-		_ = out // not used; the template uses `.` which is the whole map
-		out, err = TemplateEngine{}.Render(`{{ .v | toPyLit }}`, map[string]any{"v": c.in})
+		out, err := TemplateEngine{}.Render(`{{ .v | toPyLit }}`, map[string]any{"v": c.in})
 		if err != nil {
 			t.Fatalf("%v: err %v", c.in, err)
 		}

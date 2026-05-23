@@ -19,10 +19,10 @@ type Library struct {
 
 // FuncDef is a single library-defined source-language construct.
 //
-//   args:     declarative match shape (literals + typed captures)
-//   template: text fragment contributed to the output body when matched
-//   run:      context-mutation snippet (does NOT execute user code)
-//   block:    when set, this function opens a body block closed by Block.Closer
+//	args:     declarative match shape (literals + typed captures)
+//	template: text fragment contributed to the output body when matched
+//	run:      context-mutation snippet (does NOT execute user code)
+//	block:    when set, this function opens a body block closed by Block.Closer
 type FuncDef struct {
 	Name     string
 	Args     []ArgEntry
@@ -46,14 +46,14 @@ type ArgEntry struct {
 
 // BlockSpec marks a function as a block opener. There are two modes:
 //
-//   1. Named-closer mode  (default):
-//        block: { closer: <function-name> }
-//      The body is delimited by INDENT/DEDENT; the closer function runs after.
+//  1. Named-closer mode  (default):
+//     block: { closer: <function-name> }
+//     The body is delimited by INDENT/DEDENT; the closer function runs after.
 //
-//   2. Delimiter mode:
-//        block: { open: "{", close: "}" }
-//      The body is delimited by exact tokens. No closer function involved.
-//      Useful for `for x in 40 { ... }` style.
+//  2. Delimiter mode:
+//     block: { open: "{", close: "}" }
+//     The body is delimited by exact tokens. No closer function involved.
+//     Useful for `for x in 40 { ... }` style.
 type BlockSpec struct {
 	Closer string
 	Open   string

@@ -10,11 +10,11 @@ const (
 )
 
 type CLIViewModel struct {
-	State    CLIState
-	Output   string
-	File     string
-	ErrMsg   string
-	useCase  RunScriptUseCase
+	State   CLIState
+	Output  string
+	File    string
+	ErrMsg  string
+	useCase RunScriptUseCase
 }
 
 func NewCLIViewModel(uc RunScriptUseCase) *CLIViewModel {

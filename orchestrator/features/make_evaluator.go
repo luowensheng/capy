@@ -13,13 +13,13 @@ import (
 // MakeEvaluator builds the transpiler-driver outer evaluator. It walks the
 // parsed program top-down. For each FuncCall:
 //
-//   1. Validate captured args against their declared types.
-//   2. If the function opens a block, recursively render the body block first
-//      so the rendered string is available as `.body` in the function template.
-//   3. Render the function's `template:` (with captures + body + read-only
-//      context) and append the result to the parent block's body string.
-//   4. Run the function's `run:` snippet (mutates context only).
-//   5. After the body completes, render+run the closer FuncCall the same way.
+//  1. Validate captured args against their declared types.
+//  2. If the function opens a block, recursively render the body block first
+//     so the rendered string is available as `.body` in the function template.
+//  3. Render the function's `template:` (with captures + body + read-only
+//     context) and append the result to the parent block's body string.
+//  4. Run the function's `run:` snippet (mutates context only).
+//  5. After the body completes, render+run the closer FuncCall the same way.
 //
 // Once the program block is fully rendered, the orchestrator (RunScript)
 // renders `file_template:` with .body=(top-level body) and .context=(final).

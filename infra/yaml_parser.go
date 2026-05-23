@@ -9,19 +9,20 @@ import (
 // RawLibrary is the YAML DTO. The orchestrator maps it into a domain.Library.
 //
 // Top-level YAML keys this DTO accepts:
-//   extension, output_file, types, context, functions, file_template
+//
+//	extension, output_file, types, context, functions, file_template
 //
 // Configurable surface syntax (block delimiters, statement terminator, arg
 // separator) is deferred to a future version. For now, blocks are
 // INDENT/DEDENT or `{...}`, statements end at NEWLINE, args are
 // whitespace-separated.
 type RawLibrary struct {
-	Extension    string                  `yaml:"extension"`
-	OutputFile   string                  `yaml:"output_file"`
-	Types        map[string]RawType      `yaml:"types"`
-	Context      map[string]interface{}  `yaml:"context"`
-	Functions    map[string]RawFunction  `yaml:"functions"`
-	FileTemplate string                  `yaml:"file_template"`
+	Extension    string                 `yaml:"extension"`
+	OutputFile   string                 `yaml:"output_file"`
+	Types        map[string]RawType     `yaml:"types"`
+	Context      map[string]interface{} `yaml:"context"`
+	Functions    map[string]RawFunction `yaml:"functions"`
+	FileTemplate string                 `yaml:"file_template"`
 }
 
 type RawFunction struct {
@@ -40,8 +41,9 @@ type RawBlock struct {
 
 // RawArg is an args-list entry. The Kind discriminator is required and decides
 // which other fields are valid:
-//   kind: literal  → value: "TEXT"
-//   kind: capture  → name: NAME, type: TYPE
+//
+//	kind: literal  → value: "TEXT"
+//	kind: capture  → name: NAME, type: TYPE
 type RawArg struct {
 	Kind  string `yaml:"kind"`
 	Value string `yaml:"value,omitempty"`

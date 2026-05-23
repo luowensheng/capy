@@ -11,7 +11,7 @@ func cmdHelp(name string) error {
 		fmt.Println(`capy run <library.yaml> <script.capy>
 
 Transpile a script against a library. Output goes to stdout unless the
-library sets `+"`output_file:`"+` or you pass --out.
+library sets ` + "`output_file:`" + ` or you pass --out.
 
 Flags:
   --out <path>    write output to this file instead of stdout

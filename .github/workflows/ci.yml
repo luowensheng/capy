@@ -5,6 +5,18 @@ on:
     branches: [main]
   pull_request:
 
+# Speed up retries / ensure only the latest commit per branch runs.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Use the Go module proxy and never try to authenticate to git for missing
+# modules (so a transient proxy hiccup doesn't drop to "could not read
+# Username for github.com" prompts).
+env:
+  GOPROXY: https://proxy.golang.org,direct
+  GOFLAGS: -mod=readonly
+
 jobs:
   test:
     name: test (Go ${{ matrix.go }} / ${{ matrix.os }})
@@ -15,8 +27,8 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: ${{ matrix.go }}
           cache: true
@@ -29,12 +41,12 @@ jobs:
     name: lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: '1.23'
           cache: true
-      - uses: golangci/golangci-lint-action@v6
+      - uses: golangci/golangci-lint-action@v7
         with:
           version: latest
           args: --timeout=3m
@@ -47,8 +59,8 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: '1.23'
           cache: true

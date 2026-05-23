@@ -33,9 +33,10 @@ func NewError(line, col int, format string, args ...any) *CapyError {
 // it returns the plain error string.
 //
 // Example:
-//   error: no library function matches token "x"
-//     3 │     x = 1
-//       │     ^
+//
+//	error: no library function matches token "x"
+//	  3 │     x = 1
+//	    │     ^
 func FormatWithSource(err error, source string) string {
 	var ce *CapyError
 	switch e := err.(type) {

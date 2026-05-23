@@ -78,8 +78,8 @@ type InnerStmt interface{ innerStmtNode() }
 
 // Path is a dotted/indexed access chain rooted at a name.
 //
-//   context.imports          → Path{Root:"context", Steps:[Field("imports")]}
-//   context.vars[name]       → Path{Root:"context", Steps:[Field("vars"), Index(VarRef{name})]}
+//	context.imports          → Path{Root:"context", Steps:[Field("imports")]}
+//	context.vars[name]       → Path{Root:"context", Steps:[Field("vars"), Index(VarRef{name})]}
 type Path struct {
 	Root  string
 	Steps []PathStep
