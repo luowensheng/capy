@@ -1,0 +1,2039 @@
+Run go test -race -cover ./...
+?   	github.com/luowensheng/capy/features	[no test files]
+--- FAIL: TestGolden (0.08s)
+    --- FAIL: TestGolden/assembly/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            ; program: sum-demo
+            
+            section .data
+                x: dq 0
+                y: dq 0
+            
+            section .text
+                global _start
+            
+            _start:
+                ; var x = 5
+                mov rax, 5
+                mov [x], rax
+                ; var y = 7
+                mov rax, 7
+                mov [y], rax
+                ; add x y
+                mov rax, [x]
+                add rax, [y]
+                mov [result], rax
+                ; exit 0
+                mov rdi, 0
+                mov rax, 60
+                syscall
+            
+            
+            got:
+            ; program: sum-demo
+            
+            section .data
+                x: dq 0
+                y: dq 0
+            
+            section .text
+                global _start
+            
+            _start:
+                ; var x = 5
+                mov rax, 5
+                mov [x], rax
+                ; var y = 7
+                mov rax, 7
+                mov [y], rax
+                ; add x y
+                mov rax, [x]
+                add rax, [y]
+                mov [result], rax
+                ; exit 0
+                mov rdi, 0
+                mov rax, 60
+                syscall
+            
+    --- FAIL: TestGolden/html-component/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            <div id="card" class="card">
+              <h3>"Welcome"</h3>
+              <p>"Capy makes transpilers easy."</p>
+              <p>"Try editing this component."</p>
+            
+            </div>
+            
+            got:
+            <div id="card" class="card">
+              <h3>"Welcome"</h3>
+              <p>"Capy makes transpilers easy."</p>
+              <p>"Try editing this component."</p>
+            
+            </div>
+    --- FAIL: TestGolden/scene-dsl/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            <sphere id=moon opts={"size": 16, "color": "#888"}/>
+            <ring id=ring_a opts={"thickness": 2, "color": "#ff6f00"}/>
+            
+            got:
+            <sphere id=moon opts={"size": 16, "color": "#888"}/>
+            <ring id=ring_a opts={"thickness": 2, "color": "#ff6f00"}/>
+    --- FAIL: TestGolden/transpile-api-docs/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            # API Reference
+            
+            2 routes defined.
+            
+            ### `GET /users`
+            
+            List all users.
+            
+            - `limit` (int): Maximum number of users to return.
+            - `200`: ok
+            
+            ### `POST /users`
+            
+            Create a user.
+            
+            - `name` (string): Display name.
+            - `email` (string): Contact email.
+            - `201`: created
+            - `400`: invalid payload
+            
+            
+            
+            got:
+            # API Reference
+            
+            2 routes defined.
+            
+            ### `GET /users`
+            
+            List all users.
+            
+            - `limit` (int): Maximum number of users to return.
+            - `200`: ok
+            
+            ### `POST /users`
+            
+            Create a user.
+            
+            - `name` (string): Display name.
+            - `email` (string): Contact email.
+            - `201`: created
+            - `400`: invalid payload
+            
+            
+    --- FAIL: TestGolden/transpile-bash/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            #!/usr/bin/env bash
+            # script: "release-builder"
+            set -euo pipefail
+            log() { printf "[%s] %s\n" "$(date +%T)" "$*"; }
+            command -v go >/dev/null || { echo "missing: go"; exit 1; }
+            command -v git >/dev/null || { echo "missing: git"; exit 1; }
+            log step: "build"
+            "go build -o /tmp/capy ./cmd/capy"
+            log step: "smoke"
+            "/tmp/capy version"
+            log step: "tag"
+            "git tag v0.1.0"
+            
+            got:
+            #!/usr/bin/env bash
+            # script: "release-builder"
+            set -euo pipefail
+            log() { printf "[%s] %s\n" "$(date +%T)" "$*"; }
+            command -v go >/dev/null || { echo "missing: go"; exit 1; }
+            command -v git >/dev/null || { echo "missing: git"; exit 1; }
+            log step: "build"
+            "go build -o /tmp/capy ./cmd/capy"
+            log step: "smoke"
+            "/tmp/capy version"
+            log step: "tag"
+            "git tag v0.1.0"
+    --- FAIL: TestGolden/transpile-blog/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            ---
+            author: Capy authors
+            date: 2026-05-23
+            title: Launching Capy
+            tags: ["release","go"]
+            ---
+            
+            ## Why
+            
+            I keep writing tiny parsers. Capy is the engine I wished I had.
+            
+            ## How
+            
+            A YAML file is the entire grammar. Capy reads source against it and renders templates.
+            
+            
+            got:
+            ---
+            author: Capy authors
+            date: 2026-05-23
+            title: Launching Capy
+            tags: ["release","go"]
+            ---
+            
+            ## Why
+            
+            I keep writing tiny parsers. Capy is the engine I wished I had.
+            
+            ## How
+            
+            A YAML file is the entire grammar. Capy reads source against it and renders templates.
+            
+    --- FAIL: TestGolden/transpile-canvas-game/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            <!doctype html>
+            <html lang="en">
+            <head>
+              <meta charset="utf-8" />
+              <title>Block Hopper</title>
+              <style>
+                body { margin: 0; background: #111; display: grid; place-items: center; min-height: 100vh; font-family: monospace; color: #eee; }
+                canvas { background: #222; border: 1px solid #444; image-rendering: pixelated; }
+                h1 { margin: 0 0 8px; font-size: 14px; }
+              </style>
+            </head>
+            <body>
+              <div>
+                <h1>Block Hopper — arrow keys</h1>
+                <canvas id="c" width="480" height="320"></canvas>
+              </div>
+              <script>
+                const canvas = document.getElementById("c");
+                const ctx = canvas.getContext("2d");
+                const keys = {};
+                window.addEventListener("keydown", e => keys[e.key] = true);
+                window.addEventListener("keyup",   e => keys[e.key] = false);
+            
+                const sprites = {
+                  player: { x: 220, y: 280, w: 40, h: 20, color: "#4dd" },
+                  enemy: { x: 100, y: 100, w: 30, h: 30, color: "#f64" },
+                  goal: { x: 420, y: 20, w: 20, h: 20, color: "#fd0" },
+                };
+            
+                function update() {
+                  if (keys["ArrowLeft"]) {
+                    sprites.player.x += -4;
+                    sprites.player.y += 0;
+                  }
+                  if (keys["ArrowRight"]) {
+                    sprites.player.x += 4;
+                    sprites.player.y += 0;
+                  }
+                  if (keys["ArrowUp"]) {
+                    sprites.player.x += 0;
+                    sprites.player.y += -4;
+                  }
+                  if (keys["ArrowDown"]) {
+                    sprites.player.x += 0;
+                    sprites.player.y += 4;
+                  }
+                  // tick: enemy_bounce
+                  sprites.enemy.x += 1; if (sprites.enemy.x > 450) sprites.enemy.x = 0;
+                }
+            
+                function draw() {
+                  ctx.clearRect(0, 0, canvas.width, canvas.height);
+                  for (const s of Object.values(sprites)) {
+                    ctx.fillStyle = s.color;
+                    ctx.fillRect(s.x, s.y, s.w, s.h);
+                  }
+                }
+            
+                function loop() {
+                  update();
+                  draw();
+                  requestAnimationFrame(loop);
+                }
+                loop();
+              </script>
+            </body>
+            </html>
+            
+            got:
+            <!doctype html>
+            <html lang="en">
+            <head>
+              <meta charset="utf-8" />
+              <title>Block Hopper</title>
+              <style>
+                body { margin: 0; background: #111; display: grid; place-items: center; min-height: 100vh; font-family: monospace; color: #eee; }
+                canvas { background: #222; border: 1px solid #444; image-rendering: pixelated; }
+                h1 { margin: 0 0 8px; font-size: 14px; }
+              </style>
+            </head>
+            <body>
+              <div>
+                <h1>Block Hopper — arrow keys</h1>
+                <canvas id="c" width="480" height="320"></canvas>
+              </div>
+              <script>
+                const canvas = document.getElementById("c");
+                const ctx = canvas.getContext("2d");
+                const keys = {};
+                window.addEventListener("keydown", e => keys[e.key] = true);
+                window.addEventListener("keyup",   e => keys[e.key] = false);
+            
+                const sprites = {
+                  player: { x: 220, y: 280, w: 40, h: 20, color: "#4dd" },
+                  enemy: { x: 100, y: 100, w: 30, h: 30, color: "#f64" },
+                  goal: { x: 420, y: 20, w: 20, h: 20, color: "#fd0" },
+                };
+            
+                function update() {
+                  if (keys["ArrowLeft"]) {
+                    sprites.player.x += -4;
+                    sprites.player.y += 0;
+                  }
+                  if (keys["ArrowRight"]) {
+                    sprites.player.x += 4;
+                    sprites.player.y += 0;
+                  }
+                  if (keys["ArrowUp"]) {
+                    sprites.player.x += 0;
+                    sprites.player.y += -4;
+                  }
+                  if (keys["ArrowDown"]) {
+                    sprites.player.x += 0;
+                    sprites.player.y += 4;
+                  }
+                  // tick: enemy_bounce
+                  sprites.enemy.x += 1; if (sprites.enemy.x > 450) sprites.enemy.x = 0;
+                }
+            
+                function draw() {
+                  ctx.clearRect(0, 0, canvas.width, canvas.height);
+                  for (const s of Object.values(sprites)) {
+                    ctx.fillStyle = s.color;
+                    ctx.fillRect(s.x, s.y, s.w, s.h);
+                  }
+                }
+            
+                function loop() {
+                  update();
+                  draw();
+                  requestAnimationFrame(loop);
+                }
+                loop();
+              </script>
+            </body>
+            </html>
+    --- FAIL: TestGolden/transpile-changelog/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            # Changelog
+            
+            ## [0.2.0] — 2026-06-15
+            
+            - Added: Configurable surface syntax
+            - Added: else arm on inner if
+            - Fixed: Indentation tokenisation edge case
+            
+            ## [0.1.0] — 2026-05-23
+            
+            - Added: Initial public release
+            - Added: Type system with pattern + options
+            - Added: Two block modes
+            
+            
+            
+            got:
+            # Changelog
+            
+            ## [0.2.0] — 2026-06-15
+            
+            - Added: Configurable surface syntax
+            - Added: else arm on inner if
+            - Fixed: Indentation tokenisation edge case
+            
+            ## [0.1.0] — 2026-05-23
+            
+            - Added: Initial public release
+            - Added: Type system with pattern + options
+            - Added: Two block modes
+            
+            
+    --- FAIL: TestGolden/transpile-chrome-extension/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            {
+              "manifest_version": 3,
+              "name": "Capy Helper",
+              "version": "0.1.0",
+              "description": "Adds Capy-related shortcuts to capy.dev.",
+              "permissions": ["storage","activeTab"],
+              "host_permissions": ["https://capy.dev/*"],
+              "content_scripts": [{"js":["content.js"],"matches":["https://capy.dev/*"]}]
+            }
+            
+            got:
+            {
+              "manifest_version": 3,
+              "name": "Capy Helper",
+              "version": "0.1.0",
+              "description": "Adds Capy-related shortcuts to capy.dev.",
+              "permissions": ["storage","activeTab"],
+              "host_permissions": ["https://capy.dev/*"],
+              "content_scripts": [{"js":["content.js"],"matches":["https://capy.dev/*"]}]
+            }
+    --- FAIL: TestGolden/transpile-cli/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            package cli
+            
+            import "github.com/spf13/cobra"
+            
+            
+            var serveCmd = &cobra.Command{
+                Use:   "serve",
+                Short: "start the server",
+            }
+            
+            var migrateCmd = &cobra.Command{
+                Use:   "migrate",
+                Short: "run database migrations",
+            }
+            
+            
+            func init() {
+                serveCmd.Flags().String("port", "", "TCP port to listen on")
+                serveCmd.Flags().String("host", "", "host to bind")
+                migrateCmd.Flags().String("dir", "", "migration directory")
+            }
+            
+            got:
+            package cli
+            
+            import "github.com/spf13/cobra"
+            
+            
+            var serveCmd = &cobra.Command{
+                Use:   "serve",
+                Short: "start the server",
+            }
+            
+            var migrateCmd = &cobra.Command{
+                Use:   "migrate",
+                Short: "run database migrations",
+            }
+            
+            
+            func init() {
+                serveCmd.Flags().String("port", "", "TCP port to listen on")
+                serveCmd.Flags().String("host", "", "host to bind")
+                migrateCmd.Flags().String("dir", "", "migration directory")
+            }
+    --- FAIL: TestGolden/transpile-cron/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            0 3 * * * /usr/local/bin/backup.sh
+            0 0 * * 0 /usr/local/bin/weekly-cleanup.sh
+            */15 * * * * /usr/local/bin/heartbeat
+            
+            got:
+            0 3 * * * /usr/local/bin/backup.sh
+            0 0 * * 0 /usr/local/bin/weekly-cleanup.sh
+            */15 * * * * /usr/local/bin/heartbeat
+    --- FAIL: TestGolden/transpile-css-animations/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            /* generated CSS — 2 keyframes, 2 classes */
+            @keyframes pulse {
+              0% { transform: scale(1); }
+              50% { transform: scale(1.1); }
+              100% { transform: scale(1); }
+            
+            }
+            @keyframes slide_in {
+              0% { transform: translateX(-100%); }
+              100% { transform: translateX(0); }
+            
+            }
+            .card {
+              background: #fff;
+              border-radius: 8px;
+              padding: 1rem;
+              box-shadow: 0 2px 8px rgba(0,0,0,.1);
+              animation: slide_in 0.4s ease-out infinite;
+            
+            }
+            .badge {
+              display: inline-block;
+              padding: 0.25rem 0.5rem;
+              background: #4dd;
+              color: #fff;
+              animation: pulse 1.2s ease-in-out infinite;
+            
+            }
+            
+            
+            got:
+            /* generated CSS — 2 keyframes, 2 classes */
+            @keyframes pulse {
+              0% { transform: scale(1); }
+              50% { transform: scale(1.1); }
+              100% { transform: scale(1); }
+            
+            }
+            @keyframes slide_in {
+              0% { transform: translateX(-100%); }
+              100% { transform: translateX(0); }
+            
+            }
+            .card {
+              background: #fff;
+              border-radius: 8px;
+              padding: 1rem;
+              box-shadow: 0 2px 8px rgba(0,0,0,.1);
+              animation: slide_in 0.4s ease-out infinite;
+            
+            }
+            .badge {
+              display: inline-block;
+              padding: 0.25rem 0.5rem;
+              background: #4dd;
+              color: #fff;
+              animation: pulse 1.2s ease-in-out infinite;
+            
+            }
+            
+    --- FAIL: TestGolden/transpile-csv/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            name,age,city
+            Alice,30,Paris
+            Bob,25,Berlin
+            Carol,42,Lisbon
+            
+            got:
+            name,age,city
+            Alice,30,Paris
+            Bob,25,Berlin
+            Carol,42,Lisbon
+    --- FAIL: TestGolden/transpile-dockerfile/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            FROM "golang:1.23-alpine"
+            WORKDIR "/src"
+            COPY "go.mod" "."
+            COPY "go.sum" "."
+            RUN "go mod download"
+            COPY "." "."
+            RUN "go build -o /app ./cmd/capy"
+            ENV PORT=8080
+            EXPOSE 8080
+            ENTRYPOINT ["/app"]
+            
+            got:
+            FROM "golang:1.23-alpine"
+            WORKDIR "/src"
+            COPY "go.mod" "."
+            COPY "go.sum" "."
+            RUN "go mod download"
+            COPY "." "."
+            RUN "go build -o /app ./cmd/capy"
+            ENV PORT=8080
+            EXPOSE 8080
+            ENTRYPOINT ["/app"]
+    --- FAIL: TestGolden/transpile-email-html/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            <!doctype html>
+            <html>
+            <head>
+              <meta charset="utf-8" />
+              <title>Welcome to Capy</title>
+            </head>
+            <body style="margin:0;padding:24px;background:#f4f4f4">
+              <div style="display:none;max-height:0;overflow:hidden">Your account is ready.</div>
+              <table cellpadding="0" cellspacing="0" style="background:#fff;max-width:600px;margin:0 auto;padding:32px;border-radius:8px">
+                <tr><td>
+                  <h1 style="font-family:Arial,sans-serif;font-size:24px;color:#111;margin:0 0 16px">Welcome to Capy!</h1>
+                  <p style="font-family:Arial,sans-serif;font-size:15px;line-height:1.5;color:#333;margin:0 0 16px">Thanks for signing up. You're all set to start building DSLs.</p>
+                  <p style="font-family:Arial,sans-serif;font-size:15px;line-height:1.5;color:#333;margin:0 0 16px">Click below to read the getting-started guide.</p>
+                  <p style="margin:24px 0;text-align:center">
+                    <a href="https://capy.dev/getting-started" style="background:#4dd;color:#fff;padding:12px 24px;text-decoration:none;border-radius:4px;font-family:Arial,sans-serif;font-weight:600">Get started</a>
+                  </p>
+                  <hr style="border:none;border-top:1px solid #eee;margin:24px 0" />
+                  <p style="font-family:Arial,sans-serif;font-size:12px;color:#888;text-align:center;margin:24px 0 0">Sent by Capy. Unsubscribe at capy.dev/unsubscribe.</p>
+            
+                </td></tr>
+              </table>
+            </body>
+            </html>
+            
+            got:
+            <!doctype html>
+            <html>
+            <head>
+              <meta charset="utf-8" />
+              <title>Welcome to Capy</title>
+            </head>
+            <body style="margin:0;padding:24px;background:#f4f4f4">
+              <div style="display:none;max-height:0;overflow:hidden">Your account is ready.</div>
+              <table cellpadding="0" cellspacing="0" style="background:#fff;max-width:600px;margin:0 auto;padding:32px;border-radius:8px">
+                <tr><td>
+                  <h1 style="font-family:Arial,sans-serif;font-size:24px;color:#111;margin:0 0 16px">Welcome to Capy!</h1>
+                  <p style="font-family:Arial,sans-serif;font-size:15px;line-height:1.5;color:#333;margin:0 0 16px">Thanks for signing up. You're all set to start building DSLs.</p>
+                  <p style="font-family:Arial,sans-serif;font-size:15px;line-height:1.5;color:#333;margin:0 0 16px">Click below to read the getting-started guide.</p>
+                  <p style="margin:24px 0;text-align:center">
+                    <a href="https://capy.dev/getting-started" style="background:#4dd;color:#fff;padding:12px 24px;text-decoration:none;border-radius:4px;font-family:Arial,sans-serif;font-weight:600">Get started</a>
+                  </p>
+                  <hr style="border:none;border-top:1px solid #eee;margin:24px 0" />
+                  <p style="font-family:Arial,sans-serif;font-size:12px;color:#888;text-align:center;margin:24px 0 0">Sent by Capy. Unsubscribe at capy.dev/unsubscribe.</p>
+            
+                </td></tr>
+              </table>
+            </body>
+            </html>
+    --- FAIL: TestGolden/transpile-env/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            DATABASE_URL="postgres://localhost/mydb"
+            PORT=5432
+            DEBUG=true
+            REGION="us-east-1"
+            
+            got:
+            DATABASE_URL="postgres://localhost/mydb"
+            PORT=5432
+            DEBUG=true
+            REGION="us-east-1"
+    --- FAIL: TestGolden/transpile-express-server/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            const express = require("express");
+            const app = express();
+            
+            app.use(express.json());
+            app.use(morgan('combined'));
+            
+            
+            app.get("/health", (req, res) => {
+              res.json({ok: true})
+            });
+            
+            app.get("/users", (req, res) => {
+              res.json([{id: 1, name: 'Alice'}])
+            });
+            
+            app.post("/users", (req, res) => {
+              const u = req.body; res.status(201).json({id: 42, ...u})
+            });
+            
+            app.get("/users/:id", (req, res) => {
+              res.json({id: req.params.id, name: 'Mock'})
+            });
+            
+            
+            app.listen(8080, () => {
+              console.log("listening on", 8080);
+            });
+            
+            got:
+            const express = require("express");
+            const app = express();
+            
+            app.use(express.json());
+            app.use(morgan('combined'));
+            
+            
+            app.get("/health", (req, res) => {
+              res.json({ok: true})
+            });
+            
+            app.get("/users", (req, res) => {
+              res.json([{id: 1, name: 'Alice'}])
+            });
+            
+            app.post("/users", (req, res) => {
+              const u = req.body; res.status(201).json({id: 42, ...u})
+            });
+            
+            app.get("/users/:id", (req, res) => {
+              res.json({id: req.params.id, name: 'Mock'})
+            });
+            
+            
+            app.listen(8080, () => {
+              console.log("listening on", 8080);
+            });
+    --- FAIL: TestGolden/transpile-fastapi-app/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            from fastapi import FastAPI
+            from pydantic import BaseModel
+            
+            app = FastAPI()
+            
+            class User(BaseModel):
+                id: int
+                name: str
+                email: str
+            
+            
+            class Post(BaseModel):
+                id: int
+                author_id: int
+                body: str
+            
+            
+            @app.get("/users", response_model=User)
+            def list_users():
+                return {}
+            
+            @app.get("/users/{id}", response_model=User)
+            def get_user():
+                return {}
+            
+            @app.post("/posts", response_model=Post)
+            def create_post():
+                return {}
+            
+            
+            got:
+            from fastapi import FastAPI
+            from pydantic import BaseModel
+            
+            app = FastAPI()
+            
+            class User(BaseModel):
+                id: int
+                name: str
+                email: str
+            
+            
+            class Post(BaseModel):
+                id: int
+                author_id: int
+                body: str
+            
+            
+            @app.get("/users", response_model=User)
+            def list_users():
+                return {}
+            
+            @app.get("/users/{id}", response_model=User)
+            def get_user():
+                return {}
+            
+            @app.post("/posts", response_model=Post)
+            def create_post():
+                return {}
+            
+    --- FAIL: TestGolden/transpile-flask-app/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            from flask import Flask, jsonify, request
+            
+            app = Flask(__name__)
+            
+            @app.route("/health", methods=["GET"])
+            def health():
+                return jsonify(ok=True)
+            
+            @app.route("/users", methods=["GET"])
+            def list_users():
+                return jsonify([{'id': 1, 'name': 'Alice'}])
+            
+            @app.route("/users", methods=["POST"])
+            def create_user():
+                u = request.get_json(); u['id'] = 42; return jsonify(u), 201
+            
+            
+            if __name__ == "__main__":
+                app.run(port=8000)
+            
+            got:
+            from flask import Flask, jsonify, request
+            
+            app = Flask(__name__)
+            
+            @app.route("/health", methods=["GET"])
+            def health():
+                return jsonify(ok=True)
+            
+            @app.route("/users", methods=["GET"])
+            def list_users():
+                return jsonify([{'id': 1, 'name': 'Alice'}])
+            
+            @app.route("/users", methods=["POST"])
+            def create_user():
+                u = request.get_json(); u['id'] = 42; return jsonify(u), 201
+            
+            
+            if __name__ == "__main__":
+                app.run(port=8000)
+    --- FAIL: TestGolden/transpile-form/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            <form action="/contact" method="post">
+              <label for="name">Your name</label>
+              <input id="name" name="name" type="text" />
+              <label for="email">Email address</label>
+              <input id="email" name="email" type="email" />
+              <label for="message">Message</label>
+              <textarea id="message" name="message"></textarea>
+            
+              <button type="submit">Submit</button>
+            </form>
+            
+            got:
+            <form action="/contact" method="post">
+              <label for="name">Your name</label>
+              <input id="name" name="name" type="text" />
+              <label for="email">Email address</label>
+              <input id="email" name="email" type="email" />
+              <label for="message">Message</label>
+              <textarea id="message" name="message"></textarea>
+            
+              <button type="submit">Submit</button>
+            </form>
+    --- FAIL: TestGolden/transpile-gh-actions/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            name: ci
+            on: [push, pull_request]
+            
+            jobs:
+              test:
+                runs-on: ubuntu-latest
+                steps:
+                    - name: checkout
+                      run: "actions/checkout@v4"
+                    - name: test
+                      run: "go test ./..."
+            
+              lint:
+                runs-on: ubuntu-latest
+                steps:
+                    - name: checkout
+                      run: "actions/checkout@v4"
+                    - name: lint
+                      run: "golangci-lint run"
+            
+            
+            
+            got:
+            name: ci
+            on: [push, pull_request]
+            
+            jobs:
+              test:
+                runs-on: ubuntu-latest
+                steps:
+                    - name: checkout
+                      run: "actions/checkout@v4"
+                    - name: test
+                      run: "go test ./..."
+            
+              lint:
+                runs-on: ubuntu-latest
+                steps:
+                    - name: checkout
+                      run: "actions/checkout@v4"
+                    - name: lint
+                      run: "golangci-lint run"
+            
+            
+    --- FAIL: TestGolden/transpile-go/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            package model
+            
+            type User struct {
+                ID int
+                Name string
+                Email string
+                CreatedAt time.Time
+            
+            }
+            type Post struct {
+                ID int
+                AuthorID int
+                Body string
+            
+            }
+            
+            // imports needed: time 
+            
+            got:
+            package model
+            
+            type User struct {
+                ID int
+                Name string
+                Email string
+                CreatedAt time.Time
+            
+            }
+            type Post struct {
+                ID int
+                AuthorID int
+                Body string
+            
+            }
+            
+            // imports needed: time 
+    --- FAIL: TestGolden/transpile-graphql/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            type User {
+              id: ID!
+              name: String!
+              email: String
+              role: UserRole
+            
+            }
+            enum UserRole {
+              ADMIN
+              MEMBER
+              GUEST
+            
+            }
+            type Query {
+              users: [User!]!
+            
+            }
+            
+            got:
+            type User {
+              id: ID!
+              name: String!
+              email: String
+              role: UserRole
+            
+            }
+            enum UserRole {
+              ADMIN
+              MEMBER
+              GUEST
+            
+            }
+            type Query {
+              users: [User!]!
+            
+            }
+    --- FAIL: TestGolden/transpile-invoice/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            # Invoice INV-2026-001
+            
+            **To:** Acme Corp
+            **Date:** 2026-05-23
+            
+            | Item | Qty | Unit price |
+            |---|---:|---:|
+            | Consulting hours | 8 | $120.00 |
+            | Capy enterprise plan | 1 | $2000.00 |
+            | Onboarding workshop | 2 | $500.00 |
+            
+            
+            got:
+            # Invoice INV-2026-001
+            
+            **To:** Acme Corp
+            **Date:** 2026-05-23
+            
+            | Item | Qty | Unit price |
+            |---|---:|---:|
+            | Consulting hours | 8 | $120.00 |
+            | Capy enterprise plan | 1 | $2000.00 |
+            | Onboarding workshop | 2 | $500.00 |
+            
+    --- FAIL: TestGolden/transpile-json/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            {
+              "dependencies": [
+                "express",
+                "lodash"
+              ],
+              "name": "my-project",
+              "scripts": {
+                "build": "go build ./...",
+                "test": "go test ./..."
+              },
+              "version": "1.2.3"
+            }
+            
+            got:
+            {
+              "dependencies": [
+                "express",
+                "lodash"
+              ],
+              "name": "my-project",
+              "scripts": {
+                "build": "go build ./...",
+                "test": "go test ./..."
+              },
+              "version": "1.2.3"
+            }
+    --- FAIL: TestGolden/transpile-kubernetes/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            apiVersion: apps/v1
+            kind: Deployment
+            metadata:
+              name: capy_api
+            spec:
+              replicas: 3
+              template:
+                spec:
+                  containers:
+                    - name: capy_api
+                      image: ghcr.io/luowensheng/capy:0.1.0
+                      ports:
+                        - containerPort: 8080
+            
+            got:
+            apiVersion: apps/v1
+            kind: Deployment
+            metadata:
+              name: capy_api
+            spec:
+              replicas: 3
+              template:
+                spec:
+                  containers:
+                    - name: capy_api
+                      image: ghcr.io/luowensheng/capy:0.1.0
+                      ports:
+                        - containerPort: 8080
+    --- FAIL: TestGolden/transpile-landing-page/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            <!doctype html>
+            <html lang="en">
+            <head>
+              <meta charset="utf-8" />
+              <meta name="viewport" content="width=device-width, initial-scale=1" />
+              <title>Capy — DSLs in YAML</title>
+              <style>
+                :root { --fg: #111; --bg: #fff; --muted: #666; --accent: #4dd; }
+                * { box-sizing: border-box; }
+                body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; color: var(--fg); background: var(--bg); }
+                .hero { padding: 6rem 1.5rem; text-align: center; }
+                .hero h1 { font-size: clamp(2rem, 5vw, 4rem); margin: 0 0 .5rem; }
+                .hero p  { font-size: 1.25rem; color: var(--muted); max-width: 600px; margin: 0 auto 2rem; }
+                .ctas a {
+                  display: inline-block; margin: 0 .5rem; padding: .9rem 1.5rem;
+                  background: var(--accent); color: #fff; text-decoration: none;
+                  border-radius: 6px; font-weight: 600;
+                }
+                .ctas a + a { background: transparent; color: var(--fg); border: 1px solid var(--fg); }
+                .features { padding: 4rem 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; max-width: 1100px; margin: 0 auto; }
+                .feature h3 { margin: .5rem 0; }
+                .feature p  { color: var(--muted); margin: 0; }
+                .icon { font-size: 2.5rem; }
+              </style>
+            </head>
+            <body>
+              <section class="hero">
+                <h1>Define a language. Get a transpiler.</h1>
+                <p>Capy is a tiny engine that turns a YAML file into a working code generator.</p>
+                <div class="ctas">
+                  <a href="/docs/getting-started">Get started</a>
+                  <a href="https://github.com/luowensheng/capy">GitHub</a>
+                </div>
+              </section>
+            
+              <section class="features">
+                <div class="feature">
+                  <div class="icon">🌱</div>
+                  <h3>Zero default grammar</h3>
+                  <p>Your library is the language.</p>
+                </div>
+                <div class="feature">
+                  <div class="icon">⚡</div>
+                  <h3>Fast</h3>
+                  <p>Single-binary Go. Boots in milliseconds.</p>
+                </div>
+                <div class="feature">
+                  <div class="icon">🧩</div>
+                  <h3>50 sample DSLs</h3>
+                  <p>From Python to Mermaid to a real x86-64 transpiler.</p>
+                </div>
+              </section>
+            </body>
+            </html>
+            
+            got:
+            <!doctype html>
+            <html lang="en">
+            <head>
+              <meta charset="utf-8" />
+              <meta name="viewport" content="width=device-width, initial-scale=1" />
+              <title>Capy — DSLs in YAML</title>
+              <style>
+                :root { --fg: #111; --bg: #fff; --muted: #666; --accent: #4dd; }
+                * { box-sizing: border-box; }
+                body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; color: var(--fg); background: var(--bg); }
+                .hero { padding: 6rem 1.5rem; text-align: center; }
+                .hero h1 { font-size: clamp(2rem, 5vw, 4rem); margin: 0 0 .5rem; }
+                .hero p  { font-size: 1.25rem; color: var(--muted); max-width: 600px; margin: 0 auto 2rem; }
+                .ctas a {
+                  display: inline-block; margin: 0 .5rem; padding: .9rem 1.5rem;
+                  background: var(--accent); color: #fff; text-decoration: none;
+                  border-radius: 6px; font-weight: 600;
+                }
+                .ctas a + a { background: transparent; color: var(--fg); border: 1px solid var(--fg); }
+                .features { padding: 4rem 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; max-width: 1100px; margin: 0 auto; }
+                .feature h3 { margin: .5rem 0; }
+                .feature p  { color: var(--muted); margin: 0; }
+                .icon { font-size: 2.5rem; }
+              </style>
+            </head>
+            <body>
+              <section class="hero">
+                <h1>Define a language. Get a transpiler.</h1>
+                <p>Capy is a tiny engine that turns a YAML file into a working code generator.</p>
+                <div class="ctas">
+                  <a href="/docs/getting-started">Get started</a>
+                  <a href="https://github.com/luowensheng/capy">GitHub</a>
+                </div>
+              </section>
+            
+              <section class="features">
+                <div class="feature">
+                  <div class="icon">🌱</div>
+                  <h3>Zero default grammar</h3>
+                  <p>Your library is the language.</p>
+                </div>
+                <div class="feature">
+                  <div class="icon">⚡</div>
+                  <h3>Fast</h3>
+                  <p>Single-binary Go. Boots in milliseconds.</p>
+                </div>
+                <div class="feature">
+                  <div class="icon">🧩</div>
+                  <h3>50 sample DSLs</h3>
+                  <p>From Python to Mermaid to a real x86-64 transpiler.</p>
+                </div>
+              </section>
+            </body>
+            </html>
+    --- FAIL: TestGolden/transpile-makefile/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            .PHONY: build lint test 
+            
+            .DEFAULT_GOAL := build
+            
+            
+            build:
+            	go build -o capy ./cmd/capy
+            
+            lint:
+            	golangci-lint run
+            
+            test:
+            	go test ./...
+            
+            
+            got:
+            .PHONY: build lint test 
+            
+            .DEFAULT_GOAL := build
+            
+            
+            build:
+            	go build -o capy ./cmd/capy
+            
+            lint:
+            	golangci-lint run
+            
+            test:
+            	go test ./...
+            
+    --- FAIL: TestGolden/transpile-markdown-todo/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            # Tasks
+            
+            ## Today
+            
+            - [ ] Write the launch blog post
+            - [x] Tag v0.1.0
+            - [ ] Test install script on Linux
+            
+            ## This week
+            
+            - [ ] Publish VS Code extension
+            - [ ] Set up Discussions
+            - [x] Move .codestyle to docs
+            
+            
+            got:
+            # Tasks
+            
+            ## Today
+            
+            - [ ] Write the launch blog post
+            - [x] Tag v0.1.0
+            - [ ] Test install script on Linux
+            
+            ## This week
+            
+            - [ ] Publish VS Code extension
+            - [ ] Set up Discussions
+            - [x] Move .codestyle to docs
+            
+    --- FAIL: TestGolden/transpile-mermaid/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            flowchart LR
+                a[Source]
+                b[Lexer]
+                c[Parser]
+                d[Evaluator]
+                e[Output]
+                a --> b
+                b --> c
+                c -->|match + render| d
+                d --> e
+            
+            
+            got:
+            flowchart LR
+                a[Source]
+                b[Lexer]
+                c[Parser]
+                d[Evaluator]
+                e[Output]
+                a --> b
+                b --> c
+                c -->|match + render| d
+                d --> e
+            
+    --- FAIL: TestGolden/transpile-nginx/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            server {
+                server_name capy.dev;
+                listen 443;
+                root /var/www/capy;
+                location /api {
+                    proxy_pass http://localhost:8080;
+                }
+            
+            }
+            server {
+                server_name blog.capy.dev;
+                listen 443;
+                root /var/www/blog;
+            
+            }
+            
+            got:
+            server {
+                server_name capy.dev;
+                listen 443;
+                root /var/www/capy;
+                location /api {
+                    proxy_pass http://localhost:8080;
+                }
+            
+            }
+            server {
+                server_name blog.capy.dev;
+                listen 443;
+                root /var/www/blog;
+            
+            }
+    --- FAIL: TestGolden/transpile-openapi/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            openapi: 3.0.0
+            info:
+              title: Capy API
+              version: 1.0.0
+            
+            paths:
+              /users:
+                get:
+                  summary: List users
+                  responses:
+                    '200':
+                      description: ok
+                      content:
+                        application/json:
+                          schema:
+                            $ref: '#/components/schemas/User'
+              /users:
+                post:
+                  summary: Create user
+                  responses:
+                    '200':
+                      description: ok
+                      content:
+                        application/json:
+                          schema:
+                            $ref: '#/components/schemas/User'
+              /posts/{id}:
+                get:
+                  summary: Get post
+                  responses:
+                    '200':
+                      description: ok
+                      content:
+                        application/json:
+                          schema:
+                            $ref: '#/components/schemas/Post'
+            
+            components:
+              schemas:
+                User:
+                  type: object
+                Post:
+                  type: object
+            
+            got:
+            openapi: 3.0.0
+            info:
+              title: Capy API
+              version: 1.0.0
+            
+            paths:
+              /users:
+                get:
+                  summary: List users
+                  responses:
+                    '200':
+                      description: ok
+                      content:
+                        application/json:
+                          schema:
+                            $ref: '#/components/schemas/User'
+              /users:
+                post:
+                  summary: Create user
+                  responses:
+                    '200':
+                      description: ok
+                      content:
+                        application/json:
+                          schema:
+                            $ref: '#/components/schemas/User'
+              /posts/{id}:
+                get:
+                  summary: Get post
+                  responses:
+                    '200':
+                      description: ok
+                      content:
+                        application/json:
+                          schema:
+                            $ref: '#/components/schemas/Post'
+            
+            components:
+              schemas:
+                User:
+                  type: object
+                Post:
+                  type: object
+    --- FAIL: TestGolden/transpile-postgres-schema/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            -- Generated by Capy
+            CREATE TABLE users (
+              id bigserial PRIMARY KEY,
+              email varchar(255) UNIQUE NOT NULL,
+              name varchar(255) NOT NULL,
+              created_at timestamptz NOT NULL DEFAULT now(),
+            
+            );
+            CREATE TABLE posts (
+              id bigserial PRIMARY KEY,
+              author_id bigint NOT NULL REFERENCES users(id),
+              title varchar(255) NOT NULL,
+              body text,
+              created_at timestamptz NOT NULL DEFAULT now(),
+            
+            );
+            
+            
+            CREATE INDEX ix_users_email ON users(email);
+            CREATE INDEX ix_posts_author_id ON posts(author_id);
+            CREATE INDEX ix_posts_created_at ON posts(created_at);
+            
+            got:
+            -- Generated by Capy
+            CREATE TABLE users (
+              id bigserial PRIMARY KEY,
+              email varchar(255) UNIQUE NOT NULL,
+              name varchar(255) NOT NULL,
+              created_at timestamptz NOT NULL DEFAULT now(),
+            
+            );
+            CREATE TABLE posts (
+              id bigserial PRIMARY KEY,
+              author_id bigint NOT NULL REFERENCES users(id),
+              title varchar(255) NOT NULL,
+              body text,
+              created_at timestamptz NOT NULL DEFAULT now(),
+            
+            );
+            
+            
+            CREATE INDEX ix_users_email ON users(email);
+            CREATE INDEX ix_posts_author_id ON posts(author_id);
+            CREATE INDEX ix_posts_created_at ON posts(created_at);
+    --- FAIL: TestGolden/transpile-prisma-schema/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            datasource db {
+              provider = "postgresql"
+              url      = "env('DATABASE_URL')"
+            }
+            
+            generator client {
+              provider = "prisma-client-js"
+            }
+            
+            model User {
+              id Int @id @default(autoincrement())
+              email String @unique
+              name String?
+            
+            }
+            
+            model Post {
+              id Int @id @default(autoincrement())
+              title String
+              body String
+              author User @relation(fields: [authorId], references: [id])
+              authorId Int
+            
+            }
+            
+            got:
+            datasource db {
+              provider = "postgresql"
+              url      = "env('DATABASE_URL')"
+            }
+            
+            generator client {
+              provider = "prisma-client-js"
+            }
+            
+            model User {
+              id Int @id @default(autoincrement())
+              email String @unique
+              name String?
+            
+            }
+            
+            model Post {
+              id Int @id @default(autoincrement())
+              title String
+              body String
+              author User @relation(fields: [authorId], references: [id])
+              authorId Int
+            
+            }
+    --- FAIL: TestGolden/transpile-prometheus-alerts/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            groups:
+              - name: capy_alerts
+                rules:
+                  - alert: HighErrorRate
+                    expr: rate(http_requests_total{status=~'5..'}[5m]) > 0.05
+                    for: 10m
+                    labels:
+                      severity: page
+                    annotations:
+                      summary: 5xx error rate > 5% for 10 minutes
+                  - alert: SlowResponse
+                    expr: histogram_quantile(0.95, http_request_duration_seconds) > 2
+                    for: 5m
+                    labels:
+                      severity: warning
+                    annotations:
+                      summary: p95 latency > 2s
+            
+            got:
+            groups:
+              - name: capy_alerts
+                rules:
+                  - alert: HighErrorRate
+                    expr: rate(http_requests_total{status=~'5..'}[5m]) > 0.05
+                    for: 10m
+                    labels:
+                      severity: page
+                    annotations:
+                      summary: 5xx error rate > 5% for 10 minutes
+                  - alert: SlowResponse
+                    expr: histogram_quantile(0.95, http_request_duration_seconds) > 2
+                    for: 5m
+                    labels:
+                      severity: warning
+                    annotations:
+                      summary: p95 latency > 2s
+    --- FAIL: TestGolden/transpile-protobuf/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            syntax = "proto3";
+            
+            package users;
+            
+            message User {
+              int64 id = 1;
+              string name = 2;
+              string email = 3;
+              repeated string roles = 4;
+            
+            }
+            message UserList {
+              repeated User users = 1;
+            
+            }
+            
+            got:
+            syntax = "proto3";
+            
+            package users;
+            
+            message User {
+              int64 id = 1;
+              string name = 2;
+              string email = 3;
+              repeated string roles = 4;
+            
+            }
+            message UserList {
+              repeated User users = 1;
+            
+            }
+    --- FAIL: TestGolden/transpile-py/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            import json
+            import os
+            print("starting")
+            x = 42
+            items = ["a", "b", "c"]
+            if x:
+                print("x is truthy")
+            
+            for item in items:
+                print(item)
+            
+            
+            got:
+            import json
+            import os
+            print("starting")
+            x = 42
+            items = ["a", "b", "c"]
+            if x:
+                print("x is truthy")
+            
+            for item in items:
+                print(item)
+            
+    --- FAIL: TestGolden/transpile-react-component/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            import React, { useState, useEffect } from "react";
+            
+            type CounterProps = {
+              label: string;
+              initial: number;
+            };
+            
+            export function Counter(props: CounterProps) {
+              const [count, setcount] = useState<number>(0);
+              const [hidden, sethidden] = useState<boolean>(false);
+            
+              useEffect(() => {
+                document.title = 'count: ' + count
+              }, [count]);
+            
+              return (
+                  <div><h1>{props.label}: {count}</h1><button onClick={() => setCount(count + 1)}>+1</button><button onClick={() => setHidden(!hidden)}>toggle</button>{!hidden && <p>visible</p>}</div>
+            
+              );
+            }
+            
+            got:
+            import React, { useState, useEffect } from "react";
+            
+            type CounterProps = {
+              label: string;
+              initial: number;
+            };
+            
+            export function Counter(props: CounterProps) {
+              const [count, setcount] = useState<number>(0);
+              const [hidden, sethidden] = useState<boolean>(false);
+            
+              useEffect(() => {
+                document.title = 'count: ' + count
+              }, [count]);
+            
+              return (
+                  <div><h1>{props.label}: {count}</h1><button onClick={() => setCount(count + 1)}>+1</button><button onClick={() => setHidden(!hidden)}>toggle</button>{!hidden && <p>visible</p>}</div>
+            
+              );
+            }
+    --- FAIL: TestGolden/transpile-resume/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            # Ada Lovelace
+            ## Software Engineer
+            📧 ada@example.com
+            
+            ## Skills
+            
+            - Go
+            - Compiler design
+            - Domain modeling
+            
+            ## Experience
+            
+            ### Senior Engineer @ Acme Corp (2022–present)
+            
+            - Built a transpiler engine in 1500 lines of Go
+            - Reduced build times by 40% through codegen consolidation
+            
+            
+            ### Engineer @ Bytes Ltd (2019–2022)
+            
+            - Maintained a CRUD platform serving 2M users
+            - Authored the team's CI/CD playbook
+            
+            
+            
+            got:
+            # Ada Lovelace
+            ## Software Engineer
+            📧 ada@example.com
+            
+            ## Skills
+            
+            - Go
+            - Compiler design
+            - Domain modeling
+            
+            ## Experience
+            
+            ### Senior Engineer @ Acme Corp (2022–present)
+            
+            - Built a transpiler engine in 1500 lines of Go
+            - Reduced build times by 40% through codegen consolidation
+            
+            
+            ### Engineer @ Bytes Ltd (2019–2022)
+            
+            - Maintained a CRUD platform serving 2M users
+            - Authored the team's CI/CD playbook
+            
+            
+    --- FAIL: TestGolden/transpile-slack-blocks/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            {
+              "blocks": [
+                {
+                  "text": {
+                    "text": "📦 Build complete",
+                    "type": "plain_text"
+                  },
+                  "type": "header"
+                },
+                {
+                  "text": {
+                    "text": "Branch *main* built in *4m 12s* and is ready to deploy.",
+                    "type": "mrkdwn"
+                  },
+                  "type": "section"
+                },
+                {
+                  "type": "divider"
+                },
+                {
+                  "text": {
+                    "text": "Tests: 124/124 passingnCoverage: 82%",
+                    "type": "mrkdwn"
+                  },
+                  "type": "section"
+                },
+                {
+                  "elements": [
+                    {
+                      "text": {
+                        "text": "View build",
+                        "type": "plain_text"
+                      },
+                      "type": "button",
+                      "url": "https://ci.example.com/build/1234"
+                    }
+                  ],
+                  "type": "actions"
+                }
+              ]
+            }
+            
+            got:
+            {
+              "blocks": [
+                {
+                  "text": {
+                    "text": "📦 Build complete",
+                    "type": "plain_text"
+                  },
+                  "type": "header"
+                },
+                {
+                  "text": {
+                    "text": "Branch *main* built in *4m 12s* and is ready to deploy.",
+                    "type": "mrkdwn"
+                  },
+                  "type": "section"
+                },
+                {
+                  "type": "divider"
+                },
+                {
+                  "text": {
+                    "text": "Tests: 124/124 passingnCoverage: 82%",
+                    "type": "mrkdwn"
+                  },
+                  "type": "section"
+                },
+                {
+                  "elements": [
+                    {
+                      "text": {
+                        "text": "View build",
+                        "type": "plain_text"
+                      },
+                      "type": "button",
+                      "url": "https://ci.example.com/build/1234"
+                    }
+                  ],
+                  "type": "actions"
+                }
+              ]
+            }
+    --- FAIL: TestGolden/transpile-sql/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            -- table: users
+            SELECT id FROM users WHERE active;
+            SELECT name FROM users WHERE verified;
+            INSERT INTO users VALUES [1, "alice", "alice@example.com"];
+            
+            got:
+            -- table: users
+            SELECT id FROM users WHERE active;
+            SELECT name FROM users WHERE verified;
+            INSERT INTO users VALUES [1, "alice", "alice@example.com"];
+    --- FAIL: TestGolden/transpile-statemachine/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            stateDiagram-v2
+              [*] --> Order
+              state Pending
+              state Paid
+              state Shipped
+              state Delivered
+              Pending --> Paid : payment
+              Paid --> Shipped : fulfill
+              Shipped --> Delivered : arrival
+              Delivered --> [*]
+            
+            
+            got:
+            stateDiagram-v2
+              [*] --> Order
+              state Pending
+              state Paid
+              state Shipped
+              state Delivered
+              Pending --> Paid : payment
+              Paid --> Shipped : fulfill
+              Shipped --> Delivered : arrival
+              Delivered --> [*]
+            
+    --- FAIL: TestGolden/transpile-systemd/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            [Unit]
+            After=network.target
+            Description=Capy daemon
+            
+            [Service]
+            ExecStart=/usr/local/bin/capyd --config /etc/capyd.yaml
+            Restart=always
+            User=capyd
+            
+            [Install]
+            WantedBy=multi-user.target
+            
+            
+            got:
+            [Unit]
+            After=network.target
+            Description=Capy daemon
+            
+            [Service]
+            ExecStart=/usr/local/bin/capyd --config /etc/capyd.yaml
+            Restart=always
+            User=capyd
+            
+            [Install]
+            WantedBy=multi-user.target
+            
+    --- FAIL: TestGolden/transpile-terraform/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            provider "aws" {
+              region = "us-east-1"
+            }
+            
+            resource "aws_instance" "web" {
+              ami = "ami-0c55b159cbfafe1f0"
+              instance_type = "t3.micro"
+              tags = { "Name" = "capy-web" }
+            
+            }
+            
+            resource "aws_s3_bucket" "assets" {
+              bucket = "capy-assets-prod"
+              tags = { "Env" = "production" }
+            
+            }
+            
+            got:
+            provider "aws" {
+              region = "us-east-1"
+            }
+            
+            resource "aws_instance" "web" {
+              ami = "ami-0c55b159cbfafe1f0"
+              instance_type = "t3.micro"
+              tags = { "Name" = "capy-web" }
+            
+            }
+            
+            resource "aws_s3_bucket" "assets" {
+              bucket = "capy-assets-prod"
+              tags = { "Env" = "production" }
+            
+            }
+    --- FAIL: TestGolden/transpile-tests/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            package math_test
+            
+            import "testing"
+            
+            func Test_AddPositive(t *testing.T) {
+                if got, want := result, 7; got != want {
+                    t.Errorf("got %v want %v", got, want)
+                }
+                if !(positive) {
+                    t.Errorf("expected true: positive")
+                }
+            
+            }
+            
+            func Test_SubtractZero(t *testing.T) {
+                if got, want := diff, 0; got != want {
+                    t.Errorf("got %v want %v", got, want)
+                }
+            
+            }
+            
+            got:
+            package math_test
+            
+            import "testing"
+            
+            func Test_AddPositive(t *testing.T) {
+                if got, want := result, 7; got != want {
+                    t.Errorf("got %v want %v", got, want)
+                }
+                if !(positive) {
+                    t.Errorf("expected true: positive")
+                }
+            
+            }
+            
+            func Test_SubtractZero(t *testing.T) {
+                if got, want := diff, 0; got != want {
+                    t.Errorf("got %v want %v", got, want)
+                }
+            
+            }
+    --- FAIL: TestGolden/transpile-typescript/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            // Models: User, Post
+            export interface User {
+              id: "number";
+              name: "string";
+              email: "string";
+            
+            }
+            export interface Post {
+              id: "number";
+              author: "string";
+            
+            }
+            
+            
+            got:
+            // Models: User, Post
+            export interface User {
+              id: "number";
+              name: "string";
+              email: "string";
+            
+            }
+            export interface Post {
+              id: "number";
+              author: "string";
+            
+            }
+            
+    --- FAIL: TestGolden/transpile-xstate-machine/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            import { createMachine } from "xstate";
+            
+            export const traffic_light = createMachine({
+              id: "traffic_light",
+              initial: "green",
+              states: {
+                green: {
+                  on: {
+                    TICK: "yellow",
+                  },
+                },
+                yellow: {
+                  on: {
+                    TICK: "red",
+                  },
+                },
+                red: {
+                  on: {
+                    TICK: "green",
+                  },
+                },
+              },
+            });
+            
+            got:
+            import { createMachine } from "xstate";
+            
+            export const traffic_light = createMachine({
+              id: "traffic_light",
+              initial: "green",
+              states: {
+                green: {
+                  on: {
+                    TICK: "yellow",
+                  },
+                },
+                yellow: {
+                  on: {
+                    TICK: "red",
+                  },
+                },
+                red: {
+                  on: {
+                    TICK: "green",
+                  },
+                },
+              },
+            });
+    --- FAIL: TestGolden/transpile-zod-schema/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            import { z } from "zod";
+            
+            export const UserInput = z.object({
+              email: z.string().email(),
+              password: z.string().min(8),
+              name: z.string().optional(),
+            
+            });
+            
+            export const PostInput = z.object({
+              title: z.string().min(1).max(200),
+              body: z.string(),
+              tags: z.array(z.string()).default([]),
+            
+            });
+            
+            
+            export type Schemas = {
+              UserInput: z.infer<typeof UserInput>;
+              PostInput: z.infer<typeof PostInput>;
+            };
+            
+            got:
+            import { z } from "zod";
+            
+            export const UserInput = z.object({
+              email: z.string().email(),
+              password: z.string().min(8),
+              name: z.string().optional(),
+            
+            });
+            
+            export const PostInput = z.object({
+              title: z.string().min(1).max(200),
+              body: z.string(),
+              tags: z.array(z.string()).default([]),
+            
+            });
+            
+            
+            export type Schemas = {
+              UserInput: z.infer<typeof UserInput>;
+              PostInput: z.infer<typeof PostInput>;
+            };
+    --- FAIL: TestGolden/types/script (0.00s)
+        golden_test.go:74: output mismatch:
+            want:
+            email = alice@example.com
+            status = todo
+            slug = hello-world
+            
+            got:
+            email = alice@example.com
+            status = todo
+            slug = hello-world
+FAIL
+coverage: 12.0% of statements
+FAIL	github.com/luowensheng/capy/cmd/capy	0.123s
+	github.com/luowensheng/capy/domain		coverage: 0.0% of statements
+	github.com/luowensheng/capy/orchestrator		coverage: 0.0% of statements
+	github.com/luowensheng/capy/io/cli		coverage: 0.0% of statements
+	github.com/luowensheng/capy/orchestrator/views		coverage: 0.0% of statements
+?   	github.com/luowensheng/capy/usecases	[no test files]
+	github.com/luowensheng/capy/orchestrator/usecases		coverage: 0.0% of statements
+ok  	github.com/luowensheng/capy/infra	1.048s	coverage: 58.7% of statements
+ok  	github.com/luowensheng/capy/orchestrator/features	1.061s	coverage: 53.4% of statements
+FAIL
+Error: Process completed with exit code 1.

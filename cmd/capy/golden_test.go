@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -70,11 +71,14 @@ func runSampleGoldens(t *testing.T, dir string) {
 					writeFile(t, expectOkPath, output)
 					return
 				}
-				// Normalise line endings — on Windows checkouts the golden
-				// file may contain CRLF even though the engine emits LF.
-				// `.gitattributes` enforces LF in the repo but be defensive.
-				if normalizeLF(output) != normalizeLF(want) {
-					t.Fatalf("output mismatch:\nwant:\n%s\ngot:\n%s", want, output)
+				// Normalise CRLF and any UTF-8 BOM so cross-platform CI
+				// (Windows in particular) doesn't fail on invisible
+				// byte differences. `.gitattributes` already enforces LF
+				// in the repo; this is belt-and-suspenders.
+				gotNorm := normalize(output)
+				wantNorm := normalize(want)
+				if gotNorm != wantNorm {
+					t.Fatalf("output mismatch:\n%s", diffSummary(wantNorm, gotNorm))
 				}
 			default:
 				t.Skipf("no golden file for %s", scriptPath)
@@ -132,6 +136,59 @@ func writeFile(t *testing.T, p, content string) {
 	}
 }
 
-func normalizeLF(s string) string {
-	return strings.ReplaceAll(s, "\r\n", "\n")
+func normalize(s string) string {
+	// strip UTF-8 BOM if present (0xEF 0xBB 0xBF)
+	s = strings.TrimPrefix(s, "\ufeff")
+	// CRLF and lone CR → LF
+	s = strings.ReplaceAll(s, "\r\n", "\n")
+	s = strings.ReplaceAll(s, "\r", "\n")
+	return s
+}
+
+// kept for backwards compatibility / readability elsewhere
+func normalizeLF(s string) string { return normalize(s) }
+
+// diffSummary returns a short description of the first byte that differs
+// between want and got, plus a few bytes of surrounding context. This is
+// what makes invisible-byte mismatches debuggable on CI.
+func diffSummary(want, got string) string {
+	var b strings.Builder
+	for i := 0; i < len(want) && i < len(got); i++ {
+		if want[i] != got[i] {
+			lo := i - 20
+			if lo < 0 {
+				lo = 0
+			}
+			hi := i + 20
+			if hi > len(want) {
+				hi = len(want)
+			}
+			fmt.Fprintf(&b, "first diff at byte %d (line %d): want %q got %q\n",
+				i, lineOf(want, i), want[lo:hi], got[lo:min(hi, len(got))])
+			break
+		}
+	}
+	if len(want) != len(got) {
+		fmt.Fprintf(&b, "length: want=%d got=%d\n", len(want), len(got))
+	}
+	fmt.Fprintf(&b, "\n--- want (%d bytes) ---\n%s\n--- got (%d bytes) ---\n%s\n",
+		len(want), want, len(got), got)
+	return b.String()
+}
+
+func lineOf(s string, i int) int {
+	n := 1
+	for j := 0; j < i && j < len(s); j++ {
+		if s[j] == '\n' {
+			n++
+		}
+	}
+	return n
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
