@@ -459,8 +459,10 @@ in a lot of places once you start noticing it.
 
 - :material-school: **Education & DSL design**
 
-    Build a calculator language in 30 lines of YAML. Teach grammar
-    + semantics + output without inflicting yacc on students.
+    Teach grammar, semantics, and output as separate concepts in
+    one tiny artifact. Students build a calculator language in an
+    afternoon — no yacc, no AST visitors, no codegen passes to
+    explain. The library *is* the language.
 
 - :material-shield-check: **Audit & compliance**
 

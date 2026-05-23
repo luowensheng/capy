@@ -90,7 +90,7 @@ actually use it.
 
     **Rendered** — click the canvas, then use arrow keys:
 
-    <iframe src="assets/demos/canvas-game.html" width="100%" height="380" style="border:1px solid #ccc;border-radius:6px;"></iframe>
+    <iframe src="../assets/demos/canvas-game.html" width="100%" height="380" style="border:1px solid #ccc;border-radius:6px;"></iframe>
 
     [Full sample →](https://github.com/luowensheng/capy/tree/main/samples/transpile-canvas-game)
 
@@ -115,7 +115,7 @@ actually use it.
 
     **Rendered**:
 
-    <iframe src="assets/demos/landing-page.html" width="100%" height="500" style="border:1px solid #ccc;border-radius:6px;"></iframe>
+    <iframe src="../assets/demos/landing-page.html" width="100%" height="500" style="border:1px solid #ccc;border-radius:6px;"></iframe>
 
     [Full sample →](https://github.com/luowensheng/capy/tree/main/samples/transpile-landing-page)
 
@@ -140,7 +140,7 @@ actually use it.
 
     **Rendered**:
 
-    <iframe src="assets/demos/email.html" width="100%" height="500" style="border:1px solid #ccc;border-radius:6px;background:#f4f4f4;"></iframe>
+    <iframe src="../assets/demos/email.html" width="100%" height="500" style="border:1px solid #ccc;border-radius:6px;background:#f4f4f4;"></iframe>
 
     [Full sample →](https://github.com/luowensheng/capy/tree/main/samples/transpile-email-html)
 
@@ -172,7 +172,7 @@ actually use it.
 
     **Rendered** — try typing in the fields:
 
-    <iframe src="assets/demos/form.html" width="100%" height="420" style="border:1px solid #ccc;border-radius:6px;"></iframe>
+    <iframe src="../assets/demos/form.html" width="100%" height="420" style="border:1px solid #ccc;border-radius:6px;"></iframe>
 
     [Full sample →](https://github.com/luowensheng/capy/tree/main/samples/transpile-form)
 
@@ -199,7 +199,7 @@ actually use it.
 
     **Rendered**:
 
-    <iframe src="assets/demos/component-card.html" width="100%" height="280" style="border:1px solid #ccc;border-radius:6px;"></iframe>
+    <iframe src="../assets/demos/component-card.html" width="100%" height="280" style="border:1px solid #ccc;border-radius:6px;"></iframe>
 
     [Full sample →](https://github.com/luowensheng/capy/tree/main/samples/html-component)
 
@@ -229,7 +229,7 @@ actually use it.
 
     **Rendered** — the card slides in; the badge pulses:
 
-    <iframe src="assets/demos/css-animations.html" width="100%" height="280" style="border:1px solid #ccc;border-radius:6px;"></iframe>
+    <iframe src="../assets/demos/css-animations.html" width="100%" height="280" style="border:1px solid #ccc;border-radius:6px;"></iframe>
 
     [Full sample →](https://github.com/luowensheng/capy/tree/main/samples/transpile-css-animations)
 
