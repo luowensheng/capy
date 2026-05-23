@@ -1,0 +1,4 @@
+header ["name", "age", "city"]
+row ["Alice", "30", "Paris"]
+row ["Bob", "25", "Berlin"]
+row ["Carol", "42", "Lisbon"]

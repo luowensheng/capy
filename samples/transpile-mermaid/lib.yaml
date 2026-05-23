@@ -1,0 +1,38 @@
+# Flowchart DSL → Mermaid syntax.
+extension: mmd
+output_file: ""
+
+functions:
+  flowchart:
+    args:
+      - { kind: literal, value: "flowchart" }
+      - { kind: capture, name: dir, type: ident }
+    block: { closer: end }
+    template: |
+      flowchart {{ .dir }}
+      {{ .body | indent 4 }}
+
+  node:
+    args:
+      - { kind: literal, value: "node" }
+      - { kind: capture, name: id, type: ident }
+      - { kind: capture, name: label, type: any }
+    template: "{{ .id }}[{{ .label | unquote }}]\n"
+
+  edge:
+    args:
+      - { kind: capture, name: from, type: ident }
+      - { kind: literal, value: "->" }
+      - { kind: capture, name: to, type: ident }
+    template: "{{ .from }} --> {{ .to }}\n"
+
+  edge_label:
+    args:
+      - { kind: capture, name: from, type: ident }
+      - { kind: literal, value: "->" }
+      - { kind: capture, name: to, type: ident }
+      - { kind: literal, value: ":" }
+      - { kind: capture, name: label, type: any }
+    template: "{{ .from }} -->|{{ .label | unquote }}| {{ .to }}\n"
+
+  end: {}

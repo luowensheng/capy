@@ -1,0 +1,17 @@
+name  "Ada Lovelace"
+title "Software Engineer"
+email "ada@example.com"
+
+skill "Go"
+skill "Compiler design"
+skill "Domain modeling"
+
+experience "Acme Corp" "Senior Engineer" "2022–present"
+    - "Built a transpiler engine in 1500 lines of Go"
+    - "Reduced build times by 40% through codegen consolidation"
+end
+
+experience "Bytes Ltd" "Engineer" "2019–2022"
+    - "Maintained a CRUD platform serving 2M users"
+    - "Authored the team's CI/CD playbook"
+end

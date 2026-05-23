@@ -1,0 +1,8 @@
+info "Capy API" "1.0.0"
+
+schema User
+schema Post
+
+path get  "/users"      "List users" User
+path post "/users"      "Create user" User
+path get  "/posts/{id}" "Get post" Post

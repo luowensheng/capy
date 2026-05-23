@@ -1,0 +1,2 @@
+# This script fails validation — set_email value doesn't match the Email pattern.
+set_email "not-an-email"

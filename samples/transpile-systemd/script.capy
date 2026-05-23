@@ -1,0 +1,6 @@
+description "Capy daemon"
+after "network.target"
+exec "/usr/local/bin/capyd --config /etc/capyd.yaml"
+restart "always"
+user capyd
+wanted_by "multi-user.target"

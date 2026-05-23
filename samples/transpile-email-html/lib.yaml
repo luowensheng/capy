@@ -1,0 +1,78 @@
+# Email DSL → HTML email with inline styles.
+extension: html
+output_file: ""
+
+context:
+  meta: {}
+  buttons: []
+
+functions:
+  subject:
+    args:
+      - { kind: literal, value: "subject" }
+      - { kind: capture, name: s, type: any }
+    template: ""
+    run: |
+      set context.meta.subject s
+
+  preview:
+    args:
+      - { kind: literal, value: "preview" }
+      - { kind: capture, name: p, type: any }
+    template: ""
+    run: |
+      set context.meta.preview p
+
+  heading:
+    args:
+      - { kind: literal, value: "heading" }
+      - { kind: capture, name: t, type: any }
+    template: |
+      <h1 style="font-family:Arial,sans-serif;font-size:24px;color:#111;margin:0 0 16px">{{ .t | unquote }}</h1>
+
+  paragraph:
+    args:
+      - { kind: literal, value: "para" }
+      - { kind: capture, name: t, type: any }
+    template: |
+      <p style="font-family:Arial,sans-serif;font-size:15px;line-height:1.5;color:#333;margin:0 0 16px">{{ .t | unquote }}</p>
+
+  button:
+    args:
+      - { kind: literal, value: "button" }
+      - { kind: capture, name: label, type: any }
+      - { kind: capture, name: href, type: any }
+    template: |
+      <p style="margin:24px 0;text-align:center">
+        <a href="{{ .href | unquote }}" style="background:#4dd;color:#fff;padding:12px 24px;text-decoration:none;border-radius:4px;font-family:Arial,sans-serif;font-weight:600">{{ .label | unquote }}</a>
+      </p>
+
+  divider:
+    args:
+      - { kind: literal, value: "divider" }
+    template: |
+      <hr style="border:none;border-top:1px solid #eee;margin:24px 0" />
+
+  footer:
+    args:
+      - { kind: literal, value: "footer" }
+      - { kind: capture, name: t, type: any }
+    template: |
+      <p style="font-family:Arial,sans-serif;font-size:12px;color:#888;text-align:center;margin:24px 0 0">{{ .t | unquote }}</p>
+
+file_template: |
+  <!doctype html>
+  <html>
+  <head>
+    <meta charset="utf-8" />
+    <title>{{ .context.meta.subject | unquote }}</title>
+  </head>
+  <body style="margin:0;padding:24px;background:#f4f4f4">
+    <div style="display:none;max-height:0;overflow:hidden">{{ .context.meta.preview | unquote }}</div>
+    <table cellpadding="0" cellspacing="0" style="background:#fff;max-width:600px;margin:0 auto;padding:32px;border-radius:8px">
+      <tr><td>
+  {{ .body | indent 6 }}
+      </td></tr>
+    </table>
+  </body>
+  </html>

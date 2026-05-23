@@ -1,0 +1,22 @@
+# Binaries
+/capy
+/dist/
+*.exe
+*.test
+*.out
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Editor configs
+.idea/
+.vscode/
+*.swp
+*~
+
+# Local agent / tooling state (do NOT ship)
+.claude/
+
+# MkDocs build output (deployed by GitHub Actions)
+/site/

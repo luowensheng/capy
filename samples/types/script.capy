@@ -1,0 +1,3 @@
+set_email "alice@example.com"
+set_status "todo"
+set_slug "hello-world"

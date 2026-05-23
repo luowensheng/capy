@@ -1,0 +1,37 @@
+{
+  "name": "capy",
+  "displayName": "Capy",
+  "description": "Syntax highlighting for Capy (.capy) and validation for Capy libraries (lib.yaml).",
+  "version": "0.1.0",
+  "publisher": "luowensheng",
+  "engines": { "vscode": "^1.80.0" },
+  "categories": ["Programming Languages"],
+  "keywords": ["capy", "transpiler", "dsl", "code generation"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/luowensheng/capy"
+  },
+  "contributes": {
+    "languages": [
+      {
+        "id": "capy",
+        "aliases": ["Capy", "capy"],
+        "extensions": [".capy"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "capy",
+        "scopeName": "source.capy",
+        "path": "./syntaxes/capy.tmLanguage.json"
+      }
+    ],
+    "yamlValidation": [
+      {
+        "fileMatch": ["**/lib.yaml", "**/lib.yml", "**/capy.yaml", "**/capy.yml"],
+        "url": "https://raw.githubusercontent.com/luowensheng/capy/main/schemas/library.schema.json"
+      }
+    ]
+  }
+}

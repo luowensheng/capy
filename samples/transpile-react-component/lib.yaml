@@ -1,0 +1,86 @@
+# Component DSL → React function component with hooks.
+#
+# A compact spec produces an idiomatic React component file: imports,
+# typed props (TypeScript), useState for each state field, useEffect
+# for lifecycle hooks, and a JSX render function.
+
+extension: tsx
+output_file: ""
+
+context:
+  imports: ["react"]
+  state: []
+  props: []
+  effects: []
+
+functions:
+  component:
+    args:
+      - { kind: literal, value: "component" }
+      - { kind: capture, name: name, type: ident }
+    block: { closer: end }
+    template: |
+      import React, { useState, useEffect } from "react";
+
+      type {{ .name }}Props = {
+      {{- range .context.props }}
+        {{ .name }}: {{ .type | unquote }};
+      {{- end }}
+      };
+
+      export function {{ .name }}(props: {{ .name }}Props) {
+      {{- range .context.state }}
+        const [{{ .name }}, set{{ .Name }}] = useState<{{ .type | unquote }}>({{ .init }});
+      {{- end }}
+      {{- range .context.effects }}
+
+        useEffect(() => {
+          {{ .body | unquote }}
+        }, [{{ .deps | unquote }}]);
+      {{- end }}
+
+        return (
+      {{ .body | indent 6 }}
+        );
+      }
+
+  prop:
+    args:
+      - { kind: literal, value: "prop" }
+      - { kind: capture, name: name, type: ident }
+      - { kind: literal, value: ":" }
+      - { kind: capture, name: t, type: any }
+    template: ""
+    run: |
+      append context.props {name: name, type: t}
+
+  state:
+    args:
+      - { kind: literal, value: "state" }
+      - { kind: capture, name: name, type: ident }
+      - { kind: literal, value: ":" }
+      - { kind: capture, name: t, type: any }
+      - { kind: literal, value: "=" }
+      - { kind: capture, name: init, type: any }
+    template: ""
+    run: |
+      set context.tmp_name name
+      append context.state {name: name, Name: name, type: t, init: init}
+
+  effect:
+    args:
+      - { kind: literal, value: "effect" }
+      - { kind: capture, name: deps, type: any }
+      - { kind: capture, name: body, type: any }
+    template: ""
+    run: |
+      append context.effects {deps: deps, body: body}
+
+  # `render <jsx>` — the render body. The JSX is passed through as raw text.
+  render:
+    args:
+      - { kind: literal, value: "render" }
+      - { kind: capture, name: jsx, type: any }
+    template: "{{ .jsx | unquote }}\n"
+
+  end: {}

@@ -1,0 +1,5 @@
+header  "📦 Build complete"
+section "Branch *main* built in *4m 12s* and is ready to deploy."
+divider
+section "Tests: 124/124 passing\nCoverage: 82%"
+button  "View build" "https://ci.example.com/build/1234"

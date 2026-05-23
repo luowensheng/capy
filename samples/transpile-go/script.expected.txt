@@ -1,0 +1,17 @@
+package model
+
+type User struct {
+    ID int
+    Name string
+    Email string
+    CreatedAt time.Time
+
+}
+type Post struct {
+    ID int
+    AuthorID int
+    Body string
+
+}
+
+// imports needed: time 

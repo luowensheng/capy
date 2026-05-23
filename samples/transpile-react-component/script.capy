@@ -1,0 +1,11 @@
+component Counter
+    prop  label : "string"
+    prop  initial : "number"
+
+    state count : "number" = 0
+    state hidden : "boolean" = false
+
+    effect "count" "document.title = 'count: ' + count"
+
+    render "<div><h1>{props.label}: {count}</h1><button onClick={() => setCount(count + 1)}>+1</button><button onClick={() => setHidden(!hidden)}>toggle</button>{!hidden && <p>visible</p>}</div>"
+end

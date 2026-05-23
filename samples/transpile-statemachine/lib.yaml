@@ -1,0 +1,37 @@
+# State machine DSL → Mermaid state diagram.
+extension: mmd
+output_file: ""
+
+functions:
+  machine:
+    args:
+      - { kind: literal, value: "machine" }
+      - { kind: capture, name: name, type: ident }
+    block: { closer: end }
+    template: |
+      stateDiagram-v2
+        [*] --> {{ .name }}
+      {{ .body | indent 2 }}
+
+  state:
+    args:
+      - { kind: literal, value: "state" }
+      - { kind: capture, name: name, type: ident }
+    template: "state {{ .name }}\n"
+
+  transition:
+    args:
+      - { kind: capture, name: from, type: ident }
+      - { kind: literal, value: "->" }
+      - { kind: capture, name: to, type: ident }
+      - { kind: literal, value: "on" }
+      - { kind: capture, name: event, type: any }
+    template: "{{ .from }} --> {{ .to }} : {{ .event | unquote }}\n"
+
+  final:
+    args:
+      - { kind: literal, value: "final" }
+      - { kind: capture, name: name, type: ident }
+    template: "{{ .name }} --> [*]\n"
+
+  end: {}

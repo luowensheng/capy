@@ -1,0 +1,43 @@
+openapi: 3.0.0
+info:
+  title: Capy API
+  version: 1.0.0
+
+paths:
+  /users:
+    get:
+      summary: List users
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+  /users:
+    post:
+      summary: Create user
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+  /posts/{id}:
+    get:
+      summary: Get post
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+
+components:
+  schemas:
+    User:
+      type: object
+    Post:
+      type: object

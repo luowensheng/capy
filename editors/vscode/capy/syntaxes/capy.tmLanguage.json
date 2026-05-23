@@ -1,0 +1,72 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Capy",
+  "scopeName": "source.capy",
+  "fileTypes": ["capy"],
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#string" },
+    { "include": "#template" },
+    { "include": "#number" },
+    { "include": "#keyword-value" },
+    { "include": "#bracket" },
+    { "include": "#punct" },
+    { "include": "#identifier" }
+  ],
+  "repository": {
+    "comment": {
+      "name": "comment.line.number-sign.capy",
+      "match": "#.*$"
+    },
+    "string": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.capy",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [{ "name": "constant.character.escape.capy", "match": "\\\\." }]
+        },
+        {
+          "name": "string.quoted.single.capy",
+          "begin": "'",
+          "end": "'",
+          "patterns": [{ "name": "constant.character.escape.capy", "match": "\\\\." }]
+        }
+      ]
+    },
+    "template": {
+      "name": "string.quoted.backtick.capy",
+      "begin": "`",
+      "end": "`",
+      "patterns": [
+        {
+          "name": "meta.interpolation.capy",
+          "begin": "\\$\\{",
+          "end": "\\}",
+          "patterns": [{ "include": "#identifier" }]
+        },
+        { "name": "constant.character.escape.capy", "match": "\\\\." }
+      ]
+    },
+    "number": {
+      "name": "constant.numeric.capy",
+      "match": "\\b-?[0-9]+(\\.[0-9]+)?\\b"
+    },
+    "keyword-value": {
+      "name": "constant.language.capy",
+      "match": "\\b(true|false|null)\\b"
+    },
+    "bracket": {
+      "name": "punctuation.bracket.capy",
+      "match": "[\\{\\}\\[\\]\\(\\)]"
+    },
+    "punct": {
+      "name": "keyword.operator.capy",
+      "match": "[=!<>+\\-*/%&|^~?:,.;@$]+"
+    },
+    "identifier": {
+      "name": "variable.other.capy",
+      "match": "[A-Za-z_][A-Za-z0-9_]*"
+    }
+  }
+}

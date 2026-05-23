@@ -1,0 +1,18 @@
+table users
+    pk     id
+    unique email "varchar(255)"
+    col    name  "varchar(255) NOT NULL"
+    col    created_at "timestamptz NOT NULL DEFAULT now()"
+end
+
+table posts
+    pk     id
+    fk     author_id -> users
+    col    title "varchar(255) NOT NULL"
+    col    body  "text"
+    col    created_at "timestamptz NOT NULL DEFAULT now()"
+end
+
+index users email
+index posts author_id
+index posts created_at

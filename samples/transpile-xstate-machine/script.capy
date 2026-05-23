@@ -1,0 +1,9 @@
+machine traffic_light green
+
+state green
+state yellow
+state red
+
+on green  "TICK" -> yellow
+on yellow "TICK" -> red
+on red    "TICK" -> green

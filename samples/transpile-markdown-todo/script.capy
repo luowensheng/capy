@@ -1,0 +1,9 @@
+section "Today"
+todo "Write the launch blog post"
+done  "Tag v0.1.0"
+todo  "Test install script on Linux"
+
+section "This week"
+todo "Publish VS Code extension"
+todo "Set up Discussions"
+done "Move .codestyle to docs"

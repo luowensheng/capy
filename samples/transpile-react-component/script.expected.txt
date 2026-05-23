@@ -1,0 +1,20 @@
+import React, { useState, useEffect } from "react";
+
+type CounterProps = {
+  label: string;
+  initial: number;
+};
+
+export function Counter(props: CounterProps) {
+  const [count, setcount] = useState<number>(0);
+  const [hidden, sethidden] = useState<boolean>(false);
+
+  useEffect(() => {
+    document.title = 'count: ' + count
+  }, [count]);
+
+  return (
+      <div><h1>{props.label}: {count}</h1><button onClick={() => setCount(count + 1)}>+1</button><button onClick={() => setHidden(!hidden)}>toggle</button>{!hidden && <p>visible</p>}</div>
+
+  );
+}

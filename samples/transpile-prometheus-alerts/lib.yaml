@@ -1,0 +1,72 @@
+# Alert DSL → Prometheus alert rules YAML.
+extension: yml
+output_file: ""
+
+context:
+  alerts: []
+
+functions:
+  group:
+    args:
+      - { kind: literal, value: "group" }
+      - { kind: capture, name: name, type: ident }
+    template: ""
+    run: |
+      set context.group_name name
+
+  alert:
+    args:
+      - { kind: literal, value: "alert" }
+      - { kind: capture, name: name, type: ident }
+    block: { closer: end }
+    template: ""
+    run: |
+      append context.alerts {name: name, expr: context.last_expr, for: context.last_for, severity: context.last_sev, summary: context.last_summary}
+
+  expr:
+    args:
+      - { kind: literal, value: "expr" }
+      - { kind: capture, name: e, type: any }
+    template: ""
+    run: |
+      set context.last_expr e
+
+  for:
+    args:
+      - { kind: literal, value: "for" }
+      - { kind: capture, name: d, type: any }
+    template: ""
+    run: |
+      set context.last_for d
+
+  severity:
+    args:
+      - { kind: literal, value: "severity" }
+      - { kind: capture, name: s, type: any }
+    template: ""
+    run: |
+      set context.last_sev s
+
+  summary:
+    args:
+      - { kind: literal, value: "summary" }
+      - { kind: capture, name: t, type: any }
+    template: ""
+    run: |
+      set context.last_summary t
+
+  end: {}
+
+file_template: |
+  groups:
+    - name: {{ .context.group_name }}
+      rules:
+  {{- range .context.alerts }}
+        - alert: {{ .name }}
+          expr: {{ .expr }}
+          for: {{ .for }}
+          labels:
+            severity: {{ .severity }}
+          annotations:
+            summary: {{ .summary }}
+  {{- end }}

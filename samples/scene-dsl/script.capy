@@ -1,0 +1,5 @@
+scene.create_sphere moon, {"size": 16, "color": "#888"}
+scene.create_ring   ring_a, {
+    "thickness": 2,
+    "color": "#ff6f00"
+}

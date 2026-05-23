@@ -1,0 +1,56 @@
+# Resource DSL → Kubernetes manifest.
+extension: yaml
+output_file: ""
+
+context:
+  metadata: {}
+  spec: {}
+
+functions:
+  deployment:
+    args:
+      - { kind: literal, value: "deployment" }
+      - { kind: capture, name: name, type: ident }
+    template: ""
+    run: |
+      set context.metadata.name name
+      set context.metadata.kind "Deployment"
+
+  image:
+    args:
+      - { kind: literal, value: "image" }
+      - { kind: capture, name: img, type: any }
+    template: ""
+    run: |
+      set context.spec.image img
+
+  replicas:
+    args:
+      - { kind: literal, value: "replicas" }
+      - { kind: capture, name: n, type: int }
+    template: ""
+    run: |
+      set context.spec.replicas n
+
+  port:
+    args:
+      - { kind: literal, value: "port" }
+      - { kind: capture, name: p, type: int }
+    template: ""
+    run: |
+      set context.spec.containerPort p
+
+file_template: |
+  apiVersion: apps/v1
+  kind: {{ .context.metadata.kind }}
+  metadata:
+    name: {{ .context.metadata.name }}
+  spec:
+    replicas: {{ .context.spec.replicas }}
+    template:
+      spec:
+        containers:
+          - name: {{ .context.metadata.name }}
+            image: {{ .context.spec.image }}
+            ports:
+              - containerPort: {{ .context.spec.containerPort }}

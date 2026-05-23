@@ -1,0 +1,10 @@
+package math_test
+
+test AddPositive
+    assert_eq result 7
+    assert_true positive
+end
+
+test SubtractZero
+    assert_eq diff 0
+end

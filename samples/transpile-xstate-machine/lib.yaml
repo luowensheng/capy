@@ -1,0 +1,59 @@
+# State DSL → XState v5 machine definition in TypeScript.
+extension: ts
+output_file: ""
+
+context:
+  states: []
+  transitions: []
+
+functions:
+  machine:
+    args:
+      - { kind: literal, value: "machine" }
+      - { kind: capture, name: name, type: ident }
+      - { kind: capture, name: initial, type: ident }
+    template: ""
+    run: |
+      set context.machine_name name
+      set context.initial_state initial
+
+  state:
+    args:
+      - { kind: literal, value: "state" }
+      - { kind: capture, name: name, type: ident }
+    template: ""
+    run: |
+      append context.states name
+
+  on:
+    args:
+      - { kind: literal, value: "on" }
+      - { kind: capture, name: from, type: ident }
+      - { kind: capture, name: event, type: any }
+      - { kind: literal, value: "->" }
+      - { kind: capture, name: to, type: ident }
+    template: ""
+    run: |
+      append context.transitions {from: from, event: event, to: to}
+
+file_template: |
+  import { createMachine } from "xstate";
+
+  export const {{ .context.machine_name }} = createMachine({
+    id: "{{ .context.machine_name }}",
+    initial: "{{ .context.initial_state }}",
+    states: {
+  {{- range .context.states }}
+      {{ . }}: {
+        on: {
+  {{- $st := . }}
+  {{- range $.context.transitions }}
+    {{- if eq .from $st }}
+          {{ .event | unquote }}: "{{ .to }}",
+    {{- end }}
+  {{- end }}
+        },
+      },
+  {{- end }}
+    },
+  });

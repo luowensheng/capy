@@ -1,0 +1,8 @@
+set_name "my-project"
+set_version "1.2.3"
+
+depend on "express"
+depend on "lodash"
+
+script build = "go build ./..."
+script test  = "go test ./..."

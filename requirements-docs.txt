@@ -1,0 +1,3 @@
+# Pin via the workflow if you want stability across builds.
+mkdocs-material
+pymdown-extensions

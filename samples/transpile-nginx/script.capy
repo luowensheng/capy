@@ -1,0 +1,10 @@
+server "capy.dev" {
+    listen 443
+    root "/var/www/capy"
+    proxy "/api" to "http://localhost:8080"
+}
+
+server "blog.capy.dev" {
+    listen 443
+    root "/var/www/blog"
+}

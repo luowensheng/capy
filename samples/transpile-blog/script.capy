@@ -1,0 +1,11 @@
+title  "Launching Capy"
+date   "2026-05-23"
+author "Capy authors"
+tag    "release"
+tag    "go"
+
+h2 "Why"
+para "I keep writing tiny parsers. Capy is the engine I wished I had."
+
+h2 "How"
+para "A YAML file is the entire grammar. Capy reads source against it and renders templates."

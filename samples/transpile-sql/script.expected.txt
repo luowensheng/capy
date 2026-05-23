@@ -1,0 +1,4 @@
+-- table: users
+SELECT id FROM users WHERE active;
+SELECT name FROM users WHERE verified;
+INSERT INTO users VALUES [1, "alice", "alice@example.com"];

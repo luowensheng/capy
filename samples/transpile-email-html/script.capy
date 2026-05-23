@@ -1,0 +1,9 @@
+subject "Welcome to Capy"
+preview "Your account is ready."
+
+heading "Welcome to Capy!"
+para    "Thanks for signing up. You're all set to start building DSLs."
+para    "Click below to read the getting-started guide."
+button  "Get started" "https://capy.dev/getting-started"
+divider
+footer  "Sent by Capy. Unsubscribe at capy.dev/unsubscribe."

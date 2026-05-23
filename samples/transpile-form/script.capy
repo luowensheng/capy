@@ -1,0 +1,5 @@
+form "/contact"
+    field name "text" "Your name"
+    field email "email" "Email address"
+    textarea message "Message"
+end

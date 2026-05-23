@@ -1,0 +1,3 @@
+# An empty library: no functions, no types, no patterns. The engine has zero
+# default grammar — so this rejects every source file.
+extension: txt

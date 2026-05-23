@@ -1,0 +1,15 @@
+server {
+    server_name capy.dev;
+    listen 443;
+    root /var/www/capy;
+    location /api {
+        proxy_pass http://localhost:8080;
+    }
+
+}
+server {
+    server_name blog.capy.dev;
+    listen 443;
+    root /var/www/blog;
+
+}

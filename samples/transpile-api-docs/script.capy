@@ -1,0 +1,13 @@
+route GET "/users"
+    summary "List all users."
+    param  limit "int"    "Maximum number of users to return."
+    returns 200 "ok"
+end
+
+route POST "/users"
+    summary "Create a user."
+    param   name  "string" "Display name."
+    param   email "string" "Contact email."
+    returns 201 "created"
+    returns 400 "invalid payload"
+end

@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luowensheng.github.io/capy/schemas/library.schema.json",
+  "title": "Capy Library",
+  "description": "Schema for a Capy library YAML file (capy v0.1.x).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "extension": {
+      "type": "string",
+      "description": "Informational target file extension (e.g. 'py', 'json', 'sql')."
+    },
+    "output_file": {
+      "type": "string",
+      "description": "If set, capy writes the rendered output here instead of stdout."
+    },
+    "context": {
+      "type": "object",
+      "description": "Initial schema for the accumulated context (lists, maps, scalars).",
+      "additionalProperties": true
+    },
+    "types": {
+      "type": "object",
+      "description": "Library-defined argument types.",
+      "additionalProperties": {
+        "$ref": "#/$defs/TypeDef"
+      }
+    },
+    "functions": {
+      "type": "object",
+      "description": "Every source-language construct.",
+      "additionalProperties": {
+        "$ref": "#/$defs/FuncDef"
+      }
+    },
+    "file_template": {
+      "type": "string",
+      "description": "Top-level Go text/template; receives .body and .context."
+    }
+  },
+  "$defs": {
+    "TypeDef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "base": {
+          "type": "string",
+          "enum": ["any", "string", "int", "float", "bool"],
+          "description": "Built-in kind check applied first."
+        },
+        "pattern": {
+          "type": "string",
+          "description": "Regex applied to the value's string form."
+        },
+        "options": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Enum membership."
+        }
+      }
+    },
+    "FuncDef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "args": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ArgEntry" },
+          "description": "Ordered list of args: literals + typed captures."
+        },
+        "template": {
+          "type": "string",
+          "description": "Go text/template rendered into the output body per match."
+        },
+        "run": {
+          "type": "string",
+          "description": "Inner-DSL snippet that mutates the accumulated context."
+        },
+        "block": {
+          "oneOf": [
+            { "$ref": "#/$defs/BlockClosed" },
+            { "$ref": "#/$defs/BlockDelim" }
+          ],
+          "description": "Marks this function as a block opener. Exactly one mode."
+        },
+        "priority": {
+          "type": "integer",
+          "description": "Higher wins on ambiguous matches. Default 0."
+        }
+      }
+    },
+    "ArgEntry": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "value"],
+          "properties": {
+            "kind": { "const": "literal" },
+            "value": { "type": "string", "description": "Literal text to match exactly." }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "name"],
+          "properties": {
+            "kind": { "const": "capture" },
+            "name": { "type": "string", "description": "Capture name (used in template/run)." },
+            "type": {
+              "type": "string",
+              "description": "Built-in kind or a library type name.",
+              "examples": ["any", "ident", "raw", "string", "int", "float", "bool"]
+            }
+          }
+        }
+      ]
+    },
+    "BlockClosed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["closer"],
+      "properties": {
+        "closer": {
+          "type": "string",
+          "description": "Name of another function that closes this block. Body delimited by INDENT/DEDENT."
+        }
+      }
+    },
+    "BlockDelim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["open", "close"],
+      "properties": {
+        "open":  { "type": "string", "description": "Opening delimiter token (e.g. '{')." },
+        "close": { "type": "string", "description": "Closing delimiter token (e.g. '}')." }
+      }
+    }
+  }
+}

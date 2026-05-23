@@ -1,0 +1,10 @@
+FROM "golang:1.23-alpine"
+WORKDIR "/src"
+COPY "go.mod" "."
+COPY "go.sum" "."
+RUN "go mod download"
+COPY "." "."
+RUN "go build -o /app ./cmd/capy"
+ENV PORT=8080
+EXPOSE 8080
+ENTRYPOINT ["/app"]

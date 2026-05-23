@@ -1,0 +1,70 @@
+# Extension DSL → Chrome MV3 manifest.json + a minimal content script.
+extension: json
+output_file: ""
+
+context:
+  meta: {}
+  permissions: []
+  hosts: []
+  content_scripts: []
+
+functions:
+  name:
+    args:
+      - { kind: literal, value: "name" }
+      - { kind: capture, name: v, type: any }
+    template: ""
+    run: |
+      set context.meta.name v
+
+  version:
+    args:
+      - { kind: literal, value: "version" }
+      - { kind: capture, name: v, type: any }
+    template: ""
+    run: |
+      set context.meta.version v
+
+  description:
+    args:
+      - { kind: literal, value: "description" }
+      - { kind: capture, name: v, type: any }
+    template: ""
+    run: |
+      set context.meta.description v
+
+  permission:
+    args:
+      - { kind: literal, value: "permission" }
+      - { kind: capture, name: p, type: any }
+    template: ""
+    run: |
+      append context.permissions p
+
+  host:
+    args:
+      - { kind: literal, value: "host" }
+      - { kind: capture, name: h, type: any }
+    template: ""
+    run: |
+      append context.hosts h
+
+  content_script:
+    args:
+      - { kind: literal, value: "content_script" }
+      - { kind: capture, name: file, type: any }
+      - { kind: capture, name: matches, type: any }
+    template: ""
+    run: |
+      append context.content_scripts {js: [file], matches: [matches]}
+
+file_template: |
+  {
+    "manifest_version": 3,
+    "name": {{ .context.meta.name | toQuoted }},
+    "version": {{ .context.meta.version | toQuoted }},
+    "description": {{ .context.meta.description | toQuoted }},
+    "permissions": {{ .context.permissions | toJSON }},
+    "host_permissions": {{ .context.hosts | toJSON }},
+    "content_scripts": {{ .context.content_scripts | toJSON }}
+  }

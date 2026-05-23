@@ -1,0 +1,15 @@
+import json
+import os
+
+say "starting"
+
+x = 42
+items = ["a", "b", "c"]
+
+if x
+    say "x is truthy"
+end
+
+loop item in items
+    say item
+end

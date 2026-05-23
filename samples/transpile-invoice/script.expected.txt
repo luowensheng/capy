@@ -1,0 +1,11 @@
+# Invoice INV-2026-001
+
+**To:** Acme Corp
+**Date:** 2026-05-23
+
+| Item | Qty | Unit price |
+|---|---:|---:|
+| Consulting hours | 8 | $120.00 |
+| Capy enterprise plan | 1 | $2000.00 |
+| Onboarding workshop | 2 | $500.00 |
+

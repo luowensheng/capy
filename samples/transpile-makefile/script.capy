@@ -1,0 +1,4 @@
+task build "go build -o capy ./cmd/capy"
+task test "go test ./..."
+task lint "golangci-lint run"
+default build

@@ -1,0 +1,19 @@
+from flask import Flask, jsonify, request
+
+app = Flask(__name__)
+
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify(ok=True)
+
+@app.route("/users", methods=["GET"])
+def list_users():
+    return jsonify([{'id': 1, 'name': 'Alice'}])
+
+@app.route("/users", methods=["POST"])
+def create_user():
+    u = request.get_json(); u['id'] = 42; return jsonify(u), 201
+
+
+if __name__ == "__main__":
+    app.run(port=8000)

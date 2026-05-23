@@ -1,0 +1,124 @@
+site_name: Capy
+site_description: A transpiler engine driven by a YAML library. Define a tiny source language; get a code generator.
+site_url: https://luowensheng.github.io/capy/
+repo_url: https://github.com/luowensheng/capy
+repo_name: luowensheng/capy
+edit_uri: edit/main/docs/
+copyright: Copyright &copy; 2026 Capy authors
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: amber
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: amber
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.footer
+    - content.code.copy
+    - content.code.annotate
+    - content.action.edit
+    - content.action.view
+    - search.suggest
+    - search.highlight
+    - toc.follow
+  icon:
+    repo: fontawesome/brands/github
+    edit: material/pencil
+  font:
+    text: Inter
+    code: JetBrains Mono
+
+nav:
+  - Home: index.md
+  - Getting started: getting-started.md
+  - For AI agents:
+    - Overview & patterns: ai-agents.md
+    - Single-page brief: CAPY_FOR_LLMS.md
+  - Guide:
+    - Library authoring: library-authoring.md
+    - Language reference: language-reference.md
+    - Inner DSL: inner-dsl.md
+    - Types: types.md
+    - Templates: templates.md
+    - Block functions: block-functions.md
+    - Transpiler patterns: transpiler-patterns.md
+    - CLI reference: cli.md
+  - Tutorials:
+    - "1 · Hello world DSL": tutorials/01-hello-world.md
+    - "2 · Building a config DSL": tutorials/02-config-dsl.md
+    - "3 · Transpiling to Python": tutorials/03-transpile-python.md
+    - "4 · Custom operators": tutorials/04-custom-operators.md
+  - Reference:
+    - Feature list: features.md
+    - Cookbook: cookbook.md
+    - FAQ: faq.md
+    - Architecture: architecture.md
+    - Roadmap: roadmap.md
+    - Migration guide: migration-guide.md
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+      toc_depth: 3
+  - pymdownx.betterem
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+plugins:
+  - search
+
+# Exclude internal-only notes from the published site.
+not_in_nav: |
+  /launch/*.md
+  /legacy/*.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/luowensheng/capy
+  generator: false

@@ -1,0 +1,9 @@
+program "sum-demo"
+    var x = 5
+    var y = 7
+
+    add x y
+    store result
+
+    exit 0
+end

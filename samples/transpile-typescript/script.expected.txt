@@ -1,0 +1,13 @@
+// Models: User, Post
+export interface User {
+  id: "number";
+  name: "string";
+  email: "string";
+
+}
+export interface Post {
+  id: "number";
+  author: "string";
+
+}
+

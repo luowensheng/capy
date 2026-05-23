@@ -1,0 +1,8 @@
+port 8080
+
+use "morgan('combined')"
+
+get  "/health"           "res.json({ok: true})"
+get  "/users"            "res.json([{id: 1, name: 'Alice'}])"
+post "/users"            "const u = req.body; res.status(201).json({id: 42, ...u})"
+get  "/users/:id"        "res.json({id: req.params.id, name: 'Mock'})"

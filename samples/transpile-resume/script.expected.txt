@@ -1,0 +1,24 @@
+# Ada Lovelace
+## Software Engineer
+📧 ada@example.com
+
+## Skills
+
+- Go
+- Compiler design
+- Domain modeling
+
+## Experience
+
+### Senior Engineer @ Acme Corp (2022–present)
+
+- Built a transpiler engine in 1500 lines of Go
+- Reduced build times by 40% through codegen consolidation
+
+
+### Engineer @ Bytes Ltd (2019–2022)
+
+- Maintained a CRUD platform serving 2M users
+- Authored the team's CI/CD playbook
+
+

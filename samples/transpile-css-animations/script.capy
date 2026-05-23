@@ -1,0 +1,26 @@
+keyframe pulse
+    at 0   transform = "scale(1)"
+    at 50  transform = "scale(1.1)"
+    at 100 transform = "scale(1)"
+end
+
+keyframe slide_in
+    at 0   transform = "translateX(-100%)"
+    at 100 transform = "translateX(0)"
+end
+
+class ".card"
+    background = "#fff"
+    border_radius = "8px"
+    padding = "1rem"
+    box_shadow = "0 2px 8px rgba(0,0,0,.1)"
+    animate slide_in "0.4s" "ease-out"
+end
+
+class ".badge"
+    display = "inline-block"
+    padding = "0.25rem 0.5rem"
+    background = "#4dd"
+    color = "#fff"
+    animate pulse "1.2s" "ease-in-out"
+end

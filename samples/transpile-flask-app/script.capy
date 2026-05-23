@@ -1,0 +1,5 @@
+port 8000
+
+route get  "/health"      health    "return jsonify(ok=True)"
+route get  "/users"       list_users "return jsonify([{'id': 1, 'name': 'Alice'}])"
+route post "/users"       create_user "u = request.get_json(); u['id'] = 42; return jsonify(u), 201"

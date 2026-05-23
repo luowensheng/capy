@@ -1,0 +1,35 @@
+# A tiny query DSL → SQL.
+#
+# Source looks like:
+#   table users
+#   select id name email from users where active
+#
+# Output is plain SQL.
+
+extension: sql
+output_file: ""
+
+functions:
+  table:
+    args:
+      - { kind: literal, value: "table" }
+      - { kind: capture, name: name, type: ident }
+    template: "-- table: {{ .name }}\n"
+
+  select:
+    args:
+      - { kind: literal, value: "select" }
+      - { kind: capture, name: cols, type: any }
+      - { kind: literal, value: "from" }
+      - { kind: capture, name: tbl, type: ident }
+      - { kind: literal, value: "where" }
+      - { kind: capture, name: cond, type: any }
+    template: "SELECT {{ .cols }} FROM {{ .tbl }} WHERE {{ .cond }};\n"
+
+  insert:
+    args:
+      - { kind: literal, value: "insert" }
+      - { kind: literal, value: "into" }
+      - { kind: capture, name: tbl, type: ident }
+      - { kind: capture, name: vals, type: any }
+    template: "INSERT INTO {{ .tbl }} VALUES {{ .vals }};\n"

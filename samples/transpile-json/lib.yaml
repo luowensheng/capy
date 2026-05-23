@@ -1,0 +1,51 @@
+# Same engine, totally different target: produce a JSON config file.
+#
+# Each function's run snippet ADDS to context. No template emits text — the
+# file_template at the end serializes the whole context as JSON.
+
+extension: json
+output_file: ""
+
+context:
+  name: ""
+  version: "0.1"
+  dependencies: []
+  scripts: {}
+
+functions:
+  set_name:
+    args:
+      - { kind: capture, name: n, type: any }
+    template: ""
+    run: |
+      set context.name n
+
+  set_version:
+    args:
+      - { kind: capture, name: v, type: any }
+    template: ""
+    run: |
+      set context.version v
+
+  depend:
+    args:
+      - { kind: literal, value: "depend" }
+      - { kind: literal, value: "on" }
+      - { kind: capture, name: pkg, type: any }
+    template: ""
+    run: |
+      append context.dependencies pkg
+
+  script:
+    args:
+      - { kind: literal, value: "script" }
+      - { kind: capture, name: name, type: ident }
+      - { kind: literal, value: "=" }
+      - { kind: capture, name: cmd, type: any }
+    template: ""
+    run: |
+      set context.scripts[name] cmd
+
+# The whole output is the rendered context as pretty JSON.
+file_template: |
+  {{ .context | toJSONIndent }}

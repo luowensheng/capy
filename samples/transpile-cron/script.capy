@@ -1,0 +1,3 @@
+daily 3 do "/usr/local/bin/backup.sh"
+weekly 0 do "/usr/local/bin/weekly-cleanup.sh"
+every "*/15 * * * *" do "/usr/local/bin/heartbeat"

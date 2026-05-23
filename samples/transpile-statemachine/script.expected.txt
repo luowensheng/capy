@@ -1,0 +1,11 @@
+stateDiagram-v2
+  [*] --> Order
+  state Pending
+  state Paid
+  state Shipped
+  state Delivered
+  Pending --> Paid : payment
+  Paid --> Shipped : fulfill
+  Shipped --> Delivered : arrival
+  Delivered --> [*]
+

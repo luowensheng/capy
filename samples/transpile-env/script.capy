@@ -1,0 +1,4 @@
+set DATABASE_URL "postgres://localhost/mydb"
+set PORT 5432
+set DEBUG true
+set REGION "us-east-1"

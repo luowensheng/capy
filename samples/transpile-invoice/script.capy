@@ -1,0 +1,7 @@
+number "INV-2026-001"
+date   "2026-05-23"
+bill_to "Acme Corp"
+
+item "Consulting hours"     8 "$120.00"
+item "Capy enterprise plan" 1 "$2000.00"
+item "Onboarding workshop"  2 "$500.00"

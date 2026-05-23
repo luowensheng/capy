@@ -1,0 +1,11 @@
+flowchart LR
+    node a "Source"
+    node b "Lexer"
+    node c "Parser"
+    node d "Evaluator"
+    node e "Output"
+    a -> b
+    b -> c
+    c -> d : "match + render"
+    d -> e
+end

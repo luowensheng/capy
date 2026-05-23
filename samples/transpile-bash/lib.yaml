@@ -1,0 +1,30 @@
+# Script DSL → defensive bash with error handling + logging.
+extension: sh
+output_file: ""
+
+functions:
+  header:
+    args:
+      - { kind: literal, value: "script" }
+      - { kind: capture, name: name, type: any }
+    template: |
+      #!/usr/bin/env bash
+      # script: {{ .name }}
+      set -euo pipefail
+      log() { printf "[%s] %s\n" "$(date +%T)" "$*"; }
+
+  step:
+    args:
+      - { kind: literal, value: "step" }
+      - { kind: capture, name: name, type: any }
+      - { kind: capture, name: cmd, type: any }
+    template: |
+      log step: {{ .name }}
+      {{ .cmd }}
+
+  guard:
+    args:
+      - { kind: literal, value: "require" }
+      - { kind: capture, name: cmd, type: ident }
+    template: |
+      command -v {{ .cmd }} >/dev/null || { echo "missing: {{ .cmd }}"; exit 1; }

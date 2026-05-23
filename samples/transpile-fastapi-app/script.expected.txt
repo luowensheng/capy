@@ -1,0 +1,29 @@
+from fastapi import FastAPI
+from pydantic import BaseModel
+
+app = FastAPI()
+
+class User(BaseModel):
+    id: int
+    name: str
+    email: str
+
+
+class Post(BaseModel):
+    id: int
+    author_id: int
+    body: str
+
+
+@app.get("/users", response_model=User)
+def list_users():
+    return {}
+
+@app.get("/users/{id}", response_model=User)
+def get_user():
+    return {}
+
+@app.post("/posts", response_model=Post)
+def create_post():
+    return {}
+

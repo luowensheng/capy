@@ -1,0 +1,15 @@
+package model
+import "time"
+
+type User
+    field ID int
+    field Name string
+    field Email string
+    field CreatedAt time.Time
+end
+
+type Post
+    field ID int
+    field AuthorID int
+    field Body string
+end

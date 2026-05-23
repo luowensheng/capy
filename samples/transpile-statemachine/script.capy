@@ -1,0 +1,12 @@
+machine Order
+    state Pending
+    state Paid
+    state Shipped
+    state Delivered
+
+    Pending -> Paid on "payment"
+    Paid -> Shipped on "fulfill"
+    Shipped -> Delivered on "arrival"
+
+    final Delivered
+end

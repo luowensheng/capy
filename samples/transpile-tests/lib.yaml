@@ -1,0 +1,45 @@
+# Test-case DSL → Go test functions.
+extension: go
+output_file: ""
+
+functions:
+  package:
+    args:
+      - { kind: literal, value: "package" }
+      - { kind: capture, name: name, type: ident }
+    template: |
+      package {{ .name }}
+
+      import "testing"
+
+  test:
+    args:
+      - { kind: literal, value: "test" }
+      - { kind: capture, name: name, type: ident }
+    block: { closer: end }
+    template: |
+
+      func Test_{{ .name }}(t *testing.T) {
+      {{ .body | indent 4 }}
+      }
+
+  assert_eq:
+    args:
+      - { kind: literal, value: "assert_eq" }
+      - { kind: capture, name: a, type: any }
+      - { kind: capture, name: b, type: any }
+    template: |
+      if got, want := {{ .a }}, {{ .b }}; got != want {
+          t.Errorf("got %v want %v", got, want)
+      }
+
+  assert_true:
+    args:
+      - { kind: literal, value: "assert_true" }
+      - { kind: capture, name: expr, type: any }
+    template: |
+      if !({{ .expr }}) {
+          t.Errorf("expected true: {{ .expr }}")
+      }
+
+  end: {}

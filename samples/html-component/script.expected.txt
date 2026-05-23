@@ -1,0 +1,6 @@
+<div id="card" class="card">
+  <h3>"Welcome"</h3>
+  <p>"Capy makes transpilers easy."</p>
+  <p>"Try editing this component."</p>
+
+</div>

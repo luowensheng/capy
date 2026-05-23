@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# script: "release-builder"
+set -euo pipefail
+log() { printf "[%s] %s\n" "$(date +%T)" "$*"; }
+command -v go >/dev/null || { echo "missing: go"; exit 1; }
+command -v git >/dev/null || { echo "missing: git"; exit 1; }
+log step: "build"
+"go build -o /tmp/capy ./cmd/capy"
+log step: "smoke"
+"/tmp/capy version"
+log step: "tag"
+"git tag v0.1.0"

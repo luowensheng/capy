@@ -1,0 +1,25 @@
+; program: sum-demo
+
+section .data
+    x: dq 0
+    y: dq 0
+
+section .text
+    global _start
+
+_start:
+    ; var x = 5
+    mov rax, 5
+    mov [x], rax
+    ; var y = 7
+    mov rax, 7
+    mov [y], rax
+    ; add x y
+    mov rax, [x]
+    add rax, [y]
+    mov [result], rax
+    ; exit 0
+    mov rdi, 0
+    mov rax, 60
+    syscall
+

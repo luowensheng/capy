@@ -1,0 +1,12 @@
+{
+  "dependencies": [
+    "express",
+    "lodash"
+  ],
+  "name": "my-project",
+  "scripts": {
+    "build": "go build ./...",
+    "test": "go test ./..."
+  },
+  "version": "1.2.3"
+}

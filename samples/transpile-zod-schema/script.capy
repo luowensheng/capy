@@ -1,0 +1,11 @@
+schema UserInput
+    field email : "z.string().email()"
+    field password : "z.string().min(8)"
+    field name : "z.string().optional()"
+end
+
+schema PostInput
+    field title : "z.string().min(1).max(200)"
+    field body : "z.string()"
+    field tags : "z.array(z.string()).default([])"
+end

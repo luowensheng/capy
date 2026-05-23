@@ -1,0 +1,44 @@
+# Endpoint DSL → FastAPI app with Pydantic models.
+extension: py
+output_file: ""
+
+functions:
+  model:
+    args:
+      - { kind: literal, value: "model" }
+      - { kind: capture, name: name, type: ident }
+    block: { closer: end }
+    template: |
+
+      class {{ .name }}(BaseModel):
+      {{ .body | indent 4 }}
+
+  field:
+    args:
+      - { kind: literal, value: "field" }
+      - { kind: capture, name: name, type: ident }
+      - { kind: literal, value: ":" }
+      - { kind: capture, name: t, type: any }
+    template: "{{ .name }}: {{ .t | unquote }}\n"
+
+  endpoint:
+    args:
+      - { kind: literal, value: "endpoint" }
+      - { kind: capture, name: method, type: ident }
+      - { kind: capture, name: path, type: any }
+      - { kind: capture, name: handler, type: ident }
+      - { kind: capture, name: returns, type: any }
+    template: |
+
+      @app.{{ .method }}({{ .path }}, response_model={{ .returns | unquote }})
+      def {{ .handler }}():
+          return {}
+
+  end: {}
+
+file_template: |
+  from fastapi import FastAPI
+  from pydantic import BaseModel
+
+  app = FastAPI()
+  {{ .body }}

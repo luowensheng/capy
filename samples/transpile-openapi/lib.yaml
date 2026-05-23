@@ -1,0 +1,65 @@
+# Endpoint DSL → OpenAPI 3 YAML.
+extension: yaml
+output_file: ""
+
+context:
+  info: {}
+  paths: []
+  schemas: []
+
+functions:
+  info:
+    args:
+      - { kind: literal, value: "info" }
+      - { kind: capture, name: title, type: any }
+      - { kind: capture, name: version, type: any }
+    template: ""
+    run: |
+      set context.info.title title
+      set context.info.version version
+
+  path:
+    args:
+      - { kind: literal, value: "path" }
+      - { kind: capture, name: method, type: ident }
+      - { kind: capture, name: route, type: any }
+      - { kind: capture, name: summary, type: any }
+      - { kind: capture, name: response, type: any }
+    template: ""
+    run: |
+      append context.paths {method: method, route: route, summary: summary, response: response}
+
+  schema:
+    args:
+      - { kind: literal, value: "schema" }
+      - { kind: capture, name: name, type: ident }
+    template: ""
+    run: |
+      append context.schemas {name: name}
+
+file_template: |
+  openapi: 3.0.0
+  info:
+    title: {{ .context.info.title }}
+    version: {{ .context.info.version }}
+
+  paths:
+  {{- range .context.paths }}
+    {{ .route }}:
+      {{ .method }}:
+        summary: {{ .summary }}
+        responses:
+          '200':
+            description: ok
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/{{ .response }}'
+  {{- end }}
+
+  components:
+    schemas:
+  {{- range .context.schemas }}
+      {{ .name }}:
+        type: object
+  {{- end }}

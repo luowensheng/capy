@@ -1,0 +1,188 @@
+# Capy
+
+> A transpiler engine with zero default grammar. You define a tiny source
+> language in YAML; Capy generates the target output.
+
+[![CI](https://github.com/luowensheng/capy/actions/workflows/ci.yml/badge.svg)](https://github.com/luowensheng/capy/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/luowensheng/capy?include_prereleases)](https://github.com/luowensheng/capy/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Go Report Card](https://goreportcard.com/badge/github.com/luowensheng/capy)](https://goreportcard.com/report/github.com/luowensheng/capy)
+
+Capy reads source code, matches each statement against library-defined
+function shapes, and for each match (a) renders a template fragment and
+(b) updates an accumulated **context**. A top-level `file_template:`
+assembles `body` + `context` into the final output file.
+
+There are **no built-in keywords**. `if`, `loop`, `=`, blocks, comments —
+all defined by the library, or not at all if your DSL doesn't need them.
+
+---
+
+## 30-second teaser
+
+**`lib.yaml`**
+
+```yaml
+extension: py
+context: { imports: [] }
+
+functions:
+  import:
+    args:
+      - { kind: literal, value: "import" }
+      - { kind: capture, name: name, type: ident }
+    template: ""
+    run: |
+      append context.imports name
+
+  say:
+    args:
+      - { kind: capture, name: msg, type: any }
+    template: "print({{ .msg }})\n"
+
+file_template: |
+  {{- range .context.imports }}import {{ . }}
+  {{ end }}
+  {{- .body -}}
+```
+
+**`script.capy`**
+
+```
+import json
+import os
+say "hello, world"
+```
+
+**Output (Python)**
+
+```python
+import json
+import os
+print("hello, world")
+```
+
+The library is the entire grammar. Swap it and the same engine produces
+HTML, SQL, JSON, Makefiles — anything you can describe with `args:` +
+`template:` + `run:`.
+
+---
+
+## Why Capy is genuinely useful for AI agents
+
+Two properties most people miss:
+
+1. **Token compression** — agents emit short structured Capy; the engine
+   deterministically expands it into long boilerplate-heavy target code.
+   12 lines of game-DSL → 67-line runnable canvas game (**5.5×**). 9 lines
+   of landing-page DSL → 54 lines of responsive HTML+CSS (**6.0×**). In
+   an agent loop the gap compounds — the library is reusable across
+   hundreds of invocations.
+
+2. **Sandboxing for free** — the library is the complete grammar. A SQL
+   DSL whose `TableName` is an enum **cannot** emit `DROP TABLE`. A
+   shell DSL whose `Command` whitelists `ls`/`cat`/`grep` **cannot**
+   invoke `rm`. No prompt injection, no post-hoc filtering. The grammar
+   is the boundary.
+
+See [docs/ai-agents.md](docs/ai-agents.md) for the token-cost math,
+sandboxing patterns, and integrations with Claude Code, Cursor,
+Continue, and Aider.
+
+> **50 worked demos** live under [`samples/`](samples/). Compact DSLs
+> producing substantial useful targets: a full HTML5 canvas game (12
+> lines → 67 lines of working HTML+CSS+JS), responsive landing pages,
+> React TSX components with hooks, complete Express/Flask/FastAPI
+> servers, production code generators (Python, TypeScript, Go, NASM
+> x86-64, Bash, Cobra CLIs), infrastructure (Terraform, Kubernetes,
+> Dockerfile, nginx, systemd, GitHub Actions, Prometheus alerts, Chrome
+> extensions), schemas (PostgreSQL DDL, Prisma, Zod, XState, GraphQL,
+> Protobuf, OpenAPI), and docs (CV, changelog, invoice, blog, Slack
+> Block Kit, Mermaid diagrams).
+
+---
+
+## Install
+
+```sh
+# Go users
+go install github.com/luowensheng/capy/cmd/capy@latest
+
+# macOS / Linux (binary, no Go required)
+curl -fsSL https://raw.githubusercontent.com/luowensheng/capy/main/scripts/install.sh | sh
+
+# Homebrew
+brew install luowensheng/tap/capy
+```
+
+Or download a binary from the [releases page](https://github.com/luowensheng/capy/releases).
+
+---
+
+## Quick try
+
+```sh
+git clone https://github.com/luowensheng/capy
+cd capy
+go build -o capy ./cmd/capy
+./capy run samples/transpile-py/lib.yaml samples/transpile-py/script.capy
+```
+
+---
+
+## Documentation
+
+| Reading order | What it covers |
+|---|---|
+| [docs/getting-started.md](docs/getting-started.md) | Five-minute tour |
+| [docs/library-authoring.md](docs/library-authoring.md) | Writing your own `lib.yaml` |
+| [docs/language-reference.md](docs/language-reference.md) | Surface grammar + lexer behavior |
+| [docs/inner-dsl.md](docs/inner-dsl.md) | The `run:` operations |
+| [docs/types.md](docs/types.md) | `base` / `pattern` / `options` |
+| [docs/templates.md](docs/templates.md) | Template helpers |
+| [docs/cookbook.md](docs/cookbook.md) | Recipes for common patterns |
+| [docs/CAPY_FOR_LLMS.md](docs/CAPY_FOR_LLMS.md) | One-page brief for AI agents |
+| [docs/roadmap.md](docs/roadmap.md) | What's planned |
+
+Six worked examples live under [samples/](samples/) — each is a complete
+library + script + expected output + README.
+
+---
+
+## Why Capy?
+
+Capy is not a templating engine (it has a parser) and not a parser
+generator (it has a runtime). It's something in between: **a
+configurable transpiler**, with the configuration written as data.
+
+Compared to alternatives:
+
+| Tool                    | What it does                       | What Capy adds |
+|-------------------------|------------------------------------|----------------|
+| Jinja, Go templates     | Substitute values into text        | A real parser + accumulated context + types |
+| ANTLR, lark, tree-sitter| Parse a language you defined       | Targeted at code generation; ships with a runtime; no Java/Python required |
+| Custom Go transpilers   | Full control                       | A YAML schema replaces hundreds of lines of code per project |
+| gomplate, ytt           | Powerful templating with data      | A source language with custom syntax, not just template inputs |
+
+Use Capy when you'd otherwise hand-roll a tiny parser to drive
+code-generation: configuration languages, scaffolding tools, DSLs for
+domain experts, source-to-source rewrites.
+
+---
+
+## Status
+
+**Pre-1.0.** The library YAML schema may change between minor versions. See
+[CHANGELOG.md](CHANGELOG.md) for what's stable; [docs/roadmap.md](docs/roadmap.md)
+for what's planned.
+
+---
+
+## Contributing
+
+PRs welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). For bigger ideas,
+open an issue first.
+
+## License
+
+[MIT](LICENSE) — © 2026 Capy authors.

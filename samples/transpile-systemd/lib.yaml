@@ -1,0 +1,68 @@
+# Service definition → systemd unit file.
+extension: service
+output_file: ""
+
+context:
+  unit: {}
+  service: {}
+  install: {}
+
+functions:
+  description:
+    args:
+      - { kind: literal, value: "description" }
+      - { kind: capture, name: t, type: any }
+    template: ""
+    run: |
+      set context.unit.Description t
+
+  after:
+    args:
+      - { kind: literal, value: "after" }
+      - { kind: capture, name: t, type: any }
+    template: ""
+    run: |
+      set context.unit.After t
+
+  exec:
+    args:
+      - { kind: literal, value: "exec" }
+      - { kind: capture, name: cmd, type: any }
+    template: ""
+    run: |
+      set context.service.ExecStart cmd
+
+  restart:
+    args:
+      - { kind: literal, value: "restart" }
+      - { kind: capture, name: policy, type: any }
+    template: ""
+    run: |
+      set context.service.Restart policy
+
+  user:
+    args:
+      - { kind: literal, value: "user" }
+      - { kind: capture, name: u, type: ident }
+    template: ""
+    run: |
+      set context.service.User u
+
+  wanted_by:
+    args:
+      - { kind: literal, value: "wanted_by" }
+      - { kind: capture, name: target, type: any }
+    template: ""
+    run: |
+      set context.install.WantedBy target
+
+file_template: |
+  [Unit]
+  {{ range $k, $v := .context.unit }}{{ $k }}={{ $v }}
+  {{ end }}
+  [Service]
+  {{ range $k, $v := .context.service }}{{ $k }}={{ $v }}
+  {{ end }}
+  [Install]
+  {{ range $k, $v := .context.install }}{{ $k }}={{ $v }}
+  {{ end }}

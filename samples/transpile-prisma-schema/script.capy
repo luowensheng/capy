@@ -1,0 +1,15 @@
+datasource "postgresql" "env('DATABASE_URL')"
+generator "prisma-client-js"
+
+model User
+    id    id
+    field email "String @unique"
+    field name  "String?"
+end
+
+model Post
+    id    id
+    field title "String"
+    field body  "String"
+    relation author User
+end

@@ -1,0 +1,4 @@
+component card "Welcome" {
+    text "Capy makes transpilers easy."
+    text "Try editing this component."
+}

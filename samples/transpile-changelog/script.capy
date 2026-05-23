@@ -1,0 +1,11 @@
+version "0.2.0" "2026-06-15"
+    added   "Configurable surface syntax"
+    added   "else arm on inner if"
+    fixed   "Indentation tokenisation edge case"
+end
+
+version "0.1.0" "2026-05-23"
+    added   "Initial public release"
+    added   "Type system with pattern + options"
+    added   "Two block modes"
+end

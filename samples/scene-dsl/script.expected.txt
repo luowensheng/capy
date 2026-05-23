@@ -1,0 +1,2 @@
+<sphere id=moon opts={"size": 16, "color": "#888"}/>
+<ring id=ring_a opts={"thickness": 2, "color": "#ff6f00"}/>

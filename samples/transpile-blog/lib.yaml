@@ -1,0 +1,59 @@
+# Blog DSL → markdown post with YAML front matter.
+extension: md
+output_file: ""
+
+context:
+  meta: {}
+  tags: []
+
+functions:
+  title:
+    args:
+      - { kind: literal, value: "title" }
+      - { kind: capture, name: t, type: any }
+    template: ""
+    run: |
+      set context.meta.title t
+
+  date:
+    args:
+      - { kind: literal, value: "date" }
+      - { kind: capture, name: d, type: any }
+    template: ""
+    run: |
+      set context.meta.date d
+
+  author:
+    args:
+      - { kind: literal, value: "author" }
+      - { kind: capture, name: a, type: any }
+    template: ""
+    run: |
+      set context.meta.author a
+
+  tag:
+    args:
+      - { kind: literal, value: "tag" }
+      - { kind: capture, name: t, type: any }
+    template: ""
+    run: |
+      append context.tags t
+
+  para:
+    args:
+      - { kind: literal, value: "para" }
+      - { kind: capture, name: text, type: any }
+    template: "\n{{ .text | unquote }}\n"
+
+  heading:
+    args:
+      - { kind: literal, value: "h2" }
+      - { kind: capture, name: t, type: any }
+    template: "\n## {{ .t | unquote }}\n"
+
+file_template: |
+  ---
+  {{ range $k, $v := .context.meta }}{{ $k }}: {{ $v }}
+  {{ end }}tags: {{ .context.tags | toJSON }}
+  ---
+  {{ .body }}

@@ -1,0 +1,21 @@
+name: ci
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+        - name: checkout
+          run: "actions/checkout@v4"
+        - name: test
+          run: "go test ./..."
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+        - name: checkout
+          run: "actions/checkout@v4"
+        - name: lint
+          run: "golangci-lint run"
+
+

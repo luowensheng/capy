@@ -1,0 +1,17 @@
+groups:
+  - name: capy_alerts
+    rules:
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~'5..'}[5m]) > 0.05
+        for: 10m
+        labels:
+          severity: page
+        annotations:
+          summary: 5xx error rate > 5% for 10 minutes
+      - alert: SlowResponse
+        expr: histogram_quantile(0.95, http_request_duration_seconds) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: p95 latency > 2s

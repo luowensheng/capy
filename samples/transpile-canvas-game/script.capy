@@ -1,0 +1,12 @@
+game "Block Hopper" 480 320
+
+sprite player "#4dd" 220 280 40 20
+sprite enemy  "#f64" 100 100 30 30
+sprite goal   "#fd0" 420 20  20 20
+
+on_key "ArrowLeft"  player -4 0
+on_key "ArrowRight" player  4 0
+on_key "ArrowUp"    player  0 -4
+on_key "ArrowDown"  player  0 4
+
+tick enemy_bounce "sprites.enemy.x += 1; if (sprites.enemy.x > 450) sprites.enemy.x = 0;"

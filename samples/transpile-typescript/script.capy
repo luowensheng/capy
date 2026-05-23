@@ -1,0 +1,10 @@
+model User
+    field id : "number"
+    field name : "string"
+    field email : "string"
+end
+
+model Post
+    field id : "number"
+    field author : "string"
+end

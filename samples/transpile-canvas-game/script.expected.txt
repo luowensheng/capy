@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Block Hopper</title>
+  <style>
+    body { margin: 0; background: #111; display: grid; place-items: center; min-height: 100vh; font-family: monospace; color: #eee; }
+    canvas { background: #222; border: 1px solid #444; image-rendering: pixelated; }
+    h1 { margin: 0 0 8px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div>
+    <h1>Block Hopper — arrow keys</h1>
+    <canvas id="c" width="480" height="320"></canvas>
+  </div>
+  <script>
+    const canvas = document.getElementById("c");
+    const ctx = canvas.getContext("2d");
+    const keys = {};
+    window.addEventListener("keydown", e => keys[e.key] = true);
+    window.addEventListener("keyup",   e => keys[e.key] = false);
+
+    const sprites = {
+      player: { x: 220, y: 280, w: 40, h: 20, color: "#4dd" },
+      enemy: { x: 100, y: 100, w: 30, h: 30, color: "#f64" },
+      goal: { x: 420, y: 20, w: 20, h: 20, color: "#fd0" },
+    };
+
+    function update() {
+      if (keys["ArrowLeft"]) {
+        sprites.player.x += -4;
+        sprites.player.y += 0;
+      }
+      if (keys["ArrowRight"]) {
+        sprites.player.x += 4;
+        sprites.player.y += 0;
+      }
+      if (keys["ArrowUp"]) {
+        sprites.player.x += 0;
+        sprites.player.y += -4;
+      }
+      if (keys["ArrowDown"]) {
+        sprites.player.x += 0;
+        sprites.player.y += 4;
+      }
+      // tick: enemy_bounce
+      sprites.enemy.x += 1; if (sprites.enemy.x > 450) sprites.enemy.x = 0;
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (const s of Object.values(sprites)) {
+        ctx.fillStyle = s.color;
+        ctx.fillRect(s.x, s.y, s.w, s.h);
+      }
+    }
+
+    function loop() {
+      update();
+      draw();
+      requestAnimationFrame(loop);
+    }
+    loop();
+  </script>
+</body>
+</html>

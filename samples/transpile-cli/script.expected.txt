@@ -1,0 +1,21 @@
+package cli
+
+import "github.com/spf13/cobra"
+
+
+var serveCmd = &cobra.Command{
+    Use:   "serve",
+    Short: "start the server",
+}
+
+var migrateCmd = &cobra.Command{
+    Use:   "migrate",
+    Short: "run database migrations",
+}
+
+
+func init() {
+    serveCmd.Flags().String("port", "", "TCP port to listen on")
+    serveCmd.Flags().String("host", "", "host to bind")
+    migrateCmd.Flags().String("dir", "", "migration directory")
+}

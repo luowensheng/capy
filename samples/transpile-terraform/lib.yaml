@@ -1,0 +1,42 @@
+# Infrastructure DSL → Terraform HCL.
+extension: tf
+output_file: ""
+
+functions:
+  provider:
+    args:
+      - { kind: literal, value: "provider" }
+      - { kind: capture, name: name, type: any }
+      - { kind: capture, name: region, type: any }
+    template: |
+      provider {{ .name }} {
+        region = {{ .region }}
+      }
+
+  resource:
+    args:
+      - { kind: literal, value: "resource" }
+      - { kind: capture, name: type, type: any }
+      - { kind: capture, name: name, type: ident }
+    block: { closer: end }
+    template: |
+
+      resource {{ .type }} {{ .name | toQuoted }} {
+      {{ .body | indent 2 }}
+      }
+
+  set:
+    args:
+      - { kind: capture, name: key, type: ident }
+      - { kind: literal, value: "=" }
+      - { kind: capture, name: value, type: any }
+    template: "{{ .key }} = {{ .value }}\n"
+
+  tag:
+    args:
+      - { kind: literal, value: "tag" }
+      - { kind: capture, name: k, type: any }
+      - { kind: capture, name: v, type: any }
+    template: "tags = { {{ .k }} = {{ .v }} }\n"
+
+  end: {}

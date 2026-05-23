@@ -1,0 +1,14 @@
+# Tasks
+
+## Today
+
+- [ ] Write the launch blog post
+- [x] Tag v0.1.0
+- [ ] Test install script on Linux
+
+## This week
+
+- [ ] Publish VS Code extension
+- [ ] Set up Discussions
+- [x] Move .codestyle to docs
+

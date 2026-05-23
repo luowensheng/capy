@@ -1,0 +1,15 @@
+model User
+    field id : "int"
+    field name : "str"
+    field email : "str"
+end
+
+model Post
+    field id : "int"
+    field author_id : "int"
+    field body : "str"
+end
+
+endpoint get  "/users"      list_users User
+endpoint get  "/users/{id}" get_user   User
+endpoint post "/posts"      create_post Post

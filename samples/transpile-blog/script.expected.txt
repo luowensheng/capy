@@ -1,0 +1,15 @@
+---
+author: Capy authors
+date: 2026-05-23
+title: Launching Capy
+tags: ["release","go"]
+---
+
+## Why
+
+I keep writing tiny parsers. Capy is the engine I wished I had.
+
+## How
+
+A YAML file is the entire grammar. Capy reads source against it and renders templates.
+

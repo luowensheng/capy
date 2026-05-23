@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Capy — DSLs in YAML</title>
+  <style>
+    :root { --fg: #111; --bg: #fff; --muted: #666; --accent: #4dd; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; color: var(--fg); background: var(--bg); }
+    .hero { padding: 6rem 1.5rem; text-align: center; }
+    .hero h1 { font-size: clamp(2rem, 5vw, 4rem); margin: 0 0 .5rem; }
+    .hero p  { font-size: 1.25rem; color: var(--muted); max-width: 600px; margin: 0 auto 2rem; }
+    .ctas a {
+      display: inline-block; margin: 0 .5rem; padding: .9rem 1.5rem;
+      background: var(--accent); color: #fff; text-decoration: none;
+      border-radius: 6px; font-weight: 600;
+    }
+    .ctas a + a { background: transparent; color: var(--fg); border: 1px solid var(--fg); }
+    .features { padding: 4rem 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; max-width: 1100px; margin: 0 auto; }
+    .feature h3 { margin: .5rem 0; }
+    .feature p  { color: var(--muted); margin: 0; }
+    .icon { font-size: 2.5rem; }
+  </style>
+</head>
+<body>
+  <section class="hero">
+    <h1>Define a language. Get a transpiler.</h1>
+    <p>Capy is a tiny engine that turns a YAML file into a working code generator.</p>
+    <div class="ctas">
+      <a href="/docs/getting-started">Get started</a>
+      <a href="https://github.com/luowensheng/capy">GitHub</a>
+    </div>
+  </section>
+
+  <section class="features">
+    <div class="feature">
+      <div class="icon">🌱</div>
+      <h3>Zero default grammar</h3>
+      <p>Your library is the language.</p>
+    </div>
+    <div class="feature">
+      <div class="icon">⚡</div>
+      <h3>Fast</h3>
+      <p>Single-binary Go. Boots in milliseconds.</p>
+    </div>
+    <div class="feature">
+      <div class="icon">🧩</div>
+      <h3>50 sample DSLs</h3>
+      <p>From Python to Mermaid to a real x86-64 transpiler.</p>
+    </div>
+  </section>
+</body>
+</html>

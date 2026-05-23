@@ -1,0 +1,16 @@
+type User
+    required id : "ID"
+    required name : "String"
+    field    email : "String"
+    field    role : "UserRole"
+end
+
+enum UserRole
+    variant ADMIN
+    variant MEMBER
+    variant GUEST
+end
+
+type Query
+    field users : "[User!]!"
+end

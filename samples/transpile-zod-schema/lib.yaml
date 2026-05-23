@@ -1,0 +1,40 @@
+# Type DSL → Zod schema in TypeScript.
+extension: ts
+output_file: ""
+
+context:
+  exports: []
+
+functions:
+  schema:
+    args:
+      - { kind: literal, value: "schema" }
+      - { kind: capture, name: name, type: ident }
+    block: { closer: end }
+    template: |
+
+      export const {{ .name }} = z.object({
+      {{ .body | indent 2 }}
+      });
+    run: |
+      append context.exports name
+
+  field:
+    args:
+      - { kind: literal, value: "field" }
+      - { kind: capture, name: name, type: ident }
+      - { kind: literal, value: ":" }
+      - { kind: capture, name: t, type: any }
+    template: "{{ .name }}: {{ .t | unquote }},\n"
+
+  end: {}
+
+file_template: |
+  import { z } from "zod";
+  {{ .body }}
+
+  export type Schemas = {
+  {{- range .context.exports }}
+    {{ . }}: z.infer<typeof {{ . }}>;
+  {{- end }}
+  };

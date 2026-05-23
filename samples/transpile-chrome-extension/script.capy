@@ -1,0 +1,10 @@
+name        "Capy Helper"
+version     "0.1.0"
+description "Adds Capy-related shortcuts to capy.dev."
+
+permission "storage"
+permission "activeTab"
+
+host "https://capy.dev/*"
+
+content_script "content.js" "https://capy.dev/*"

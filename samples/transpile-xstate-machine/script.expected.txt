@@ -1,0 +1,23 @@
+import { createMachine } from "xstate";
+
+export const traffic_light = createMachine({
+  id: "traffic_light",
+  initial: "green",
+  states: {
+    green: {
+      on: {
+        TICK: "yellow",
+      },
+    },
+    yellow: {
+      on: {
+        TICK: "red",
+      },
+    },
+    red: {
+      on: {
+        TICK: "green",
+      },
+    },
+  },
+});

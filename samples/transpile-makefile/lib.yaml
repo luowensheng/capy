@@ -1,0 +1,43 @@
+# Declarative tasks → Makefile.
+#
+# Source:
+#   task build "go build ./..."
+#   task test "go test ./..."
+#   default build
+#
+# Output: a runnable Makefile.
+
+extension: mk
+output_file: ""
+
+context:
+  default_task: ""
+  tasks: {}             # name → command
+
+functions:
+  task:
+    args:
+      - { kind: literal, value: "task" }
+      - { kind: capture, name: name, type: ident }
+      - { kind: capture, name: cmd, type: any }
+    template: ""
+    run: |
+      set context.tasks[name] cmd
+
+  default:
+    args:
+      - { kind: literal, value: "default" }
+      - { kind: capture, name: name, type: ident }
+    template: ""
+    run: |
+      set context.default_task name
+
+file_template: |
+  .PHONY: {{ range $name, $_ := .context.tasks }}{{ $name }} {{ end }}
+  {{ if .context.default_task }}
+  .DEFAULT_GOAL := {{ .context.default_task }}
+  {{ end }}
+  {{ range $name, $cmd := .context.tasks }}
+  {{ $name }}:
+  	{{ $cmd }}
+  {{ end }}

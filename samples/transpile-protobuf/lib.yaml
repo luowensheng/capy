@@ -1,0 +1,45 @@
+# Schema DSL → .proto file.
+extension: proto
+output_file: ""
+
+functions:
+  syntax:
+    args:
+      - { kind: literal, value: "syntax" }
+      - { kind: capture, name: v, type: any }
+    template: "syntax = {{ .v }};\n\n"
+
+  package:
+    args:
+      - { kind: literal, value: "package" }
+      - { kind: capture, name: name, type: ident }
+    template: "package {{ .name }};\n\n"
+
+  message:
+    args:
+      - { kind: literal, value: "message" }
+      - { kind: capture, name: name, type: ident }
+    block: { closer: end }
+    template: |
+      message {{ .name }} {
+      {{ .body | indent 2 }}
+      }
+
+  field:
+    args:
+      - { kind: capture, name: t, type: any }
+      - { kind: capture, name: name, type: ident }
+      - { kind: literal, value: "=" }
+      - { kind: capture, name: tag, type: int }
+    template: "{{ .t }} {{ .name }} = {{ .tag }};\n"
+
+  repeated:
+    args:
+      - { kind: literal, value: "repeated" }
+      - { kind: capture, name: t, type: any }
+      - { kind: capture, name: name, type: ident }
+      - { kind: literal, value: "=" }
+      - { kind: capture, name: tag, type: int }
+    template: "repeated {{ .t }} {{ .name }} = {{ .tag }};\n"
+
+  end: {}

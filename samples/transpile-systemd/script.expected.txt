@@ -1,0 +1,12 @@
+[Unit]
+After=network.target
+Description=Capy daemon
+
+[Service]
+ExecStart=/usr/local/bin/capyd --config /etc/capyd.yaml
+Restart=always
+User=capyd
+
+[Install]
+WantedBy=multi-user.target
+

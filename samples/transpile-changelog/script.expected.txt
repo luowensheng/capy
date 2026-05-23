@@ -1,0 +1,15 @@
+# Changelog
+
+## [0.2.0] — 2026-06-15
+
+- Added: Configurable surface syntax
+- Added: else arm on inner if
+- Fixed: Indentation tokenisation edge case
+
+## [0.1.0] — 2026-05-23
+
+- Added: Initial public release
+- Added: Type system with pattern + options
+- Added: Two block modes
+
+

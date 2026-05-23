@@ -1,0 +1,73 @@
+# CV/Resume DSL → markdown resume.
+extension: md
+output_file: ""
+
+context:
+  meta: {}
+  skills: []
+
+functions:
+  name:
+    args:
+      - { kind: literal, value: "name" }
+      - { kind: capture, name: v, type: any }
+    template: ""
+    run: |
+      set context.meta.name v
+
+  title:
+    args:
+      - { kind: literal, value: "title" }
+      - { kind: capture, name: v, type: any }
+    template: ""
+    run: |
+      set context.meta.title v
+
+  email:
+    args:
+      - { kind: literal, value: "email" }
+      - { kind: capture, name: v, type: any }
+    template: ""
+    run: |
+      set context.meta.email v
+
+  skill:
+    args:
+      - { kind: literal, value: "skill" }
+      - { kind: capture, name: s, type: any }
+    template: ""
+    run: |
+      append context.skills s
+
+  experience:
+    args:
+      - { kind: literal, value: "experience" }
+      - { kind: capture, name: company, type: any }
+      - { kind: capture, name: role, type: any }
+      - { kind: capture, name: range, type: any }
+    block: { closer: end }
+    template: |
+
+      ### {{ .role | unquote }} @ {{ .company | unquote }} ({{ .range | unquote }})
+
+      {{ .body }}
+
+  bullet:
+    args:
+      - { kind: literal, value: "-" }
+      - { kind: capture, name: text, type: any }
+    template: "- {{ .text | unquote }}\n"
+
+  end: {}
+
+file_template: |
+  # {{ .context.meta.name }}
+  ## {{ .context.meta.title }}
+  📧 {{ .context.meta.email }}
+
+  ## Skills
+
+  {{ range .context.skills }}- {{ . }}
+  {{ end }}
+  ## Experience
+  {{ .body }}

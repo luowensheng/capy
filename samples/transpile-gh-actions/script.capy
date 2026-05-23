@@ -1,0 +1,13 @@
+name "ci"
+on "push"
+on "pull_request"
+
+job test "ubuntu-latest"
+    step "checkout" "actions/checkout@v4"
+    step "test" "go test ./..."
+end
+
+job lint "ubuntu-latest"
+    step "checkout" "actions/checkout@v4"
+    step "lint" "golangci-lint run"
+end

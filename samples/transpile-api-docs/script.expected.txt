@@ -1,0 +1,21 @@
+# API Reference
+
+2 routes defined.
+
+### `GET /users`
+
+List all users.
+
+- `limit` (int): Maximum number of users to return.
+- `200`: ok
+
+### `POST /users`
+
+Create a user.
+
+- `name` (string): Display name.
+- `email` (string): Contact email.
+- `201`: created
+- `400`: invalid payload
+
+

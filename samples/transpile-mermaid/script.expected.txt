@@ -1,0 +1,11 @@
+flowchart LR
+    a[Source]
+    b[Lexer]
+    c[Parser]
+    d[Evaluator]
+    e[Output]
+    a --> b
+    b --> c
+    c -->|match + render| d
+    d --> e
+

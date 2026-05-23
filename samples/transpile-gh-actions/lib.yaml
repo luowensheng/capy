@@ -1,0 +1,51 @@
+# Workflow DSL → GitHub Actions YAML.
+extension: yml
+output_file: ""
+
+context:
+  triggers: []
+
+functions:
+  name:
+    args:
+      - { kind: literal, value: "name" }
+      - { kind: capture, name: n, type: any }
+    template: ""
+    run: |
+      set context.workflow_name n
+
+  on:
+    args:
+      - { kind: literal, value: "on" }
+      - { kind: capture, name: ev, type: any }
+    template: ""
+    run: |
+      append context.triggers ev
+
+  job:
+    args:
+      - { kind: literal, value: "job" }
+      - { kind: capture, name: jname, type: ident }
+      - { kind: capture, name: runs_on, type: any }
+    block: { closer: end }
+    template: |
+      {{ .jname }}:
+        runs-on: {{ .runs_on | unquote }}
+        steps:
+      {{ .body }}
+
+  step:
+    args:
+      - { kind: literal, value: "step" }
+      - { kind: capture, name: name, type: any }
+      - { kind: capture, name: cmd, type: any }
+    template: "      - name: {{ .name | unquote }}\n        run: {{ .cmd }}\n"
+
+  end: {}
+
+file_template: |
+  name: {{ .context.workflow_name | unquote }}
+  on: [{{ range $i, $t := .context.triggers }}{{ if $i }}, {{ end }}{{ $t | unquote }}{{ end }}]
+
+  jobs:
+  {{ .body | indent 2 }}

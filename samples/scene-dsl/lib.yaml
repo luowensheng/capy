@@ -1,0 +1,18 @@
+# A pure declarative DSL: every line is a function call that emits HTML.
+# No control flow defined here — none is needed for this DSL.
+
+extension: html
+output_file: ""
+
+functions:
+  scene.create_sphere:
+    args:
+      - { kind: capture, name: id, type: raw }
+      - { kind: capture, name: opts, type: any }
+    template: "<sphere id={{ .id }} opts={{ .opts }}/>\n"
+
+  scene.create_ring:
+    args:
+      - { kind: capture, name: id, type: raw }
+      - { kind: capture, name: opts, type: any }
+    template: "<ring id={{ .id }} opts={{ .opts }}/>\n"

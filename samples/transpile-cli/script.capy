@@ -1,0 +1,6 @@
+command serve  "start the server"
+flag serve port "int"    "TCP port to listen on"
+flag serve host "string" "host to bind"
+
+command migrate "run database migrations"
+flag migrate dir "string" "migration directory"

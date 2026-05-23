@@ -1,0 +1,41 @@
+{
+  "blocks": [
+    {
+      "text": {
+        "text": "📦 Build complete",
+        "type": "plain_text"
+      },
+      "type": "header"
+    },
+    {
+      "text": {
+        "text": "Branch *main* built in *4m 12s* and is ready to deploy.",
+        "type": "mrkdwn"
+      },
+      "type": "section"
+    },
+    {
+      "type": "divider"
+    },
+    {
+      "text": {
+        "text": "Tests: 124/124 passingnCoverage: 82%",
+        "type": "mrkdwn"
+      },
+      "type": "section"
+    },
+    {
+      "elements": [
+        {
+          "text": {
+            "text": "View build",
+            "type": "plain_text"
+          },
+          "type": "button",
+          "url": "https://ci.example.com/build/1234"
+        }
+      ],
+      "type": "actions"
+    }
+  ]
+}

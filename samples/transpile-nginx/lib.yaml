@@ -1,0 +1,38 @@
+# nginx server-block DSL → nginx.conf snippet.
+extension: conf
+output_file: ""
+
+functions:
+  server:
+    args:
+      - { kind: literal, value: "server" }
+      - { kind: capture, name: domain, type: any }
+    block: { open: "{", close: "}" }
+    template: |
+      server {
+          server_name {{ .domain | unquote }};
+      {{ .body | indent 4 }}
+      }
+
+  listen:
+    args:
+      - { kind: literal, value: "listen" }
+      - { kind: capture, name: port, type: int }
+    template: "listen {{ .port }};\n"
+
+  root:
+    args:
+      - { kind: literal, value: "root" }
+      - { kind: capture, name: path, type: any }
+    template: "root {{ .path | unquote }};\n"
+
+  proxy:
+    args:
+      - { kind: literal, value: "proxy" }
+      - { kind: capture, name: path, type: any }
+      - { kind: literal, value: "to" }
+      - { kind: capture, name: target, type: any }
+    template: |
+      location {{ .path | unquote }} {
+          proxy_pass {{ .target | unquote }};
+      }

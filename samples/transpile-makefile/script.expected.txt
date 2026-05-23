@@ -1,0 +1,14 @@
+.PHONY: build lint test 
+
+.DEFAULT_GOAL := build
+
+
+build:
+	go build -o capy ./cmd/capy
+
+lint:
+	golangci-lint run
+
+test:
+	go test ./...
+

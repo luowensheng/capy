@@ -1,0 +1,4 @@
+table users
+select id from users where active
+select name from users where verified
+insert into users [1, "alice", "alice@example.com"]
