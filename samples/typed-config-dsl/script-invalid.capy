@@ -1,0 +1,11 @@
+# Every field below violates its declared type. Capy rejects the whole
+# file at transpile time with a precise error pointing at the bad value.
+
+service "Bad Name!" version "v2"
+    env production
+    port 99999
+    owner "not-an-email"
+    log_level verbose
+    brand_color "blue"
+    tls maybe
+end

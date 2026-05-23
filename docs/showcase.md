@@ -17,6 +17,136 @@ directory if you want to clone and run them yourself.
 
 ---
 
+## 🔒 Named variables + type checking
+
+Capy captures are **named** and **typed**. Built-in kinds (`int`,
+`string`, `bool`, `ident`, …) get checked at the token level;
+library-defined types add `pattern:` (regex), `options:` (enum), and
+`base:` (inheritance). Bad input becomes a precise transpile-time
+error pointing at the offending value — not a silent mis-render or
+a runtime surprise.
+
+=== "Library — typed schema"
+
+    ```
+    # Custom types
+    type Email
+        pattern "^[^@]+@[^@]+\\.[^@]+$"
+    end
+
+    type Semver
+        pattern "^[0-9]+\\.[0-9]+\\.[0-9]+(-[a-zA-Z0-9.]+)?$"
+    end
+
+    type LogLevel
+        options "trace" "debug" "info" "warn" "error" "fatal"
+    end
+
+    type Env
+        options "dev" "staging" "prod"
+    end
+
+    type Port
+        base int                  # validation inheritance
+    end
+
+    type ServiceName
+        pattern "^[a-z][a-z0-9-]{1,30}$"
+    end
+
+    # Named typed captures
+    function service
+        arg literal "service"
+        arg capture name ServiceName   # ← named "name", typed ServiceName
+        arg literal "version"
+        arg capture ver Semver
+        block_closer end
+        template:
+            service {{ .name }} {
+              version = {{ .ver }}
+            {{ .body | indent 2 }}
+            }
+    end
+
+    function port
+        arg literal "port"
+        arg capture n Port             # ← named "n", typed Port (= int)
+        template_str "port = {{ .n }}\n"
+    end
+
+    function owner
+        arg literal "owner"
+        arg capture who Email
+        template_str "owner = {{ .who }}\n"
+    end
+    # ... env / log_level / brand_color / tls ...
+    ```
+
+=== "Valid source → clean output"
+
+    Source:
+
+    ```
+    service "api-gateway" version "2.4.1"
+        env prod
+        port 8443
+        owner "platform@example.com"
+        log_level info
+        brand_color "#4dd9c0"
+        tls true
+    end
+    ```
+
+    Generated HCL:
+
+    ```hcl
+    service api-gateway {
+      version = 2.4.1
+      env = prod
+      port = 8443
+      owner = platform@example.com
+      log_level = info
+      brand_color = #4dd9c0
+      tls = true
+    }
+    ```
+
+=== "Invalid source → precise errors"
+
+    Each line below violates its declared type:
+
+    ```
+    service "Bad Name!" version "v2"
+        env production
+        port 99999
+        owner "not-an-email"
+        log_level verbose
+        brand_color "blue"
+        tls maybe
+    end
+    ```
+
+    Running it:
+
+    ```
+    $ capy run lib.capy script-invalid.capy
+    error: function "service" arg "name": value "Bad Name!"
+           does not match pattern for type "ServiceName"
+    ```
+
+    Fix that line, re-run, hit the next error. The transpilation
+    refuses to emit until every value satisfies its type.
+
+**Why this matters.** The library *is* your config schema. New
+contributors learn what fields exist and what values are valid by
+reading the `type:` blocks — no separate spec to maintain. Typos
+like `log_level verbose` are caught at the boundary instead of
+becoming a silent no-op in production.
+
+[Full sample → `samples/typed-config-dsl/`](https://github.com/luowensheng/capy/tree/main/samples/typed-config-dsl)
+
+---
+
 ## 🕹️ Playable games — Capy is not a toy
 
 The next two tabs are **fully playable HTML5 games** generated from

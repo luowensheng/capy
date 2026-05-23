@@ -33,15 +33,23 @@ func TestGolden(t *testing.T) {
 }
 
 func runSampleGoldens(t *testing.T, dir string) {
+	// Library may be lib.yaml OR lib.capy (both supported).
 	libPath := filepath.Join(dir, "lib.yaml")
 	if _, err := os.Stat(libPath); err != nil {
-		return
+		libPath = filepath.Join(dir, "lib.capy")
+		if _, err := os.Stat(libPath); err != nil {
+			return
+		}
 	}
 	scripts, err := filepath.Glob(filepath.Join(dir, "*.capy"))
 	if err != nil {
 		t.Fatalf("glob: %v", err)
 	}
 	for _, scriptPath := range scripts {
+		// Don't run the library itself as a script.
+		if filepath.Base(scriptPath) == "lib.capy" {
+			continue
+		}
 		scriptPath := scriptPath
 		base := strings.TrimSuffix(filepath.Base(scriptPath), ".capy")
 		name := filepath.Base(dir) + "/" + base

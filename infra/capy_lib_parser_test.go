@@ -148,6 +148,45 @@ file_template:
 	}
 }
 
+func TestCapyLib_TypeBlocks(t *testing.T) {
+	src := `
+extension cfg
+
+type Email
+    pattern "^[^@]+@[^@]+\\.[^@]+$"
+end
+
+type LogLevel
+    options "debug" "info" "warn" "error"
+end
+
+type Port
+    base int
+end
+
+function noop
+    arg literal "noop"
+    template_str ""
+end
+`
+	lib, err := parseCapyLib(src)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(lib.Types) != 3 {
+		t.Fatalf("expected 3 types, got %d", len(lib.Types))
+	}
+	if lib.Types["Email"].Pattern == "" {
+		t.Errorf("Email pattern missing: %+v", lib.Types["Email"])
+	}
+	if got := lib.Types["LogLevel"].Options; len(got) != 4 || got[0] != "debug" {
+		t.Errorf("LogLevel options: %+v", got)
+	}
+	if lib.Types["Port"].Base != "int" {
+		t.Errorf("Port base: %q", lib.Types["Port"].Base)
+	}
+}
+
 func TestCapyLib_RejectsUnknownTop(t *testing.T) {
 	_, err := parseCapyLib("nonsense foo\n")
 	if err == nil || !strings.Contains(err.Error(), "unknown") {

@@ -1,0 +1,95 @@
+# Typed service-config DSL. Every field is validated against its declared
+# type at transpile time — bad input is a parse error, not a runtime
+# surprise.
+#
+# Three flavors of type checking are demonstrated:
+#
+#   1. Built-in types (ident, int, string, bool)
+#   2. Custom types with `pattern:` (regex)
+#   3. Custom types with `options:` (enum)
+#   4. Custom types with `base:` (validation inheritance)
+
+extension hcl
+
+# ─── Custom types ─────────────────────────────────────────────────────
+
+type Email
+    pattern "^[^@]+@[^@]+\\.[^@]+$"
+end
+
+type Semver
+    pattern "^[0-9]+\\.[0-9]+\\.[0-9]+(-[a-zA-Z0-9.]+)?$"
+end
+
+type HexColor
+    pattern "^#[0-9a-fA-F]{6}$"
+end
+
+type LogLevel
+    options "trace" "debug" "info" "warn" "error" "fatal"
+end
+
+type Env
+    options "dev" "staging" "prod"
+end
+
+type Port
+    base int
+end
+
+type ServiceName
+    pattern "^[a-z][a-z0-9-]{1,30}$"
+end
+
+# ─── Service config DSL ───────────────────────────────────────────────
+
+function service
+    arg literal "service"
+    arg capture name ServiceName
+    arg literal "version"
+    arg capture ver Semver
+    block_closer end
+    template:
+        service {{ .name }} {
+          version = {{ .ver }}
+        {{- "\n" }}{{ .body | indent 2 }}}
+end
+
+function env
+    arg literal "env"
+    arg capture stage Env
+    template_str "env = {{ .stage }}\n"
+end
+
+function port
+    arg literal "port"
+    arg capture n Port
+    template_str "port = {{ .n }}\n"
+end
+
+function owner
+    arg literal "owner"
+    arg capture who Email
+    template_str "owner = {{ .who }}\n"
+end
+
+function log_level
+    arg literal "log_level"
+    arg capture lvl LogLevel
+    template_str "log_level = {{ .lvl }}\n"
+end
+
+function brand_color
+    arg literal "brand_color"
+    arg capture c HexColor
+    template_str "brand_color = {{ .c }}\n"
+end
+
+function tls
+    arg literal "tls"
+    arg capture on bool
+    template_str "tls = {{ .on }}\n"
+end
+
+function end
+end

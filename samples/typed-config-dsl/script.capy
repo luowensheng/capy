@@ -1,0 +1,17 @@
+service "api-gateway" version "2.4.1"
+    env prod
+    port 8443
+    owner "platform@example.com"
+    log_level info
+    brand_color "#4dd9c0"
+    tls true
+end
+
+service "billing-worker" version "1.0.0-rc.2"
+    env staging
+    port 9090
+    owner "billing-team@example.com"
+    log_level debug
+    brand_color "#f59e0b"
+    tls false
+end

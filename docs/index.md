@@ -50,6 +50,14 @@ hide:
     against the library — sandboxed, deterministic, 5–10× fewer
     tokens. Or both. [Read the AI guide →](ai-agents.md)
 
+- :material-shield-check: **Named variables, validated types**
+
+    Every capture is a named, typed variable. Built-ins (`int`,
+    `string`, `bool`, …) plus library-defined types with `pattern:`
+    (regex), `options:` (enum), and `base:` (inheritance). Bad input
+    is a transpile-time error pointing at the offending value, not a
+    runtime surprise. [Types guide →](types.md)
+
 - :material-language-go: **Embed in your Go program — no binary required**
 
     `go get github.com/luowensheng/capy`, then your program defines

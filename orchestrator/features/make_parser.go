@@ -262,17 +262,21 @@ func (p *outerP) captureValue(t string, stop []string) (domain.CaptureValue, err
 		}
 		return domain.CaptureValue{}, fmt.Errorf("expected raw token, got %q", tok.Text)
 	}
-	// Library-defined types behave like `raw`: consume one ident-or-string
-	// token. The text is then validated against the type's base/pattern/options
-	// at evaluation time. This matches what users expect for tokens like
-	// `import json` (where `json` is the literal name, not a variable lookup).
-	if _, isLibType := p.types[t]; isLibType {
+	// Library-defined types. If the type declares a `base:` (e.g. base int),
+	// recursively dispatch to the base type's token-capture rules — that's
+	// what users expect when they write `type Port { base: int }` and then
+	// `port 8443`. Without a base, behave like `raw`: accept one ident-or-
+	// string token and defer all validation to evaluation time.
+	if td, isLibType := p.types[t]; isLibType {
+		if td.Base != "" && td.Base != "any" {
+			return p.captureValue(td.Base, stop)
+		}
 		tok := p.Peek()
-		if tok.Kind == domain.TokIdent || tok.Kind == domain.TokString {
+		if tok.Kind == domain.TokIdent || tok.Kind == domain.TokString || tok.Kind == domain.TokNumber {
 			p.Advance()
 			return domain.CaptureValue{Text: tok.Text}, nil
 		}
-		return domain.CaptureValue{}, fmt.Errorf("expected ident or string for type %q, got %q", t, tok.Text)
+		return domain.CaptureValue{}, fmt.Errorf("expected ident, string, or number for type %q, got %q", t, tok.Text)
 	}
 	// Built-in value kinds: parse a value expression (with comparison tail).
 	// We store BOTH the parsed Expr (in case future inner-DSL primitives need

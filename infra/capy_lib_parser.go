@@ -159,6 +159,17 @@ func (p *capyLibParser) parseTop() (RawLibrary, error) {
 				return lib, err
 			}
 			lib.Functions[name] = fn
+		case "type":
+			if len(tokens) < 2 {
+				return lib, p.errf("type requires a name")
+			}
+			name := tokens[1]
+			p.nextLine()
+			td, err := p.parseType()
+			if err != nil {
+				return lib, err
+			}
+			lib.Types[name] = td
 		case "file_template:":
 			p.nextLine()
 			// file_template is always the last top-level item; capture
@@ -341,6 +352,59 @@ func (p *capyLibParser) parseIndentedBlock(parentIndent int) (string, error) {
 		res = res[:len(res)-1]
 	}
 	return res, nil
+}
+
+// parseType reads `type NAME` body lines until matching `end` at column 0.
+// Body lines accept `base TYPE`, `pattern STRING`, `options STR STR ...`.
+func (p *capyLibParser) parseType() (RawType, error) {
+	var td RawType
+	for {
+		line, indent, ok := p.peekLine()
+		if !ok {
+			return td, p.errf("unexpected EOF inside type")
+		}
+		if indent == 0 {
+			tokens, err := tokenizeLibLine(line)
+			if err != nil {
+				return td, p.errf("%v", err)
+			}
+			if len(tokens) == 1 && tokens[0] == "end" {
+				p.nextLine()
+				return td, nil
+			}
+			return td, p.errf("expected `end` to close type, got %q", strings.TrimSpace(line))
+		}
+		tokens, err := tokenizeLibLine(line)
+		if err != nil {
+			return td, p.errf("%v", err)
+		}
+		if len(tokens) == 0 {
+			p.nextLine()
+			continue
+		}
+		switch tokens[0] {
+		case "base":
+			p.nextLine()
+			if len(tokens) != 2 {
+				return td, p.errf("base requires a type name")
+			}
+			td.Base = tokens[1]
+		case "pattern":
+			p.nextLine()
+			if len(tokens) != 2 {
+				return td, p.errf("pattern requires one regex string")
+			}
+			td.Pattern = tokens[1]
+		case "options":
+			p.nextLine()
+			if len(tokens) < 2 {
+				return td, p.errf("options requires one or more values")
+			}
+			td.Options = append(td.Options, tokens[1:]...)
+		default:
+			return td, p.errf("unknown directive inside type: %q", tokens[0])
+		}
+	}
 }
 
 // parseFileTemplateToEOF captures every remaining line of the file as the
