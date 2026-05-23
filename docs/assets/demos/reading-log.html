@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Emma's reading log</title>
+  <style>
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: linear-gradient(135deg, #fff4d6, #ffe4b8); font-family: "Comic Sans MS", "Marker Felt", sans-serif; color: #5a3a14; padding: 24px; }
+    .log { background: white; border: 6px dashed #f4a83c; border-radius: 16px; box-shadow: 0 10px 30px rgba(120,80,20,0.12); max-width: 580px; width: 100%; padding: 32px 36px; }
+    h1 { margin: 0; font-size: 28px; color: #d18020; text-align: center; }
+    .age { text-align: center; color: #a06820; font-size: 14px; margin-bottom: 16px; }
+    .progress { background: #fff4d6; border-radius: 999px; height: 16px; overflow: hidden; margin: 16px 0; }
+    .progress-bar { background: linear-gradient(90deg, #f4a83c, #f78b3c); height: 100%; transition: width 0.5s; }
+    .progress-label { text-align: center; font-size: 13px; color: #6a4818; margin-bottom: 24px; }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 8px 6px; color: #d18020; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; border-bottom: 2px solid #f4a83c; }
+    td { padding: 10px 6px; border-bottom: 1px dashed #f4d8a8; font-size: 15px; }
+    .pages { text-align: right; color: #a06820; font-variant-numeric: tabular-nums; }
+    .stars { color: #f4a83c; letter-spacing: 0.1em; }
+  </style>
+</head>
+<body>
+  <article class="log">
+    <h1>Emma's reading log</h1>
+    <div class="age">Age 7</div>
+    <div class="progress">
+      <div class="progress-bar" style="width: 100%"></div>
+    </div>
+    <div class="progress-label">735 of 500 pages toward this year's goal</div>
+
+    <table>
+      <tr><th>Book</th><th>Pages</th><th>Rating</th></tr>
+      <tr>
+        <td>Charlotte's Web</td>
+        <td class="pages">184</td>
+        <td class="stars">★★★★★</td>
+      </tr>
+      <tr>
+        <td>The Wild Robot</td>
+        <td class="pages">277</td>
+        <td class="stars">★★★★★</td>
+      </tr>
+      <tr>
+        <td>Mr. Popper's Penguins</td>
+        <td class="pages">138</td>
+        <td class="stars">★★★★☆</td>
+      </tr>
+      <tr>
+        <td>Frog and Toad Together</td>
+        <td class="pages">64</td>
+        <td class="stars">★★★★★</td>
+      </tr>
+      <tr>
+        <td>Junie B. Jones #1</td>
+        <td class="pages">72</td>
+        <td class="stars">★★★☆☆</td>
+      </tr>
+    </table>
+  </article>
+</body>
+</html>

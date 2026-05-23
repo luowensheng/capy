@@ -1,0 +1,158 @@
+# Event invitation DSL → a pretty HTML invitation card.
+# Designed for parents, hosts, organizers — anyone planning a party.
+extension html
+
+context
+    title ""
+    host ""
+    when ""
+    time ""
+    where ""
+    address ""
+    rsvp_by ""
+    rsvp_to ""
+    notes []
+    bring []
+end
+
+function invite
+    arg literal "invite"
+    arg capture title string
+    block_closer end
+    template_str ""
+    run:
+        set context.title title
+end
+
+function host
+    arg literal "host"
+    arg capture v string
+    template_str ""
+    run:
+        set context.host v
+end
+
+function when
+    arg literal "when"
+    arg capture v string
+    template_str ""
+    run:
+        set context.when v
+end
+
+function time
+    arg literal "time"
+    arg capture v string
+    template_str ""
+    run:
+        set context.time v
+end
+
+function where
+    arg literal "where"
+    arg capture v string
+    template_str ""
+    run:
+        set context.where v
+end
+
+function address
+    arg literal "address"
+    arg capture v string
+    template_str ""
+    run:
+        set context.address v
+end
+
+function rsvp_by
+    arg literal "rsvp_by"
+    arg capture v string
+    template_str ""
+    run:
+        set context.rsvp_by v
+end
+
+function rsvp_to
+    arg literal "rsvp_to"
+    arg capture v string
+    template_str ""
+    run:
+        set context.rsvp_to v
+end
+
+function note
+    arg literal "note"
+    arg capture v string
+    template_str ""
+    run:
+        append context.notes v
+end
+
+function bring
+    arg literal "bring"
+    arg capture v string
+    template_str ""
+    run:
+        append context.bring v
+end
+
+function end
+end
+
+file_template:
+    <!doctype html>
+    <html lang="en">
+    <head>
+      <meta charset="utf-8" />
+      <title>{{ .context.title | unquote }}</title>
+      <style>
+        body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: linear-gradient(135deg, #ffd5e8, #cfe9ff); font-family: "Georgia", "Times New Roman", serif; color: #2d2348; padding: 24px; }
+        .card { background: #fff; border-radius: 18px; box-shadow: 0 20px 60px rgba(60,30,100,0.12); max-width: 460px; padding: 40px 44px; text-align: center; position: relative; }
+        .card::before, .card::after { content: ""; position: absolute; left: 20px; right: 20px; height: 1px; background: linear-gradient(90deg, transparent, #d4b8e8, transparent); }
+        .card::before { top: 18px; } .card::after { bottom: 18px; }
+        .stamp { color: #d177a8; text-transform: uppercase; letter-spacing: 0.3em; font-size: 11px; margin-bottom: 12px; }
+        h1 { font-size: 30px; margin: 0 0 6px; color: #50346e; font-style: italic; }
+        .host { font-size: 14px; color: #8a7aa0; margin-bottom: 24px; }
+        .detail { margin: 16px 0; }
+        .detail .label { color: #b487c5; font-variant: small-caps; letter-spacing: 0.18em; font-size: 11px; }
+        .detail .value { font-size: 17px; color: #2d2348; margin-top: 2px; }
+        .small { font-size: 13px; color: #6a5a82; }
+        .rsvp { margin-top: 26px; padding-top: 20px; border-top: 1px dashed #e0c8e8; }
+        .notes { margin-top: 22px; text-align: left; font-size: 14px; color: #4a3a62; line-height: 1.55; }
+        .notes p { margin: 6px 0; }
+        .bring { margin-top: 18px; font-size: 13px; color: #6a5a82; font-style: italic; }
+      </style>
+    </head>
+    <body>
+      <article class="card">
+        <div class="stamp">You're invited</div>
+        <h1>{{ .context.title | unquote }}</h1>
+        <div class="host">Hosted by {{ .context.host | unquote }}</div>
+
+        <div class="detail">
+          <div class="label">When</div>
+          <div class="value">{{ .context.when | unquote }}<br/><span class="small">{{ .context.time | unquote }}</span></div>
+        </div>
+
+        <div class="detail">
+          <div class="label">Where</div>
+          <div class="value">{{ .context.where | unquote }}<br/><span class="small">{{ .context.address | unquote }}</span></div>
+        </div>
+
+        <div class="rsvp">
+          <div class="label">RSVP by {{ .context.rsvp_by | unquote }}</div>
+          <div class="value"><a href="mailto:{{ .context.rsvp_to | unquote }}">{{ .context.rsvp_to | unquote }}</a></div>
+        </div>
+
+        <div class="notes">
+          {{- range .context.notes }}
+          <p>{{ . | unquote }}</p>
+          {{- end }}
+        </div>
+
+        {{- range .context.bring }}
+        <div class="bring">Please bring: {{ . | unquote }}</div>
+        {{- end }}
+      </article>
+    </body>
+    </html>

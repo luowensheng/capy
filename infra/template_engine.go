@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"text/template"
 )
@@ -92,6 +93,58 @@ var funcs = template.FuncMap{
 		b, _ := json.MarshalIndent(v, "", "  ")
 		return string(b)
 	},
+	// add returns a + b. Both args coerced to int64. Useful for running
+	// totals inside `range` blocks (e.g. summing pages in a reading log).
+	"add": func(a, b any) int64 { return toInt(a) + toInt(b) },
+	"sub": func(a, b any) int64 { return toInt(a) - toInt(b) },
+	"mul": func(a, b any) int64 { return toInt(a) * toInt(b) },
+	// percent returns (numerator / denominator) * 100 as an int, clamped
+	// to [0, 100]. Handy for progress bars in HTML output.
+	"percent": func(n, d any) int64 {
+		den := toInt(d)
+		if den == 0 {
+			return 0
+		}
+		p := toInt(n) * 100 / den
+		if p < 0 {
+			return 0
+		}
+		if p > 100 {
+			return 100
+		}
+		return p
+	},
+	// stars renders an integer as that many filled-star characters plus
+	// the remainder out of five as outlined stars. Useful for rating
+	// displays in non-programmer DSLs (reading logs, restaurant lists).
+	"stars": func(n any) string {
+		k := int(toInt(n))
+		if k < 0 {
+			k = 0
+		}
+		if k > 5 {
+			k = 5
+		}
+		return strings.Repeat("★", k) + strings.Repeat("☆", 5-k)
+	},
+}
+
+// toInt coerces common numeric types to int64. Tolerates strings holding
+// digit sequences so `{{ add .x 1 }}` works even when .x came from a
+// string-typed capture.
+func toInt(v any) int64 {
+	switch x := v.(type) {
+	case int:
+		return int64(x)
+	case int64:
+		return x
+	case float64:
+		return int64(x)
+	case string:
+		n, _ := strconv.ParseInt(strings.TrimSpace(x), 10, 64)
+		return n
+	}
+	return 0
 }
 
 func pyLit(v any) string {

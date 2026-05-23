@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Lemon olive oil cake</title>
+  <style>
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #fdf6e3; font-family: Georgia, "Times New Roman", serif; color: #3a2e1e; padding: 24px; }
+    .card { background: #fffaf0; border: 1px solid #e8d9b0; box-shadow: 0 8px 30px rgba(60,40,0,0.08); border-radius: 12px; max-width: 640px; padding: 36px 48px; }
+    h1 { font-size: 32px; margin: 0 0 6px; letter-spacing: 0.01em; }
+    .meta { color: #8a7a5a; font-style: italic; margin-bottom: 28px; display: flex; gap: 18px; font-size: 14px; }
+    .meta span::before { content: "•"; margin-right: 8px; color: #c8b27a; }
+    .meta span:first-child::before { display: none; }
+    h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 0.16em; color: #b88a3a; margin: 24px 0 10px; font-weight: 600; }
+    ul.ingredients { list-style: none; padding: 0; margin: 0 0 8px; columns: 2; column-gap: 32px; }
+    ul.ingredients li { padding: 4px 0; font-size: 15px; break-inside: avoid; }
+    .qty { color: #b88a3a; font-variant-numeric: tabular-nums; margin-right: 6px; }
+    ol.steps { padding-left: 22px; margin: 8px 0; }
+    ol.steps li { padding: 6px 0; font-size: 15px; line-height: 1.5; }
+    .tip { margin-top: 22px; padding: 12px 16px; background: #faf0d4; border-left: 4px solid #d4a73a; font-size: 14px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <article class="card">
+    <h1>Lemon olive oil cake</h1>
+    <div class="meta">
+      <span>Serves 8</span>
+      <span>45 minutes</span>
+    </div>
+
+    <h2>Ingredients</h2>
+    <ul class="ingredients">
+      <li><span class="qty">1 1/2 cups</span> <span class="name">all-purpose flour</span></li>
+      <li><span class="qty">3/4 cup</span> <span class="name">olive oil</span></li>
+      <li><span class="qty">1 cup</span> <span class="name">sugar</span></li>
+      <li><span class="qty">3</span> <span class="name">eggs</span></li>
+      <li><span class="qty">2 tablespoons</span> <span class="name">lemon zest</span></li>
+      <li><span class="qty">1/4 cup</span> <span class="name">lemon juice</span></li>
+      <li><span class="qty">1 teaspoon</span> <span class="name">baking powder</span></li>
+      <li><span class="qty">1/4 teaspoon</span> <span class="name">salt</span></li>
+    </ul>
+
+    <h2>Method</h2>
+    <ol class="steps">
+      <li>Preheat oven to 350F and grease a 9-inch round pan.</li>
+      <li>Whisk flour, baking powder, and salt in a bowl.</li>
+      <li>In another bowl, beat sugar and eggs until light.</li>
+      <li>Stir in olive oil, lemon zest, and lemon juice.</li>
+      <li>Fold the dry ingredients into the wet mixture.</li>
+      <li>Pour into the pan and bake for 35-40 minutes.</li>
+      <li>Cool on a rack before slicing.</li>
+    </ol>
+    <div class="tip"><strong>Tip:</strong> For extra zing, glaze with powdered sugar and lemon juice.</div>
+  </article>
+</body>
+</html>

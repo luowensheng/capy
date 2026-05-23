@@ -46,6 +46,7 @@ theme:
 
 nav:
   - Home: index.md
+  - For everyone: for-everyone.md
   - Getting started: getting-started.md
   - Live demos: showcase.md
   - Use cases: use-cases.md

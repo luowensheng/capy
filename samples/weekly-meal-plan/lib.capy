@@ -1,0 +1,134 @@
+# Weekly meal plan DSL → printable HTML meal planner.
+# Designed for parents and home cooks.
+extension html
+
+context
+    week ""
+    serves ""
+    days []
+    notes []
+end
+
+function week
+    arg literal "week"
+    arg capture w string
+    block_closer end
+    template_str ""
+    run:
+        set context.week w
+end
+
+function serves
+    arg literal "serves"
+    arg capture n any
+    template_str ""
+    run:
+        set context.serves n
+end
+
+function monday
+    arg literal "monday"
+    arg capture meal string
+    template_str ""
+    run:
+        append context.days {day: "Monday", meal: meal}
+end
+function tuesday
+    arg literal "tuesday"
+    arg capture meal string
+    template_str ""
+    run:
+        append context.days {day: "Tuesday", meal: meal}
+end
+function wednesday
+    arg literal "wednesday"
+    arg capture meal string
+    template_str ""
+    run:
+        append context.days {day: "Wednesday", meal: meal}
+end
+function thursday
+    arg literal "thursday"
+    arg capture meal string
+    template_str ""
+    run:
+        append context.days {day: "Thursday", meal: meal}
+end
+function friday
+    arg literal "friday"
+    arg capture meal string
+    template_str ""
+    run:
+        append context.days {day: "Friday", meal: meal}
+end
+function saturday
+    arg literal "saturday"
+    arg capture meal string
+    template_str ""
+    run:
+        append context.days {day: "Saturday", meal: meal}
+end
+function sunday
+    arg literal "sunday"
+    arg capture meal string
+    template_str ""
+    run:
+        append context.days {day: "Sunday", meal: meal}
+end
+
+function note
+    arg literal "note"
+    arg capture text string
+    template_str ""
+    run:
+        append context.notes text
+end
+
+function end
+end
+
+file_template:
+    <!doctype html>
+    <html lang="en">
+    <head>
+      <meta charset="utf-8" />
+      <title>Meal plan — {{ .context.week | unquote }}</title>
+      <style>
+        body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #f0f7f0; font-family: "Helvetica Neue", Arial, sans-serif; color: #2c3e2c; padding: 24px; }
+        .planner { background: white; border-radius: 12px; box-shadow: 0 8px 28px rgba(40,80,40,0.08); max-width: 720px; width: 100%; padding: 32px 40px; }
+        h1 { margin: 0 0 4px; font-size: 26px; color: #2c5e2c; }
+        .subtitle { color: #6a8c6a; margin-bottom: 28px; font-size: 14px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+        td { padding: 14px 12px; border-bottom: 1px solid #e0eee0; vertical-align: top; }
+        .day { font-weight: 600; color: #2c5e2c; width: 110px; font-size: 14px; letter-spacing: 0.04em; text-transform: uppercase; }
+        .meal { color: #2c3e2c; font-size: 15px; line-height: 1.4; }
+        .notes { background: #f7fbf7; padding: 16px 20px; border-left: 4px solid #6db66d; border-radius: 4px; }
+        .notes h3 { margin: 0 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.12em; color: #4c8c4c; }
+        .notes p { margin: 4px 0; font-size: 14px; color: #3a5e3a; }
+      </style>
+    </head>
+    <body>
+      <article class="planner">
+        <h1>Meal plan — {{ .context.week | unquote }}</h1>
+        <div class="subtitle">Serves {{ .context.serves }} · {{ len .context.days }} dinners</div>
+
+        <table>
+        {{- range .context.days }}
+          <tr>
+            <td class="day">{{ .day }}</td>
+            <td class="meal">{{ .meal | unquote }}</td>
+          </tr>
+        {{- end }}
+        </table>
+
+        {{- if .context.notes }}
+        <div class="notes">
+          <h3>Notes</h3>
+          {{- range .context.notes }}
+          <p>{{ . | unquote }}</p>
+          {{- end }}
+        </div>
+        {{- end }}
+      </article>
+    </body>
+    </html>

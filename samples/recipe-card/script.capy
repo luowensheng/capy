@@ -1,0 +1,23 @@
+recipe "Lemon olive oil cake"
+    serves 8
+    time "45 minutes"
+
+    ingredient "all-purpose flour"   "1 1/2 cups"
+    ingredient "olive oil"           "3/4 cup"
+    ingredient "sugar"               "1 cup"
+    ingredient "eggs"                "3"
+    ingredient "lemon zest"          "2 tablespoons"
+    ingredient "lemon juice"         "1/4 cup"
+    ingredient "baking powder"       "1 teaspoon"
+    ingredient "salt"                "1/4 teaspoon"
+
+    step "Preheat oven to 350F and grease a 9-inch round pan."
+    step "Whisk flour, baking powder, and salt in a bowl."
+    step "In another bowl, beat sugar and eggs until light."
+    step "Stir in olive oil, lemon zest, and lemon juice."
+    step "Fold the dry ingredients into the wet mixture."
+    step "Pour into the pan and bake for 35-40 minutes."
+    step "Cool on a rack before slicing."
+
+    tip "For extra zing, glaze with powdered sugar and lemon juice."
+end

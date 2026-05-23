@@ -8,6 +8,57 @@ may break between minor versions** (see `CONTRIBUTING.md`).
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-05-24
+
+Repositioning release. Capy is reframed as a tool **anyone** can
+use, not just programmers. The homepage opens with an animated
+typewriter demo cycling through everyday DSLs (recipe / invite /
+meal plan / reading log).
+
+### Added
+
+- **Animated hero** at the top of the homepage
+  (`docs/assets/hero/hero.html`). Self-contained HTML/CSS/JS that
+  types out source DSL with syntax highlighting, then reveals the
+  generated polished output in a side-by-side iframe. Cycles
+  through four demos; click dots to jump.
+
+- **Four non-programmer samples**, each a complete library +
+  source + golden + README:
+  - `samples/recipe-card/` — recipes for home cooks. Six DSL
+    keywords (`recipe`, `serves`, `time`, `ingredient`, `step`,
+    `tip`). Output: polished HTML recipe card.
+  - `samples/event-invite/` — party invitations. Pastel HTML invite
+    with RSVP, notes, and "please bring" lines.
+  - `samples/weekly-meal-plan/` — weekly dinner planner.
+    Green-and-white HTML grid with day-by-day meals + notes.
+  - `samples/reading-log/` — children's reading tracker. Bright
+    orange certificate with progress bar (pages-read / yearly goal)
+    and star ratings (rendered via new `stars` template helper).
+
+- **`docs/for-everyone.md`** — non-programmer guide. Explains the
+  vocabulary model with the recipe sample as the worked example,
+  walks the three ways to get a library (use a sample, ask an AI,
+  write your own), and gives a 5-minute setup.
+
+- **Template helpers** (`infra/template_engine.go`):
+  `add` / `sub` / `mul` for numeric math, `percent` for progress-bar
+  calculations clamped to 0-100, and `stars` for rendering 1-5
+  ratings as ★★★★☆.
+
+### Changed
+
+- Homepage `docs/index.md` opens with the animated hero and a
+  reframed lead ("Write something simple. Get something polished.")
+  before the feature grid. Adds a "For everyone" button to the
+  hero CTAs.
+
+- Live showcase opens with a new "Capy for everyday things — no
+  coding needed" section with playable iframes for all four new
+  samples.
+
+- MkDocs nav exposes `for-everyone.md` directly under Home.
+
 ## [0.4.0] — 2026-05-24
 
 Two new patterns get first-class documentation and worked samples,

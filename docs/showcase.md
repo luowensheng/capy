@@ -17,6 +17,122 @@ directory if you want to clone and run them yourself.
 
 ---
 
+## 🏡 Capy for everyday things — no coding needed
+
+These four demos use vocabularies designed for ordinary tasks: a
+recipe, an invitation, a meal plan, a child's reading log. The
+"language" you write is plain English with a handful of keywords.
+Open the iframes to see the polished output.
+
+=== "Recipe card"
+
+    Source you write:
+
+    ```
+    recipe "Lemon olive oil cake"
+        serves 8
+        time "45 minutes"
+
+        ingredient "all-purpose flour"   "1 1/2 cups"
+        ingredient "olive oil"           "3/4 cup"
+        ingredient "sugar"               "1 cup"
+        ingredient "lemon zest"          "2 tablespoons"
+
+        step "Preheat oven to 350F."
+        step "Whisk flour and sugar."
+        step "Add oil and lemon zest."
+        step "Bake for 35-40 minutes."
+
+        tip "Glaze with powdered sugar and lemon juice."
+    end
+    ```
+
+    Generated HTML card (open it, print it, email it):
+
+    <iframe src="../assets/demos/recipe-card.html" width="100%" height="540" style="border: 1px solid #e8d9b0; background: #fdf6e3; border-radius: 8px;"></iframe>
+
+    [Full sample → `samples/recipe-card/`](https://github.com/luowensheng/capy/tree/main/samples/recipe-card)
+
+=== "Event invitation"
+
+    ```
+    invite "Maya turns 6!"
+        host "The Patel family"
+
+        when "Saturday, June 14"
+        time "2:00 - 5:00 pm"
+        where "Lincoln Park, Pavilion 3"
+        address "200 Park Avenue, Springfield"
+
+        rsvp_by "June 7"
+        rsvp_to "maya@example.com"
+
+        note "There will be a unicorn cake and a butterfly hunt."
+        note "Wear something you can run in. Sunscreen recommended."
+
+        bring "A book to add to Maya's library (any age)"
+    end
+    ```
+
+    <iframe src="../assets/demos/event-invite.html" width="100%" height="640" style="border: 1px solid #d4b8e8; background: linear-gradient(135deg, #ffd5e8, #cfe9ff); border-radius: 8px;"></iframe>
+
+    [Full sample → `samples/event-invite/`](https://github.com/luowensheng/capy/tree/main/samples/event-invite)
+
+=== "Weekly meal plan"
+
+    ```
+    week "March 10 - 16"
+        serves 4
+
+        monday    "Sheet-pan salmon with broccoli and lemon"
+        tuesday   "Pasta with brown butter and sage"
+        wednesday "Black bean tacos with avocado and lime"
+        thursday  "Leftover salmon salads with greens"
+        friday    "Homemade pizza night (kids choose toppings)"
+        saturday  "Slow-cooker chicken stew"
+        sunday    "Roast vegetables and quinoa bowls"
+
+        note "Buy fresh fish on Sunday or Monday for best quality."
+        note "Make extra rice on Wednesday for Thursday lunches."
+    end
+    ```
+
+    <iframe src="../assets/demos/weekly-meal-plan.html" width="100%" height="640" style="border: 1px solid #c5e0c5; background: #f0f7f0; border-radius: 8px;"></iframe>
+
+    [Full sample → `samples/weekly-meal-plan/`](https://github.com/luowensheng/capy/tree/main/samples/weekly-meal-plan)
+
+=== "Reading log (for kids)"
+
+    ```
+    log "Emma's reading log" age 7
+        goal 500
+
+        book "Charlotte's Web"           pages 184  rating 5
+        book "The Wild Robot"            pages 277  rating 5
+        book "Mr. Popper's Penguins"     pages 138  rating 4
+        book "Frog and Toad Together"    pages 64   rating 5
+        book "Junie B. Jones #1"         pages 72   rating 3
+    end
+    ```
+
+    Progress bar fills toward the yearly goal. Stars come from the
+    rating number. Update through the year by adding more `book` lines.
+
+    <iframe src="../assets/demos/reading-log.html" width="100%" height="540" style="border: 1px solid #f4d8a8; background: #fff4d6; border-radius: 8px;"></iframe>
+
+    [Full sample → `samples/reading-log/`](https://github.com/luowensheng/capy/tree/main/samples/reading-log)
+
+**Why this matters.** You don't need a degree in computer science
+to use Capy. The vocabularies above (`recipe`, `serves`,
+`ingredient`, `step`; `invite`, `host`, `when`, `where`; `monday`,
+`tuesday`, …) are designed for ordinary tasks — and someone (you,
+a teammate, or an AI) can design a new vocabulary for any task you
+do more than twice.
+
+[Read the non-programmer guide → `docs/for-everyone.md`](for-everyone.md)
+
+---
+
 ## 📜 Grammar as contract — one source, many consumers
 
 A Capy grammar isn't just a parser definition — it's a **machine-

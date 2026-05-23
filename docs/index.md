@@ -6,16 +6,35 @@ hide:
 
 # Capy
 
-> **A transpiler engine with zero default grammar.** Define a tiny
-> source language in a Capy library file (`.capy` — Capy's native
-> syntax — or YAML if you prefer). The engine turns input into any
-> target text you describe — Python, SQL, JSON, Kubernetes manifests,
-> Markdown, your custom DSL. 50 worked demos in the repo.
+> **Write something simple. Get something polished.**
+>
+> Capy turns plain, English-like descriptions into real artifacts —
+> printable recipe cards, party invitations, weekly schedules,
+> reading logs, full websites, code, configs. Anyone can use it;
+> developers can extend it.
 
-[Get started in 5 minutes :material-rocket-launch:](getting-started.md){ .md-button .md-button--primary }
+<iframe src="assets/hero/hero.html" width="100%" height="540" style="border: 0; border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.18); display: block; margin: 8px 0 28px;" title="Capy in action"></iframe>
+
+[Try it in 5 minutes :material-rocket-launch:](getting-started.md){ .md-button .md-button--primary }
+[For everyone :material-account-multiple:](for-everyone.md){ .md-button }
 [Live demos :material-play-circle:](showcase.md){ .md-button }
-[Use cases :material-lightbulb:](use-cases.md){ .md-button }
-[Browse 50 samples :material-folder-open:](https://github.com/luowensheng/capy/tree/main/samples){ .md-button }
+[Browse all samples :material-folder-open:](https://github.com/luowensheng/capy/tree/main/samples){ .md-button }
+
+---
+
+## Capy in one paragraph
+
+Most people end up writing the same things over and over — recipe
+cards, invitations, meal plans, reading logs, configs, API specs,
+codebases. Capy lets you describe **what you want** in a few plain
+lines, and turns it into **what you'd otherwise have to format by
+hand**. The vocabulary is whatever you (or someone before you)
+designed for the task — `recipe`, `invite`, `endpoint`, `table`,
+`scene`, whatever fits. No syntax to memorize. No code to learn.
+
+The demos above show four ready-made vocabularies. There are 50+
+more in the repo — and you can write your own (or ask an AI to)
+in about thirty minutes.
 
 ---
 

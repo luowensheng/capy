@@ -1,0 +1,16 @@
+invite "Maya turns 6!"
+    host "The Patel family"
+
+    when "Saturday, June 14"
+    time "2:00 - 5:00 pm"
+    where "Lincoln Park, Pavilion 3"
+    address "200 Park Avenue, Springfield"
+
+    rsvp_by "June 7"
+    rsvp_to "maya@example.com"
+
+    note "There will be a unicorn cake and a butterfly hunt."
+    note "Wear something you can run in. Sunscreen recommended."
+
+    bring "A book to add to Maya's library (any age)"
+end

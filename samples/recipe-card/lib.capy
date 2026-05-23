@@ -1,0 +1,116 @@
+# Recipe DSL → a beautiful HTML recipe card.
+# Designed for home cooks: no programming concepts required.
+extension html
+
+context
+    title ""
+    serves ""
+    time ""
+    ingredients []
+    steps []
+    tips []
+end
+
+function recipe
+    arg literal "recipe"
+    arg capture title string
+    block_closer end
+    template_str ""
+    run:
+        set context.title title
+end
+
+function serves
+    arg literal "serves"
+    arg capture n any
+    template_str ""
+    run:
+        set context.serves n
+end
+
+function time
+    arg literal "time"
+    arg capture t string
+    template_str ""
+    run:
+        set context.time t
+end
+
+function ingredient
+    arg literal "ingredient"
+    arg capture name string
+    arg capture qty string
+    template_str ""
+    run:
+        append context.ingredients {name: name, qty: qty}
+end
+
+function step
+    arg literal "step"
+    arg capture text string
+    template_str ""
+    run:
+        append context.steps text
+end
+
+function tip
+    arg literal "tip"
+    arg capture text string
+    template_str ""
+    run:
+        append context.tips text
+end
+
+function end
+end
+
+file_template:
+    <!doctype html>
+    <html lang="en">
+    <head>
+      <meta charset="utf-8" />
+      <title>{{ .context.title | unquote }}</title>
+      <style>
+        body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #fdf6e3; font-family: Georgia, "Times New Roman", serif; color: #3a2e1e; padding: 24px; }
+        .card { background: #fffaf0; border: 1px solid #e8d9b0; box-shadow: 0 8px 30px rgba(60,40,0,0.08); border-radius: 12px; max-width: 640px; padding: 36px 48px; }
+        h1 { font-size: 32px; margin: 0 0 6px; letter-spacing: 0.01em; }
+        .meta { color: #8a7a5a; font-style: italic; margin-bottom: 28px; display: flex; gap: 18px; font-size: 14px; }
+        .meta span::before { content: "•"; margin-right: 8px; color: #c8b27a; }
+        .meta span:first-child::before { display: none; }
+        h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 0.16em; color: #b88a3a; margin: 24px 0 10px; font-weight: 600; }
+        ul.ingredients { list-style: none; padding: 0; margin: 0 0 8px; columns: 2; column-gap: 32px; }
+        ul.ingredients li { padding: 4px 0; font-size: 15px; break-inside: avoid; }
+        .qty { color: #b88a3a; font-variant-numeric: tabular-nums; margin-right: 6px; }
+        ol.steps { padding-left: 22px; margin: 8px 0; }
+        ol.steps li { padding: 6px 0; font-size: 15px; line-height: 1.5; }
+        .tip { margin-top: 22px; padding: 12px 16px; background: #faf0d4; border-left: 4px solid #d4a73a; font-size: 14px; border-radius: 4px; }
+      </style>
+    </head>
+    <body>
+      <article class="card">
+        <h1>{{ .context.title | unquote }}</h1>
+        <div class="meta">
+          <span>Serves {{ .context.serves }}</span>
+          <span>{{ .context.time | unquote }}</span>
+        </div>
+
+        <h2>Ingredients</h2>
+        <ul class="ingredients">
+          {{- range .context.ingredients }}
+          <li><span class="qty">{{ .qty | unquote }}</span> <span class="name">{{ .name | unquote }}</span></li>
+          {{- end }}
+        </ul>
+
+        <h2>Method</h2>
+        <ol class="steps">
+          {{- range .context.steps }}
+          <li>{{ . | unquote }}</li>
+          {{- end }}
+        </ol>
+
+        {{- range .context.tips }}
+        <div class="tip"><strong>Tip:</strong> {{ . | unquote }}</div>
+        {{- end }}
+      </article>
+    </body>
+    </html>

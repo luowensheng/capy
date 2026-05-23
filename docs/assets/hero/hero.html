@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Capy in action</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --bg-pane: #161b22;
+      --border: #30363d;
+      --accent: #58a6ff;
+      --accent-2: #a5d6ff;
+      --muted: #8b949e;
+      --text: #c9d1d9;
+      --kw: #ff7b72;
+      --str: #a5d6ff;
+      --num: #79c0ff;
+      --cmt: #8b949e;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: ui-sans-serif, system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif; }
+    body { padding: 16px; min-height: 100vh; }
+
+    .stage {
+      display: grid;
+      grid-template-columns: 1fr 36px 1fr;
+      gap: 14px;
+      max-width: 1080px;
+      margin: 0 auto;
+      align-items: stretch;
+      min-height: 460px;
+    }
+    .pane {
+      background: var(--bg-pane);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+    }
+    .pane-head {
+      padding: 9px 14px;
+      font-size: 11px;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      display: flex; justify-content: space-between; align-items: center;
+      background: rgba(255,255,255,0.02);
+    }
+    .pane-head .label { color: var(--accent-2); }
+    .pane-head .right { color: var(--muted); }
+    .pane-body {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+    .arrow {
+      align-self: center;
+      font-size: 26px;
+      color: var(--accent);
+      text-align: center;
+      animation: pulse 2.2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: translateX(0); opacity: 0.6; }
+      50% { transform: translateX(4px); opacity: 1; }
+    }
+
+    pre#source {
+      margin: 0;
+      padding: 18px 20px;
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.55;
+      color: var(--text);
+      white-space: pre;
+      overflow: auto;
+      height: 100%;
+    }
+    pre#source .kw { color: var(--kw); }
+    pre#source .str { color: var(--str); }
+    pre#source .num { color: var(--num); }
+    pre#source .cmt { color: var(--cmt); font-style: italic; }
+
+    .cursor::after {
+      content: "▌";
+      color: var(--accent);
+      animation: blink 1s steps(2) infinite;
+      margin-left: 1px;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    #output-frame {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: white;
+      opacity: 0;
+      transition: opacity 0.6s;
+    }
+    #output-frame.visible { opacity: 1; }
+
+    .controls {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 18px;
+      max-width: 1080px;
+      margin-left: auto; margin-right: auto;
+    }
+    .dot {
+      width: 26px; height: 6px; border-radius: 999px;
+      background: rgba(255,255,255,0.16);
+      cursor: pointer;
+      transition: background 0.2s, width 0.2s;
+      border: 0;
+      padding: 0;
+    }
+    .dot:hover { background: rgba(255,255,255,0.3); }
+    .dot.active { background: var(--accent); width: 38px; }
+
+    .tagline {
+      max-width: 1080px;
+      margin: 0 auto 16px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .tagline strong { color: var(--accent-2); font-weight: 500; }
+
+    @media (max-width: 800px) {
+      .stage { grid-template-columns: 1fr; }
+      .arrow { transform: rotate(90deg); margin: 4px 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="tagline">Type something <strong>readable</strong>. Capy turns it into something <strong>polished</strong>.</div>
+  <div class="stage">
+    <section class="pane">
+      <div class="pane-head"><span class="label">YOU WRITE</span><span class="right">script.capy</span></div>
+      <div class="pane-body">
+        <pre id="source"><span class="cursor"></span></pre>
+      </div>
+    </section>
+    <div class="arrow">▶</div>
+    <section class="pane">
+      <div class="pane-head"><span class="label">CAPY GIVES YOU</span><span class="right" id="output-label">output</span></div>
+      <div class="pane-body">
+        <iframe id="output-frame" sandbox="allow-same-origin" title="Generated preview"></iframe>
+      </div>
+    </section>
+  </div>
+  <div class="controls" id="dots"></div>
+
+  <script>
+    const DEMOS = [
+      {
+        label: "recipe-card.html",
+        outputUrl: "../demos/recipe-card.html",
+        source:
+`recipe "Lemon olive oil cake"
+    serves 8
+    time "45 minutes"
+
+    ingredient "all-purpose flour"  "1 1/2 cups"
+    ingredient "olive oil"          "3/4 cup"
+    ingredient "sugar"              "1 cup"
+    ingredient "eggs"               "3"
+    ingredient "lemon zest"         "2 tablespoons"
+
+    step "Preheat oven to 350F."
+    step "Whisk flour and sugar."
+    step "Add oil and lemon zest."
+    step "Bake for 35-40 minutes."
+
+    tip "Glaze with powdered sugar and lemon juice."
+end`,
+      },
+      {
+        label: "event-invite.html",
+        outputUrl: "../demos/event-invite.html",
+        source:
+`invite "Maya turns 6!"
+    host "The Patel family"
+    when "Saturday, June 14"
+    time "2:00 - 5:00 pm"
+    where "Lincoln Park, Pavilion 3"
+
+    rsvp_by "June 7"
+    rsvp_to "maya@example.com"
+
+    note "Unicorn cake and butterfly hunt."
+    bring "A book to add to Maya's library."
+end`,
+      },
+      {
+        label: "weekly-meal-plan.html",
+        outputUrl: "../demos/weekly-meal-plan.html",
+        source:
+`week "March 10 - 16"
+    serves 4
+
+    monday    "Sheet-pan salmon with broccoli"
+    tuesday   "Pasta with brown butter"
+    wednesday "Black bean tacos"
+    thursday  "Leftover salmon salads"
+    friday    "Pizza night"
+    saturday  "Slow-cooker chicken stew"
+
+    note "Buy fresh fish on Sunday."
+end`,
+      },
+      {
+        label: "reading-log.html",
+        outputUrl: "../demos/reading-log.html",
+        source:
+`log "Emma's reading log" age 7
+    goal 500
+
+    book "Charlotte's Web"           pages 184  rating 5
+    book "The Wild Robot"            pages 277  rating 5
+    book "Mr. Popper's Penguins"     pages 138  rating 4
+    book "Frog and Toad Together"    pages 64   rating 5
+end`,
+      },
+    ];
+
+    // Lightweight syntax highlighting for the source pane.
+    // Keywords drawn from the DSLs above.
+    const KW = new Set([
+      "recipe","serves","time","ingredient","step","tip","end",
+      "invite","host","when","where","address","rsvp_by","rsvp_to","note","bring",
+      "week","monday","tuesday","wednesday","thursday","friday","saturday","sunday",
+      "log","age","goal","book","pages","rating",
+    ]);
+    function escapeHTML(s) {
+      return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+    function highlight(src) {
+      // Tokenize line-by-line, preserving whitespace.
+      return src.split("\n").map(line => {
+        const indent = line.match(/^\s*/)[0];
+        const rest = line.slice(indent.length);
+        if (rest.startsWith("#")) return indent + `<span class="cmt">${escapeHTML(rest)}</span>`;
+        let out = indent;
+        let i = 0;
+        while (i < rest.length) {
+          const c = rest[i];
+          if (c === '"') {
+            let j = i + 1;
+            while (j < rest.length && rest[j] !== '"') j++;
+            out += `<span class="str">${escapeHTML(rest.slice(i, j+1))}</span>`;
+            i = j + 1;
+          } else if (/[A-Za-z_]/.test(c)) {
+            let j = i;
+            while (j < rest.length && /[A-Za-z_0-9]/.test(rest[j])) j++;
+            const word = rest.slice(i, j);
+            out += KW.has(word) ? `<span class="kw">${word}</span>` : escapeHTML(word);
+            i = j;
+          } else if (/[0-9]/.test(c)) {
+            let j = i;
+            while (j < rest.length && /[0-9./]/.test(rest[j])) j++;
+            out += `<span class="num">${escapeHTML(rest.slice(i, j))}</span>`;
+            i = j;
+          } else {
+            out += escapeHTML(c);
+            i++;
+          }
+        }
+        return out;
+      }).join("\n");
+    }
+
+    const sourceEl = document.getElementById("source");
+    const frame = document.getElementById("output-frame");
+    const outputLabel = document.getElementById("output-label");
+    const dotsEl = document.getElementById("dots");
+
+    DEMOS.forEach((_, idx) => {
+      const b = document.createElement("button");
+      b.className = "dot" + (idx === 0 ? " active" : "");
+      b.setAttribute("aria-label", "Demo " + (idx + 1));
+      b.addEventListener("click", () => { idx_seek(idx); });
+      dotsEl.appendChild(b);
+    });
+
+    let current = 0;
+    let typingAbort = null;
+
+    function setActiveDot(idx) {
+      [...dotsEl.children].forEach((d, i) => d.classList.toggle("active", i === idx));
+    }
+
+    async function typeOut(text, signal) {
+      sourceEl.innerHTML = '<span class="cursor"></span>';
+      frame.classList.remove("visible");
+      let shown = "";
+      const totalDelay = 4500; // ms target for typing across whole snippet
+      const perChar = Math.max(6, Math.min(28, totalDelay / text.length));
+      for (let i = 0; i < text.length; i++) {
+        if (signal.aborted) return false;
+        shown += text[i];
+        sourceEl.innerHTML = highlight(shown) + '<span class="cursor"></span>';
+        // bigger pause on newline so it feels natural
+        const pause = text[i] === "\n" ? perChar * 4 : perChar;
+        await new Promise(r => setTimeout(r, pause));
+      }
+      return true;
+    }
+
+    async function play(idx) {
+      if (typingAbort) typingAbort.abort();
+      const controller = new AbortController();
+      typingAbort = controller;
+      current = idx;
+      setActiveDot(idx);
+      const demo = DEMOS[idx];
+      outputLabel.textContent = demo.label;
+      // Preload frame in background
+      frame.src = demo.outputUrl;
+      const completed = await typeOut(demo.source, controller.signal);
+      if (!completed) return;
+      // Pause briefly, then reveal
+      await new Promise(r => setTimeout(r, 250));
+      if (controller.signal.aborted) return;
+      frame.classList.add("visible");
+      // Hold the output a while, then advance
+      await new Promise(r => setTimeout(r, 7000));
+      if (controller.signal.aborted) return;
+      play((idx + 1) % DEMOS.length);
+    }
+
+    function idx_seek(idx) {
+      play(idx);
+    }
+
+    // Kick off
+    play(0);
+  </script>
+</body>
+</html>

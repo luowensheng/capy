@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Maya turns 6!</title>
+  <style>
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: linear-gradient(135deg, #ffd5e8, #cfe9ff); font-family: "Georgia", "Times New Roman", serif; color: #2d2348; padding: 24px; }
+    .card { background: #fff; border-radius: 18px; box-shadow: 0 20px 60px rgba(60,30,100,0.12); max-width: 460px; padding: 40px 44px; text-align: center; position: relative; }
+    .card::before, .card::after { content: ""; position: absolute; left: 20px; right: 20px; height: 1px; background: linear-gradient(90deg, transparent, #d4b8e8, transparent); }
+    .card::before { top: 18px; } .card::after { bottom: 18px; }
+    .stamp { color: #d177a8; text-transform: uppercase; letter-spacing: 0.3em; font-size: 11px; margin-bottom: 12px; }
+    h1 { font-size: 30px; margin: 0 0 6px; color: #50346e; font-style: italic; }
+    .host { font-size: 14px; color: #8a7aa0; margin-bottom: 24px; }
+    .detail { margin: 16px 0; }
+    .detail .label { color: #b487c5; font-variant: small-caps; letter-spacing: 0.18em; font-size: 11px; }
+    .detail .value { font-size: 17px; color: #2d2348; margin-top: 2px; }
+    .small { font-size: 13px; color: #6a5a82; }
+    .rsvp { margin-top: 26px; padding-top: 20px; border-top: 1px dashed #e0c8e8; }
+    .notes { margin-top: 22px; text-align: left; font-size: 14px; color: #4a3a62; line-height: 1.55; }
+    .notes p { margin: 6px 0; }
+    .bring { margin-top: 18px; font-size: 13px; color: #6a5a82; font-style: italic; }
+  </style>
+</head>
+<body>
+  <article class="card">
+    <div class="stamp">You're invited</div>
+    <h1>Maya turns 6!</h1>
+    <div class="host">Hosted by The Patel family</div>
+
+    <div class="detail">
+      <div class="label">When</div>
+      <div class="value">Saturday, June 14<br/><span class="small">2:00 - 5:00 pm</span></div>
+    </div>
+
+    <div class="detail">
+      <div class="label">Where</div>
+      <div class="value">Lincoln Park, Pavilion 3<br/><span class="small">200 Park Avenue, Springfield</span></div>
+    </div>
+
+    <div class="rsvp">
+      <div class="label">RSVP by June 7</div>
+      <div class="value"><a href="mailto:maya@example.com">maya@example.com</a></div>
+    </div>
+
+    <div class="notes">
+      <p>There will be a unicorn cake and a butterfly hunt.</p>
+      <p>Wear something you can run in. Sunscreen recommended.</p>
+    </div>
+    <div class="bring">Please bring: A book to add to Maya's library (any age)</div>
+  </article>
+</body>
+</html>
