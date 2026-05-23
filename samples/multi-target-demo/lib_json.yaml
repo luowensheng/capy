@@ -1,0 +1,18 @@
+# Same source, target 2: JSON document.
+extension: json
+
+context:
+  users: []
+
+functions:
+  user:
+    args:
+      - { kind: capture, name: name, type: ident }
+      - { kind: capture, name: age, type: int }
+      - { kind: capture, name: status, type: ident }
+    template: ""
+    run: |
+      append context.users {name: name, age: age, status: status}
+
+file_template: |
+  { "users": {{ .context.users | toJSONIndent }} }

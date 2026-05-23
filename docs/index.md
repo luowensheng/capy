@@ -55,9 +55,56 @@ hide:
 Each tab shows the **Capy source** and the **generated target**.
 Source is short and declarative; targets are real, runnable artifacts.
 
+=== "Same source, 3 targets"
+
+    The **same** `script.capy` (data declared once):
+
+    ```
+    user alice 30 active
+    user bob   25 inactive
+    user carol 42 active
+    ```
+
+    Three different libraries produce three real artifacts — without
+    touching the source file:
+
+    **`lib_sql.yaml` →** SQL inserts
+
+    ```sql
+    INSERT INTO users (name, age, status) VALUES ('alice', 30, 'active');
+    INSERT INTO users (name, age, status) VALUES ('bob', 25, 'inactive');
+    INSERT INTO users (name, age, status) VALUES ('carol', 42, 'active');
+    ```
+
+    **`lib_json.yaml` →** JSON
+
+    ```json
+    { "users": [
+      { "name": "alice", "age": 30, "status": "active" },
+      { "name": "bob",   "age": 25, "status": "inactive" },
+      { "name": "carol", "age": 42, "status": "active" }
+    ] }
+    ```
+
+    **`lib_md.yaml` →** Markdown table
+
+    ```
+    | Name  | Age | Status   |
+    |-------|-----|----------|
+    | alice | 30  | active   |
+    | bob   | 25  | inactive |
+    | carol | 42  | active   |
+    ```
+
+    **The library IS the grammar.** Swap it and the same engine produces
+    a completely different file. Add a new target by writing a new
+    library; never touch the source. This is what nothing else does.
+
+    [Full sample →](https://github.com/luowensheng/capy/tree/main/samples/multi-target-demo)
+
 === "Python"
 
-    **`lib.yaml`** declares a few functions; **`script.capy`** uses them:
+    A small source language with imports + control flow:
 
     ```
     import json

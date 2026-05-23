@@ -1,0 +1,6 @@
+| Name | Age | Status |
+|------|-----|--------|
+| alice | 30 | active |
+| bob | 25 | inactive |
+| carol | 42 | active |
+
