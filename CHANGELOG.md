@@ -8,6 +8,58 @@ may break between minor versions** (see `CONTRIBUTING.md`).
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-05-24
+
+Two new patterns get first-class documentation and worked samples,
+plus a new template helper they both rely on.
+
+### Added
+
+- **`samples/contract-first-api/`** — REST API DSL where the
+  grammar IS the contract. One source (`script.capy`) feeds three
+  libraries (OpenAPI YAML / TypeScript client / Markdown docs);
+  each has a committed golden snapshot. CI test
+  (`cmd/capy/contract_first_test.go`) re-runs all three on every
+  commit so library drift fails fast. Adding a 4th target is a
+  ~30-line `.capy` file.
+
+- **`samples/supercharge-markdown/`** — Capy as a Markdown
+  preprocessor. 26-line DSL with `post` / `tag` / `para` / `h2` /
+  `bullet` / `callout` / `card` / `code` becomes 48 lines of real
+  Markdown with YAML frontmatter, blockquote callouts, and inline
+  HTML metric cards. Drop into Hugo / Jekyll / MkDocs / Astro
+  unchanged.
+
+- **`samples/supercharge-sql/`** — Capy as a Postgres DDL
+  preprocessor. Macros (`pk`, `fk`, `timestamps`, `soft_delete`,
+  `index`) expand into idiomatic SQL. The database doesn't know
+  Capy ran.
+
+- **`docs/grammar-as-contract.md`** — the workflow doc:
+  user describes intent → agent drafts library → grammar acts as
+  contract → consumers build against it before targets land → CI
+  goldens guard against drift. Includes the "build before tested"
+  argument.
+
+- **`docs/extending-existing-syntax.md`** — the supercharge-an-
+  existing-format playbook with the canonical recipe and a table
+  of host formats this pattern fits (SQL, Markdown, HTML,
+  Dockerfile, GitHub Actions, Terraform, Kubernetes, OpenAPI,
+  Mermaid, …).
+
+- **Template helpers**: new `trimSuffix` and `trimPrefix` in the
+  template engine. Useful for generators that emit trailing
+  commas (`{{ .body | trimSuffix ",\n" }}`) — needed by
+  `supercharge-sql` and similar patterns.
+
+### Changed
+
+- Homepage adds two cards: "Grammar as contract" and "Supercharge
+  an existing syntax."
+- Live showcase opens with two new tabbed sections demonstrating
+  both patterns end-to-end.
+- MkDocs nav exposes both new top-level pages.
+
 ## [0.3.1] — 2026-05-24
 
 Reframing release. Capy is now consistently presented as a library

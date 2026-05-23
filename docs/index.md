@@ -68,6 +68,22 @@ hide:
     is a transpile-time error pointing at the offending value, not a
     runtime surprise. [Types guide →](types.md)
 
+- :material-file-document-check: **Grammar as contract — build before the library lands**
+
+    Once `capy check lib.capy` parses, your DSL is a stable
+    contract. Frontend devs can build against it before any target
+    is implemented; add OpenAPI → TypeScript → Markdown targets
+    later. Golden snapshots in CI prove the contract holds.
+    [Pattern docs →](grammar-as-contract.md)
+
+- :material-rocket-launch: **Supercharge an existing syntax**
+
+    You don't have to invent a new language. Take SQL, Markdown,
+    Dockerfile, K8s manifests — anything textual — and put Capy
+    macros on top. The output is **plain target syntax**; your
+    existing runtime consumes it unchanged.
+    [Pattern docs →](extending-existing-syntax.md)
+
 - :material-language-go: **Embed in your Go program — no binary required**
 
     `go get github.com/luowensheng/capy`, then your program defines

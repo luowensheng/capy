@@ -1,0 +1,26 @@
+# A REST API contract written as a tiny Capy DSL.
+# This file is the SOURCE OF TRUTH — multiple libraries can target it.
+api "PetStore" version "1.0.0"
+
+endpoint GET "/pets"
+    summary "List all pets"
+    returns "Pet[]"
+end
+
+endpoint POST "/pets"
+    summary "Create a pet"
+    param body "Pet"
+    returns "Pet"
+end
+
+endpoint GET "/pets/{id}"
+    summary "Get a pet by ID"
+    param path id int
+    returns "Pet"
+end
+
+endpoint DELETE "/pets/{id}"
+    summary "Delete a pet"
+    param path id int
+    returns "void"
+end

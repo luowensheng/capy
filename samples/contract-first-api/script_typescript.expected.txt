@@ -1,0 +1,29 @@
+// ──────────────────────────────────────────────────────────
+// PetStore — generated TypeScript client.
+// Source: script.capy
+// ──────────────────────────────────────────────────────────
+
+// GET "/pets"
+export async function GET_handler(path: string): Promise<unknown> {
+  const res = await fetch(path, { method: "GET" });
+  return res.json();
+}
+
+// POST "/pets"
+export async function POST_handler(path: string): Promise<unknown> {
+  const res = await fetch(path, { method: "POST" });
+  return res.json();
+}
+
+// GET "/pets/{id}"
+export async function GET_handler(path: string): Promise<unknown> {
+  const res = await fetch(path, { method: "GET" });
+  return res.json();
+}
+
+// DELETE "/pets/{id}"
+export async function DELETE_handler(path: string): Promise<unknown> {
+  const res = await fetch(path, { method: "DELETE" });
+  return res.json();
+}
+

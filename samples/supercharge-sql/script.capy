@@ -1,0 +1,32 @@
+# A typed table DSL that compiles to plain Postgres DDL.
+# The Capy library adds macros (pk, fk, timestamps, soft_delete)
+# that expand into multiple SQL columns + constraints + indexes.
+
+table users
+    pk id
+    col email "varchar(255) UNIQUE NOT NULL"
+    col name  "varchar(100)"
+    timestamps
+end
+
+table posts
+    pk id
+    fk author_id -> users
+    col title    "varchar(255) NOT NULL"
+    col body     "text"
+    col status   "varchar(20) DEFAULT 'draft'"
+    timestamps
+    soft_delete
+end
+
+table comments
+    pk id
+    fk post_id   -> posts
+    fk author_id -> users
+    col body "text NOT NULL"
+    timestamps
+end
+
+index posts author_id
+index posts status
+index comments post_id

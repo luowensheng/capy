@@ -1,0 +1,24 @@
+openapi: 3.0.3
+info:
+  title: PetStore
+  version: 1.0.0
+paths:
+  - path: "/pets"
+    method: GET
+    summary: "List all pets"
+    returns: "Pet[]"
+  - path: "/pets"
+    method: POST
+    summary: "Create a pet"
+    param: { in: body, schema: "Pet" }
+    returns: "Pet"
+  - path: "/pets/{id}"
+    method: GET
+    summary: "Get a pet by ID"
+    param: { in: path, name: id, type: int }
+    returns: "Pet"
+  - path: "/pets/{id}"
+    method: DELETE
+    summary: "Delete a pet"
+    param: { in: path, name: id, type: int }
+    returns: "void"

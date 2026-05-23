@@ -57,6 +57,17 @@ var funcs = template.FuncMap{
 		}
 		return text
 	},
+	// trimSuffix removes a trailing string if present. Useful for joining
+	// generators that emit comma-suffixed lines: drop the dangling comma
+	// at the end of a list with `{{ .body | trimSuffix ",\n" }}\n`.
+	"trimSuffix": func(suffix string, s any) string {
+		text := toStringAny(s)
+		return strings.TrimSuffix(text, suffix)
+	},
+	"trimPrefix": func(prefix string, s any) string {
+		text := toStringAny(s)
+		return strings.TrimPrefix(text, prefix)
+	},
 	"join": func(sep string, items []any) string {
 		parts := make([]string, 0, len(items))
 		for _, x := range items {

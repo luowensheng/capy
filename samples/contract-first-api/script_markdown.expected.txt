@@ -1,0 +1,35 @@
+# PetStore API — v1.0.0
+
+*Generated from the canonical Capy contract. Edit `script.capy`, not this file.*
+
+## `GET "/pets"`
+
+"List all pets"
+
+- **Returns**: `"Pet[]"`
+
+
+## `POST "/pets"`
+
+"Create a pet"
+
+- **Request body**: `"Pet"`
+- **Returns**: `"Pet"`
+
+
+## `GET "/pets/{id}"`
+
+"Get a pet by ID"
+
+- **`id`** (path, `int`)
+- **Returns**: `"Pet"`
+
+
+## `DELETE "/pets/{id}"`
+
+"Delete a pet"
+
+- **`id`** (path, `int`)
+- **Returns**: `"void"`
+
+

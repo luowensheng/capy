@@ -1,0 +1,69 @@
+# Capy → OpenAPI 3.0 YAML.
+extension yaml
+
+context
+    title ""
+    version ""
+    paths []
+end
+
+function api
+    arg literal "api"
+    arg capture title string
+    arg literal "version"
+    arg capture ver string
+    template_str ""
+    run:
+        set context.title title
+        set context.version ver
+end
+
+function endpoint
+    arg literal "endpoint"
+    arg capture method ident
+    arg capture path string
+    block_closer end
+    template:
+        - path: {{ .path }}
+          method: {{ .method }}
+        {{ .body | indent 2 -}}
+end
+
+function summary
+    arg literal "summary"
+    arg capture text string
+    template_str "summary: {{ .text }}\n"
+end
+
+function param
+    arg literal "param"
+    arg capture loc ident
+    arg capture name ident
+    arg capture typ ident
+    template_str "param: { in: {{ .loc }}, name: {{ .name }}, type: {{ .typ }} }\n"
+end
+
+function param_body
+    priority 100
+    arg literal "param"
+    arg literal "body"
+    arg capture schema string
+    template_str "param: { in: body, schema: {{ .schema }} }\n"
+end
+
+function returns
+    arg literal "returns"
+    arg capture schema string
+    template_str "returns: {{ .schema }}\n"
+end
+
+function end
+end
+
+file_template:
+    openapi: 3.0.3
+    info:
+      title: {{ .context.title }}
+      version: {{ .context.version }}
+    paths:
+    {{ .body | indent 2 -}}

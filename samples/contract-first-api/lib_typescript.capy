@@ -1,0 +1,69 @@
+# Capy → TypeScript HTTP client (same DSL as lib_openapi.capy).
+extension ts
+
+context
+    title ""
+    endpoints []
+end
+
+function api
+    arg literal "api"
+    arg capture title string
+    arg literal "version"
+    arg capture ver string
+    template_str ""
+    run:
+        set context.title title
+end
+
+function endpoint
+    arg literal "endpoint"
+    arg capture method ident
+    arg capture path string
+    block_closer end
+    template:
+
+        // {{ .method }} {{ .path }}
+        export async function {{ .method }}_handler(path: string): Promise<unknown> {
+          const res = await fetch(path, { method: "{{ .method }}" });
+          return res.json();
+        }
+end
+
+function summary
+    arg literal "summary"
+    arg capture text string
+    template_str "// {{ .text }}\n"
+end
+
+function param
+    arg literal "param"
+    arg capture loc ident
+    arg capture name ident
+    arg capture typ ident
+    template_str "// @param {{ .loc }} {{ .name }}: {{ .typ }}\n"
+end
+
+function param_body
+    priority 100
+    arg literal "param"
+    arg literal "body"
+    arg capture schema string
+    template_str "// @param body {{ .schema }}\n"
+end
+
+function returns
+    arg literal "returns"
+    arg capture schema string
+    template_str "// @returns {{ .schema }}\n"
+end
+
+function end
+end
+
+file_template:
+    // ──────────────────────────────────────────────────────────
+    // {{ .context.title }} — generated TypeScript client.
+    // Source: script.capy
+    // ──────────────────────────────────────────────────────────
+    {{ .body }}

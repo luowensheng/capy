@@ -17,6 +17,256 @@ directory if you want to clone and run them yourself.
 
 ---
 
+## 📜 Grammar as contract — one source, many consumers
+
+A Capy grammar isn't just a parser definition — it's a **machine-
+verified contract**. Once it parses, downstream consumers can start
+building against it *before* the libraries that target it are
+implemented. Add new targets later without touching the source.
+
+=== "Source (the contract)"
+
+    ```
+    api "PetStore" version "1.0.0"
+
+    endpoint GET "/pets"
+        summary "List all pets"
+        returns "Pet[]"
+    end
+
+    endpoint POST "/pets"
+        summary "Create a pet"
+        param body "Pet"
+        returns "Pet"
+    end
+
+    endpoint GET "/pets/{id}"
+        summary "Get a pet by ID"
+        param path id int
+        returns "Pet"
+    end
+
+    endpoint DELETE "/pets/{id}"
+        summary "Delete a pet"
+        param path id int
+        returns "void"
+    end
+    ```
+
+    Frontend devs can mock against this *today*. Library
+    implementations can land next week, next month, never — the
+    contract is stable.
+
+=== "→ OpenAPI YAML"
+
+    ```yaml
+    openapi: 3.0.3
+    info:
+      title: PetStore
+      version: 1.0.0
+    paths:
+      - path: "/pets"
+        method: GET
+        summary: "List all pets"
+        returns: "Pet[]"
+      - path: "/pets"
+        method: POST
+        summary: "Create a pet"
+        param: { in: body, schema: "Pet" }
+        returns: "Pet"
+      - path: "/pets/{id}"
+        method: GET
+        param: { in: path, name: id, type: int }
+        returns: "Pet"
+    ```
+
+=== "→ TypeScript client stubs"
+
+    ```typescript
+    // PetStore — generated TypeScript client.
+
+    // GET "/pets"
+    // List all pets
+    export async function GET_handler(path: string): Promise<unknown> {
+      const res = await fetch(path, { method: "GET" });
+      return res.json();
+    }
+
+    // POST "/pets"
+    // Create a pet
+    // @param body "Pet"
+    export async function POST_handler(path: string): Promise<unknown> {
+      const res = await fetch(path, { method: "POST" });
+      return res.json();
+    }
+    ```
+
+=== "→ Markdown API docs"
+
+    ```markdown
+    # PetStore API — v1.0.0
+
+    *Generated from the canonical Capy contract. Edit script.capy, not this file.*
+
+    ## `GET "/pets"`
+    List all pets
+
+    - **Returns**: `Pet[]`
+
+    ## `POST "/pets"`
+    Create a pet
+
+    - **Request body**: `Pet`
+    - **Returns**: `Pet`
+    ```
+
+All three outputs come from the same `script.capy`. Every commit
+runs a golden test that proves they still match. Add a 4th target
+(Postman? FastAPI server? Rust client?) by writing one 30-line
+library — the contract guarantees compatibility.
+
+[Full sample → `samples/contract-first-api/`](https://github.com/luowensheng/capy/tree/main/samples/contract-first-api) ·
+[Pattern docs → `grammar-as-contract.md`](grammar-as-contract.md)
+
+---
+
+## ⚡ Supercharge existing syntax — Capy as a preprocessor
+
+Capy doesn't have to invent a new language. The most practical
+pattern is to put Capy macros *on top of* an existing target — SQL,
+Markdown, HTML, Dockerfile, Kubernetes — so authors get rich
+declarations while the runtime still consumes plain target syntax.
+
+=== "SQL DDL with macros"
+
+    Source (`script.capy`):
+
+    ```
+    table users
+        pk id
+        col email "varchar(255) UNIQUE NOT NULL"
+        col name  "varchar(100)"
+        timestamps
+    end
+
+    table posts
+        pk id
+        fk author_id -> users
+        col title "varchar(255) NOT NULL"
+        col body  "text"
+        timestamps
+        soft_delete
+    end
+
+    index posts author_id
+    ```
+
+    Expanded Postgres DDL (`capy run lib.capy script.capy`):
+
+    ```sql
+    CREATE TABLE users (
+      id bigserial PRIMARY KEY,
+      email varchar(255) UNIQUE NOT NULL,
+      name varchar(100),
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    );
+    CREATE TABLE posts (
+      id bigserial PRIMARY KEY,
+      author_id bigint NOT NULL REFERENCES users(id),
+      title varchar(255) NOT NULL,
+      body text,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now(),
+      deleted_at timestamptz
+    );
+    CREATE INDEX ix_posts_author_id ON posts(author_id);
+    ```
+
+    `psql -f schema.sql` — your database doesn't know Capy exists.
+    Capy is just a preprocessor that ran before `psql`.
+
+    [Full sample → `samples/supercharge-sql/`](https://github.com/luowensheng/capy/tree/main/samples/supercharge-sql)
+
+=== "Markdown blog with components"
+
+    Source:
+
+    ```
+    post "Adopting Capy at Acme" date "2026-05-24" author "Alice"
+        tag rust
+        tag devtools
+
+        para "We replaced 3 generators with one Capy library."
+        h2 "Why Capy"
+        bullet "Single source, multiple targets."
+        bullet "Library doubles as the spec."
+
+        callout note "This post is itself generated by Capy."
+
+        card "Generators retired" "3" "all replaced by 1 library"
+    end
+    ```
+
+    Output is **real Markdown** — YAML frontmatter, blockquote
+    callouts, inline HTML cards. Drop it into Hugo / Jekyll / MkDocs
+    / Next.js / Astro; they all render it natively.
+
+    ```markdown
+    ---
+    title: "Adopting Capy at Acme"
+    date: "2026-05-24"
+    author: "Alice"
+    tags: ["rust", "devtools"]
+    ---
+
+    # Adopting Capy at Acme
+
+    *By Alice · 2026-05-24*
+
+    We replaced 3 generators with one Capy library.
+
+    ## Why Capy
+
+    - Single source, multiple targets.
+    - Library doubles as the spec.
+
+    > **NOTE:** This post is itself generated by Capy.
+
+    <div class="metric-card">
+      <h3>Generators retired</h3>
+      <p class="metric">3</p>
+      <p class="caption">all replaced by 1 library</p>
+    </div>
+    ```
+
+    [Full sample → `samples/supercharge-markdown/`](https://github.com/luowensheng/capy/tree/main/samples/supercharge-markdown)
+
+=== "The pattern"
+
+    Any textual host format can be supercharged this way:
+
+    | Host format          | What Capy adds                                         |
+    |----------------------|--------------------------------------------------------|
+    | **SQL DDL**          | `pk` / `fk` / `timestamps` / `soft_delete` macros      |
+    | **Markdown**         | Frontmatter, callouts, cards, code blocks              |
+    | **HTML**             | Component primitives → plain HTML+CSS+JS               |
+    | **Dockerfile**       | `base` / `apt` / `pip` / multi-stage shortcuts         |
+    | **GitHub Actions**   | `job` / `steps` shorthand → full workflow YAML         |
+    | **Terraform HCL**    | Module shortcuts, env-aware defaults                   |
+    | **Kubernetes**       | One-liner deployments → full manifests                 |
+    | **OpenAPI**          | Endpoint shorthand → full operation + schema           |
+    | **Mermaid**          | High-level diagram syntax → node + edge DSL            |
+
+    The recipe is always identical: define a Capy library whose
+    `file_template:` outputs the host format. Authors compose at
+    the high level; the existing runtime consumes the low-level
+    output unchanged.
+
+    [Full pattern docs → `extending-existing-syntax.md`](extending-existing-syntax.md)
+
+---
+
 ## 🔒 Named variables + type checking
 
 Capy captures are **named** and **typed**. Built-in kinds (`int`,

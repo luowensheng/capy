@@ -1,0 +1,95 @@
+# Capy + Markdown — extend Markdown with structured frontmatter,
+# callouts, cards, and code blocks. Output is plain Markdown that
+# any static site generator (Hugo, Jekyll, MkDocs, Next.js) renders.
+extension md
+
+context
+    tags []
+end
+
+function post
+    arg literal "post"
+    arg capture title string
+    arg literal "date"
+    arg capture date string
+    arg literal "author"
+    arg capture author string
+    block_closer end
+    template:
+        ---
+        title: {{ .title }}
+        date: {{ .date }}
+        author: {{ .author }}
+        tags: [{{ range $i, $t := .context.tags }}{{ if $i }}, {{ end }}"{{ $t }}"{{ end }}]
+        ---
+
+        # {{ .title | unquote }}
+
+        *By {{ .author | unquote }} · {{ .date | unquote }}*
+
+        {{ .body }}
+end
+
+function tag
+    arg literal "tag"
+    arg capture name ident
+    template_str ""
+    run:
+        append context.tags name
+end
+
+function para
+    arg literal "para"
+    arg capture text string
+    template_str "{{ .text | unquote }}\n\n"
+end
+
+function h2
+    arg literal "h2"
+    arg capture text string
+    template_str "## {{ .text | unquote }}\n\n"
+end
+
+function bullet
+    arg literal "bullet"
+    arg capture text string
+    template_str "- {{ .text | unquote }}\n"
+end
+
+function callout
+    arg literal "callout"
+    arg capture kind ident
+    arg capture text string
+    template:
+        > **{{ .kind | upper }}:** {{ .text | unquote }}
+
+end
+
+function card
+    arg literal "card"
+    arg capture title string
+    arg capture metric string
+    arg capture caption string
+    template:
+
+        <div class="metric-card">
+          <h3>{{ .title | unquote }}</h3>
+          <p class="metric">{{ .metric | unquote }}</p>
+          <p class="caption">{{ .caption | unquote }}</p>
+        </div>
+
+end
+
+function code
+    arg literal "code"
+    arg capture lang ident
+    arg capture text string
+    template:
+        ```{{ .lang }}
+        {{ .text | unquote }}
+        ```
+
+end
+
+function end
+end
