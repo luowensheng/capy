@@ -52,6 +52,8 @@ nav:
   - Embed in Go: embedding.md
   - For AI agents:
     - Overview & patterns: ai-agents.md
+    - MCP server setup: mcp.md
+    - Integration cookbook: cookbook-ai.md
     - Single-page brief: CAPY_FOR_LLMS.md
   - Guide:
     - Library authoring: library-authoring.md

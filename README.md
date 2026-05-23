@@ -111,6 +111,9 @@ go install github.com/luowensheng/capy/cmd/capy@latest
 # Go users — embed Capy as a library
 go get github.com/luowensheng/capy
 
+# MCP server for AI agents (Claude Desktop, Claude Code, Cursor, Zed)
+go install github.com/luowensheng/capy/cmd/capy-mcp@latest
+
 # macOS / Linux (binary, no Go required)
 curl -fsSL https://raw.githubusercontent.com/luowensheng/capy/main/scripts/install.sh | sh
 
@@ -162,6 +165,8 @@ go build -o capy ./cmd/capy
 |---|---|
 | [docs/getting-started.md](docs/getting-started.md) | Five-minute tour |
 | [docs/embedding.md](docs/embedding.md) | Embedding Capy as a Go library in your own program |
+| [docs/mcp.md](docs/mcp.md) | MCP server setup for Claude Desktop / Claude Code / Cursor / Zed |
+| [docs/cookbook-ai.md](docs/cookbook-ai.md) | AI integration cookbook (10 recipes) |
 | [docs/library-authoring.md](docs/library-authoring.md) | Writing your own `lib.yaml` |
 | [docs/capy-libraries.md](docs/capy-libraries.md) | Writing libraries in Capy's own syntax (`.capy` format) |
 | [docs/language-reference.md](docs/language-reference.md) | Surface grammar + lexer behavior |

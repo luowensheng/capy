@@ -50,6 +50,13 @@ hide:
     against the library — sandboxed, deterministic, 5–10× fewer
     tokens. Or both. [Read the AI guide →](ai-agents.md)
 
+- :material-connection: **MCP server + Claude Code skill — drop-in AI integration**
+
+    `capy-mcp` exposes three tools (`capy_check`, `capy_run`,
+    `capy_run_file`) to any MCP client — Claude Desktop, Claude
+    Code, Cursor, Zed. Plus a SKILL.md that tells agents *when* to
+    reach for it. [MCP setup →](mcp.md) · [AI cookbook →](cookbook-ai.md)
+
 - :material-shield-check: **Named variables, validated types**
 
     Every capture is a named, typed variable. Built-ins (`int`,

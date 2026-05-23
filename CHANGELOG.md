@@ -8,6 +8,46 @@ may break between minor versions** (see `CONTRIBUTING.md`).
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-05-24
+
+AI-integration release. Capy now ships an MCP server, a dedicated
+Claude Code skill, and a cookbook of integration patterns.
+
+### Added
+
+- **`capy-mcp`** — a Model Context Protocol server (`cmd/capy-mcp`)
+  exposing three tools over stdio JSON-RPC 2.0:
+  - `capy_check` — validate a library; list its functions/types.
+  - `capy_run` — transpile a script through an inline library string.
+  - `capy_run_file` — same, with paths to existing files on disk.
+
+  Format (`yaml` / `capy` / `auto`) is sniffed from the first
+  non-comment line. Shipped as a separate binary in every release
+  archive (`capy-mcp`, alongside `capy`). Works with Claude Desktop,
+  Claude Code, Cursor, Zed, and any MCP-aware client.
+
+- **`skills/capy-mcp/SKILL.md`** — Claude Code skill describing
+  *when* to reach for Capy via MCP and how to operate the three
+  tools. Pairs with the pre-existing `skills/capy-author/SKILL.md`.
+
+- **`docs/mcp.md`** — full MCP setup guide with config snippets for
+  Claude Desktop, Claude Code, Cursor, and direct JSON-RPC.
+
+- **`docs/cookbook-ai.md`** — ten copy-pasteable recipes covering
+  drop-in MCP install, sandboxed agent loops, token compression
+  math, AI-builds-library-human-uses-it, typed safe surfaces,
+  one-DSL-many-targets, embedded Go agents, skill+MCP wiring,
+  self-correcting agents, and prompt-side guidance.
+
+### Changed
+
+- `.goreleaser.yaml` builds and ships the `capy-mcp` binary
+  alongside `capy` in every release archive across all five
+  platforms (linux/darwin/windows × amd64/arm64).
+- Homepage feature grid: new "MCP server + Claude Code skill" card.
+- MkDocs nav: "For AI agents" group expanded with MCP setup and the
+  integration cookbook.
+
 ## [0.2.0] — 2026-05-24
 
 A substantial feature release. Two new entry points (Capy-native
