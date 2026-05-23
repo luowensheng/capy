@@ -170,6 +170,11 @@ func (p *capyLibParser) parseTop() (RawLibrary, error) {
 				return lib, err
 			}
 			lib.Types[name] = td
+		case "context":
+			p.nextLine()
+			if err := p.parseContext(lib.Context); err != nil {
+				return lib, err
+			}
 		case "file_template:":
 			p.nextLine()
 			// file_template is always the last top-level item; capture
@@ -352,6 +357,92 @@ func (p *capyLibParser) parseIndentedBlock(parentIndent int) (string, error) {
 		res = res[:len(res)-1]
 	}
 	return res, nil
+}
+
+// parseContext reads the body of a `context ... end` block. Each line is
+//
+//	NAME [ ] | { } | <STRING> | <NUMBER>
+//
+// where `[]` means initial empty list, `{}` means empty map, a quoted string
+// means a string literal default, and a bare number means a numeric default.
+// More elaborate shapes belong in YAML.
+func (p *capyLibParser) parseContext(ctx map[string]any) error {
+	for {
+		line, indent, ok := p.peekLine()
+		if !ok {
+			return p.errf("unexpected EOF inside context")
+		}
+		if indent == 0 {
+			tokens, err := tokenizeLibLine(line)
+			if err != nil {
+				return p.errf("%v", err)
+			}
+			if len(tokens) == 1 && tokens[0] == "end" {
+				p.nextLine()
+				return nil
+			}
+			return p.errf("expected `end` to close context, got %q", strings.TrimSpace(line))
+		}
+		tokens, err := tokenizeLibLine(line)
+		if err != nil {
+			return p.errf("%v", err)
+		}
+		if len(tokens) == 0 {
+			p.nextLine()
+			continue
+		}
+		p.nextLine()
+		if len(tokens) < 2 {
+			return p.errf("context entry needs `NAME VALUE`, got %v", tokens)
+		}
+		name := tokens[0]
+		rest := tokens[1:]
+		val, err := parseContextValue(rest)
+		if err != nil {
+			return p.errf("context %q: %v", name, err)
+		}
+		ctx[name] = val
+	}
+}
+
+func parseContextValue(toks []string) (any, error) {
+	if len(toks) == 1 {
+		t := toks[0]
+		if t == "[]" {
+			return []any{}, nil
+		}
+		if t == "{}" {
+			return map[string]any{}, nil
+		}
+		if t == "true" {
+			return true, nil
+		}
+		if t == "false" {
+			return false, nil
+		}
+		// numeric?
+		if n, err := strconv.ParseInt(t, 10, 64); err == nil {
+			return n, nil
+		}
+		if f, err := strconv.ParseFloat(t, 64); err == nil {
+			return f, nil
+		}
+		// fallback: string
+		return t, nil
+	}
+	if toks[0] == "[" && toks[len(toks)-1] == "]" {
+		// inline list of scalars: [ a b c ]
+		out := make([]any, 0, len(toks)-2)
+		for _, t := range toks[1 : len(toks)-1] {
+			v, err := parseContextValue([]string{t})
+			if err != nil {
+				return nil, err
+			}
+			out = append(out, v)
+		}
+		return out, nil
+	}
+	return strings.Join(toks, " "), nil
 }
 
 // parseType reads `type NAME` body lines until matching `end` at column 0.

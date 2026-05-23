@@ -1,11 +1,57 @@
 # Library Authoring Guide
 
-A library YAML file is the entire grammar of one source language, plus the
-recipe for generating output from it. This doc is the reference walkthrough.
+A Capy library is the entire grammar of one source language, plus the
+recipe for generating output from it. This doc is the reference
+walkthrough.
+
+A library can be written in either of two interchangeable formats:
+
+- **`.capy`** — Capy's native syntax. **Recommended for new libraries.**
+  Terser, multi-line templates read natively, same indentation and string
+  rules as the source files the library will parse.
+- **`.yaml`** — same library expressed in YAML. Useful when you want
+  downstream tooling (yq, JSON schema, language servers).
+
+Both formats parse into the same in-memory DTO and run through the same
+engine. Output is byte-identical. See [.capy libraries](capy-libraries.md)
+for the format comparison.
+
+The reference below shows both forms side by side. Skip whichever you
+don't need.
 
 ## File shape
 
-A complete Capy library has these top-level keys (all optional except `functions`):
+A complete Capy library has these top-level sections (all optional
+except `functions`):
+
+### Capy-native form
+
+```
+extension     py                  # informational; suggests target extension
+output_file   ""                  # if set, capy writes here instead of stdout
+
+context                           # initial schema for the accumulated context
+    imports []
+    classes []
+end
+
+type Email                        # library-defined argument types
+    pattern "^[^@]+@[^@]+\\.[^@]+$"
+end
+
+function greet                    # one DSL statement shape
+    arg literal "greet"
+    arg capture name string
+    template_str "..."
+    run:
+        ...
+end
+
+file_template:                    # final-output assembler
+    {{- .body -}}
+```
+
+### YAML form (same library, same engine)
 
 ```yaml
 extension:    py                # informational; suggests the target file extension

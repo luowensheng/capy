@@ -187,6 +187,40 @@ end
 	}
 }
 
+func TestCapyLib_ContextBlock(t *testing.T) {
+	src := `
+extension py
+
+context
+    imports []
+    counter 0
+    name "default"
+    flag true
+end
+
+function noop
+    arg literal "noop"
+    template_str ""
+end
+`
+	lib, err := parseCapyLib(src)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if got, ok := lib.Context["imports"].([]any); !ok || len(got) != 0 {
+		t.Errorf("imports: %T %v", lib.Context["imports"], lib.Context["imports"])
+	}
+	if lib.Context["counter"] != int64(0) {
+		t.Errorf("counter: %#v", lib.Context["counter"])
+	}
+	if lib.Context["name"] != "default" {
+		t.Errorf("name: %#v", lib.Context["name"])
+	}
+	if lib.Context["flag"] != true {
+		t.Errorf("flag: %#v", lib.Context["flag"])
+	}
+}
+
 func TestCapyLib_RejectsUnknownTop(t *testing.T) {
 	_, err := parseCapyLib("nonsense foo\n")
 	if err == nil || !strings.Contains(err.Error(), "unknown") {

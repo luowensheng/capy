@@ -8,6 +8,44 @@ may break between minor versions** (see `CONTRIBUTING.md`).
 
 ## [Unreleased]
 
+## [0.3.1] — 2026-05-24
+
+Reframing release. Capy is now consistently presented as a library
+written in **Capy's own `.capy` syntax**, with YAML as one supported
+alternative format rather than the canonical form. Plus one missing
+parser feature needed to make the docs accurate.
+
+### Added
+
+- **`context ... end` blocks in `.capy` libraries.** Same DTO as the
+  YAML `context:` section — declares initial context fields with
+  defaults (`[]`, `{}`, scalars). Brings `.capy` to feature parity
+  with YAML for the four most common library sections (`functions`,
+  `types`, `context`, `file_template`).
+
+### Changed
+
+- README, `docs/index.md`, `docs/getting-started.md`,
+  `docs/library-authoring.md`, `docs/CAPY_FOR_LLMS.md`, and both
+  `skills/*/SKILL.md` files reframed: Capy is a transpiler engine
+  driven by a `.capy` library; YAML is supported for the same
+  library when downstream tooling needs it.
+- README 30-second teaser rewritten in `.capy` syntax (verified to
+  run end-to-end).
+- Homepage feature cards no longer say "define in YAML" — they say
+  "define in a `.capy` library (or YAML)".
+- CAPY_FOR_LLMS now shows the schema in `.capy` form first, with
+  YAML alongside.
+
+### Why
+
+For users new to Capy, leading with YAML was misleading: it
+implied Capy *is* a YAML configuration framework, when it's actually
+a transpiler engine that happens to accept libraries in two
+equivalent textual formats. The `.capy` form is more idiomatic and
+shares lexical rules with the source files the library will parse —
+so authors only need one mental model.
+
 ## [0.3.0] — 2026-05-24
 
 AI-integration release. Capy now ships an MCP server, a dedicated

@@ -7,8 +7,9 @@ hide:
 # Capy
 
 > **A transpiler engine with zero default grammar.** Define a tiny
-> source language in YAML; the engine turns input into any target
-> text you describe — Python, SQL, JSON, Kubernetes manifests,
+> source language in a Capy library file (`.capy` — Capy's native
+> syntax — or YAML if you prefer). The engine turns input into any
+> target text you describe — Python, SQL, JSON, Kubernetes manifests,
 > Markdown, your custom DSL. 50 worked demos in the repo.
 
 [Get started in 5 minutes :material-rocket-launch:](getting-started.md){ .md-button .md-button--primary }
@@ -25,8 +26,9 @@ hide:
 - :material-file-cog: **Generate any target text**
 
     Python, SQL, k8s YAML, Terraform HCL, Markdown, your custom
-    format. Define what you want in YAML; Capy produces the target
-    deterministically. Same engine, any output.
+    format. Define what you want in a `.capy` library (or YAML if
+    you prefer); Capy produces the target deterministically. Same
+    engine, any output.
 
 - :material-sync: **One source, many targets**
 
@@ -40,8 +42,9 @@ hide:
     Easier to read than 800 lines of string-builder code in Go or
     Python. Easier to diff, audit, and review. Non-engineers can
     follow what's possible by reading the library. Write libraries
-    in **YAML** or in **[Capy's own syntax](capy-libraries.md)** —
-    same engine, same output.
+    in **[Capy's native `.capy` syntax](capy-libraries.md)** (the
+    default) or in **YAML** for downstream tooling — same engine,
+    byte-identical output.
 
 - :material-robot: **AI on either side, on your terms**
 
@@ -101,7 +104,7 @@ Source is short and declarative; targets are real, runnable artifacts.
     Three different libraries produce three real artifacts — without
     touching the source file:
 
-    **`lib_sql.yaml` →** SQL inserts
+    **`lib_sql.capy` →** SQL inserts
 
     ```sql
     INSERT INTO users (name, age, status) VALUES ('alice', 30, 'active');
@@ -109,7 +112,7 @@ Source is short and declarative; targets are real, runnable artifacts.
     INSERT INTO users (name, age, status) VALUES ('carol', 42, 'active');
     ```
 
-    **`lib_json.yaml` →** JSON
+    **`lib_json.capy` →** JSON
 
     ```json
     { "users": [
@@ -119,7 +122,7 @@ Source is short and declarative; targets are real, runnable artifacts.
     ] }
     ```
 
-    **`lib_md.yaml` →** Markdown table
+    **`lib_md.capy` →** Markdown table
 
     ```
     | Name  | Age | Status   |
@@ -699,7 +702,7 @@ in what order?*
 | Output passes type validation | ⚠️ sometimes | ✅ always (when types declared) |
 | Output uses only allowed APIs / tables / hosts | ⚠️ depends on prompt | ✅ enforced by library |
 | Same input produces same output | ❌ | ✅ |
-| Easy to audit what the agent can produce | ❌ | ✅ (`capy check lib.yaml`) |
+| Easy to audit what the agent can produce | ❌ | ✅ (`capy check lib.capy`) |
 | Single point of fix when target changes | ❌ | ✅ (edit one library) |
 
 The combined effect: fewer retries, fewer guardrails to write,
@@ -741,7 +744,7 @@ capy help
 
 - :material-pencil: **[Library authoring](library-authoring.md)**
 
-    The reference walkthrough for writing your own `lib.yaml`.
+    The reference walkthrough for writing your own `lib.capy`.
 
 - :material-robot: **[Capy for AI agents](ai-agents.md)**
 

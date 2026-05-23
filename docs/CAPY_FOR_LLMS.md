@@ -1,25 +1,73 @@
 # Capy for LLMs — single-page brief
 
-Paste this into a model's context window when you want it to author Capy
-library YAML. Covers the schema, the inner DSL, and the common pitfalls.
-About 600 lines of prose; designed to be self-contained.
+Paste this into a model's context window when you want it to author a
+Capy library. Covers the schema (in both Capy-native and YAML forms),
+the inner DSL, and the common pitfalls. About 600 lines of prose;
+designed to be self-contained.
 
 ---
 
 ## What Capy is
 
 A transpiler engine. You define a source-language grammar + transformation
-in a `lib.yaml` file. Capy reads source code, matches each statement
-against the library's function shapes, and for each match (a) renders the
-function's `template:` into the output body and (b) updates an accumulated
-`context` via the function's `run:` snippet. A top-level `file_template:`
-assembles `body` + `context` into the final output.
+in a **library file** (`.capy` — Capy's native syntax — or `.yaml` for
+the same library expressed in YAML). Capy reads source code, matches each
+statement against the library's function shapes, and for each match (a)
+renders the function's `template:` into the output body and (b) updates
+an accumulated `context` via the function's `run:` snippet. A top-level
+`file_template:` assembles `body` + `context` into the final output.
 
 There are NO built-in user-facing keywords. Every shape is library-defined.
 
+**Format choice:** prefer `.capy` for new libraries — terser, multi-line
+templates read natively, no YAML escape gotchas. Use YAML only when
+you specifically want downstream tooling (yq, JSON schema). Both formats
+parse into the same in-memory DTO and run through the same engine; output
+is byte-identical.
+
 ---
 
-## The YAML schema
+## The library schema — Capy-native form (recommended)
+
+```
+extension <str>              # informational; suggests output file extension
+output_file <str>            # optional; write output here instead of stdout
+
+context                      # initial accumulated state
+    <name> []                # empty list
+    <name> {}                # empty map
+    <name> 0                 # numeric default
+    <name> "default"         # string default
+end
+
+type <TypeName>              # library-defined argument type
+    base <kind>              # optional: any|string|int|float|bool
+    pattern "<regex>"        # optional: regex on the value's string form
+    options "v1" "v2" "v3"   # optional: enum membership
+end
+
+function <NAME>              # one DSL statement shape
+    priority <int>           # optional; higher wins ambiguous matches
+    arg literal "TEXT"       # match a literal token
+    arg capture <NAME> <TYPE> # capture a typed named variable
+    block_closer <NAME>      # block opener: body runs until <NAME> appears
+    block_open "OPEN" close "CLOSE"   # alternative: explicit delimiters
+    template_str "..."       # single-line inline template
+    template:                # multi-line template; ends at dedent
+        ...
+    run:                     # inner-DSL block (context mutations)
+        ...
+end
+
+file_template:               # whole-file wrapper; captures to EOF
+    ...
+```
+
+Strings use double quotes with Go-style escapes (`\n`, `\t`, `\"`, `\\`).
+Bare words are accepted for `extension`, type names, and capture names.
+Indentation delimits `template:` / `run:` / `file_template:` blocks.
+
+## The library schema — YAML form (same semantics)
 
 ```yaml
 extension: <str>             # informational; suggests output file extension

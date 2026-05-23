@@ -1,7 +1,8 @@
 # Capy
 
 > A transpiler engine with zero default grammar. You define a tiny source
-> language in YAML; Capy generates the target output.
+> language in a Capy library (`.capy` — Capy's native syntax — or YAML),
+> and Capy generates the target output.
 
 [![CI](https://github.com/luowensheng/capy/actions/workflows/ci.yml/badge.svg)](https://github.com/luowensheng/capy/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/luowensheng/capy?include_prereleases)](https://github.com/luowensheng/capy/releases)
@@ -20,30 +21,32 @@ all defined by the library, or not at all if your DSL doesn't need them.
 
 ## 30-second teaser
 
-**`lib.yaml`**
+**`lib.capy`** (Capy's native library syntax — no YAML required)
 
-```yaml
-extension: py
-context: { imports: [] }
+```
+extension py
 
-functions:
-  import:
-    args:
-      - { kind: literal, value: "import" }
-      - { kind: capture, name: name, type: ident }
-    template: ""
-    run: |
-      append context.imports name
+context
+    imports []
+end
 
-  say:
-    args:
-      - { kind: capture, name: msg, type: any }
-    template: "print({{ .msg }})\n"
+function import
+    arg literal "import"
+    arg capture name ident
+    template_str ""
+    run:
+        append context.imports name
+end
 
-file_template: |
-  {{- range .context.imports }}import {{ . }}
-  {{ end }}
-  {{- .body -}}
+function say
+    arg capture msg any
+    template_str "print({{ .msg }})\n"
+end
+
+file_template:
+    {{- range .context.imports }}import {{ . }}
+    {{ end }}
+    {{- .body -}}
 ```
 
 **`script.capy`**
@@ -63,8 +66,12 @@ print("hello, world")
 ```
 
 The library is the entire grammar. Swap it and the same engine produces
-HTML, SQL, JSON, Makefiles — anything you can describe with `args:` +
-`template:` + `run:`.
+HTML, SQL, JSON, Makefiles — anything you can describe with patterns,
+templates, and run blocks.
+
+Prefer YAML for downstream tooling (yq, JSON schema)? Same library
+works as `lib.yaml` — see [`docs/capy-libraries.md`](docs/capy-libraries.md)
+for the trade-offs.
 
 ---
 
