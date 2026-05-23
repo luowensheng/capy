@@ -1,0 +1,63 @@
+# Same Capy source → Python.
+extension: py
+
+functions:
+  fn:
+    args:
+      - { kind: literal, value: "fn" }
+      - { kind: capture, name: name, type: ident }
+      - { kind: literal, value: "(" }
+      - { kind: capture, name: a, type: ident }
+      - { kind: literal, value: "," }
+      - { kind: capture, name: b, type: ident }
+      - { kind: literal, value: ")" }
+    block: { closer: end }
+    template: |
+      def {{ .name }}({{ .a }}, {{ .b }}):
+      {{ .body | indent 4 }}
+
+  return:
+    args:
+      - { kind: literal, value: "return" }
+      - { kind: capture, name: l, type: any }
+      - { kind: literal, value: "+" }
+      - { kind: capture, name: r, type: any }
+    template: "return {{ .l }} + {{ .r }}\n"
+
+  main:
+    args: [{ kind: literal, value: "main" }]
+    block: { closer: end }
+    template: |
+
+      if __name__ == "__main__":
+      {{ .body | indent 4 }}
+
+  let_call:
+    priority: 100
+    args:
+      - { kind: literal, value: "let" }
+      - { kind: capture, name: name, type: ident }
+      - { kind: literal, value: "=" }
+      - { kind: capture, name: fn, type: ident }
+      - { kind: literal, value: "(" }
+      - { kind: capture, name: a, type: any }
+      - { kind: literal, value: "," }
+      - { kind: capture, name: b, type: any }
+      - { kind: literal, value: ")" }
+    template: "{{ .name }} = {{ .fn }}({{ .a }}, {{ .b }})\n"
+
+  let:
+    args:
+      - { kind: literal, value: "let" }
+      - { kind: capture, name: name, type: ident }
+      - { kind: literal, value: "=" }
+      - { kind: capture, name: value, type: any }
+    template: "{{ .name }} = {{ .value }}\n"
+
+  print:
+    args:
+      - { kind: literal, value: "print" }
+      - { kind: capture, name: value, type: any }
+    template: "print({{ .value }})\n"
+
+  end: {}

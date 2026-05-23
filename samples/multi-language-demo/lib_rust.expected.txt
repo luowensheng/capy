@@ -1,0 +1,12 @@
+fn add(a: i32, b: i32) -> i32 {
+    return a + b;
+
+}
+
+fn main() {
+    let x: i32 = 5;
+    let y: i32 = 7;
+    let z: i32 = add(x, y);
+    println!("{}", z);
+
+}

@@ -1,0 +1,10 @@
+fn add(a, b)
+    return a + b
+end
+
+main
+    let x = 5
+    let y = 7
+    let z = add(x, y)
+    print z
+end

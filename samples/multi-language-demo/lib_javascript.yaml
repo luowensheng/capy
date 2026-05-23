@@ -1,0 +1,65 @@
+# Same Capy source → JavaScript.
+extension: js
+
+functions:
+  fn:
+    args:
+      - { kind: literal, value: "fn" }
+      - { kind: capture, name: name, type: ident }
+      - { kind: literal, value: "(" }
+      - { kind: capture, name: a, type: ident }
+      - { kind: literal, value: "," }
+      - { kind: capture, name: b, type: ident }
+      - { kind: literal, value: ")" }
+    block: { closer: end }
+    template: |
+      function {{ .name }}({{ .a }}, {{ .b }}) {
+      {{ .body | indent 2 }}
+      }
+
+  return:
+    args:
+      - { kind: literal, value: "return" }
+      - { kind: capture, name: l, type: any }
+      - { kind: literal, value: "+" }
+      - { kind: capture, name: r, type: any }
+    template: "return {{ .l }} + {{ .r }};\n"
+
+  main:
+    args: [{ kind: literal, value: "main" }]
+    block: { closer: end }
+    template: |
+
+      (function main() {
+      {{ .body | indent 2 }}
+      })();
+
+  let_call:
+    priority: 100
+    args:
+      - { kind: literal, value: "let" }
+      - { kind: capture, name: name, type: ident }
+      - { kind: literal, value: "=" }
+      - { kind: capture, name: fn, type: ident }
+      - { kind: literal, value: "(" }
+      - { kind: capture, name: a, type: any }
+      - { kind: literal, value: "," }
+      - { kind: capture, name: b, type: any }
+      - { kind: literal, value: ")" }
+    template: "const {{ .name }} = {{ .fn }}({{ .a }}, {{ .b }});\n"
+
+  let:
+    args:
+      - { kind: literal, value: "let" }
+      - { kind: capture, name: name, type: ident }
+      - { kind: literal, value: "=" }
+      - { kind: capture, name: value, type: any }
+    template: "const {{ .name }} = {{ .value }};\n"
+
+  print:
+    args:
+      - { kind: literal, value: "print" }
+      - { kind: capture, name: value, type: any }
+    template: "console.log({{ .value }});\n"
+
+  end: {}
