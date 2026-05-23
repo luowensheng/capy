@@ -1,0 +1,4 @@
+game     "Breakout"  480 320
+paddle   80 10  7
+ball     6 4 4
+bricks   5 8 56 14 4

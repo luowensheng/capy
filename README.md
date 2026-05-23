@@ -105,8 +105,11 @@ Continue, and Aider.
 ## Install
 
 ```sh
-# Go users
+# Go users — CLI
 go install github.com/luowensheng/capy/cmd/capy@latest
+
+# Go users — embed Capy as a library
+go get github.com/luowensheng/capy
 
 # macOS / Linux (binary, no Go required)
 curl -fsSL https://raw.githubusercontent.com/luowensheng/capy/main/scripts/install.sh | sh
@@ -116,6 +119,29 @@ brew install luowensheng/tap/capy
 ```
 
 Or download a binary from the [releases page](https://github.com/luowensheng/capy/releases).
+
+### Embed in your Go program
+
+No `capy` binary required at runtime. Your program defines its own grammar inline:
+
+```go
+import "github.com/luowensheng/capy"
+
+lib, _ := capy.NewLibrary(`
+    extension html
+    function button
+        arg literal "button"
+        arg capture label string
+        template_str "<button>{{ .label }}</button>\n"
+    end
+`)
+out, _ := lib.Run(`button "Click me"`)
+// → <button>"Click me"</button>
+```
+
+See the [embedding guide](docs/embedding.md) and the runnable
+[`examples/embed-html-dsl/`](examples/embed-html-dsl) for full
+patterns (loading from disk, multiple grammars per process, hot-swap).
 
 ---
 
@@ -135,6 +161,7 @@ go build -o capy ./cmd/capy
 | Reading order | What it covers |
 |---|---|
 | [docs/getting-started.md](docs/getting-started.md) | Five-minute tour |
+| [docs/embedding.md](docs/embedding.md) | Embedding Capy as a Go library in your own program |
 | [docs/library-authoring.md](docs/library-authoring.md) | Writing your own `lib.yaml` |
 | [docs/capy-libraries.md](docs/capy-libraries.md) | Writing libraries in Capy's own syntax (`.capy` format) |
 | [docs/language-reference.md](docs/language-reference.md) | Surface grammar + lexer behavior |

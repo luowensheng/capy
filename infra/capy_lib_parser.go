@@ -43,6 +43,17 @@ func (CapyLibParser) ParseFile(path string) (RawLibrary, error) {
 	return parseCapyLib(string(b))
 }
 
+// ParseBytes parses a Capy-native library directly from in-memory bytes.
+// Used by the embedding API (top-level `capy` package).
+func (CapyLibParser) ParseBytes(b []byte) (RawLibrary, error) {
+	return parseCapyLib(string(b))
+}
+
+// ParseString is the ergonomic in-memory entry point.
+func (CapyLibParser) ParseString(s string) (RawLibrary, error) {
+	return parseCapyLib(s)
+}
+
 func parseCapyLib(src string) (RawLibrary, error) {
 	lines := strings.Split(strings.ReplaceAll(src, "\r\n", "\n"), "\n")
 	p := &capyLibParser{lines: lines, lineNo: 0}

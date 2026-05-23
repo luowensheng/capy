@@ -1,0 +1,3 @@
+game  "Snake"  400 400
+grid  20 20
+speed 110

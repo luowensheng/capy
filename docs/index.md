@@ -50,6 +50,20 @@ hide:
     against the library — sandboxed, deterministic, 5–10× fewer
     tokens. Or both. [Read the AI guide →](ai-agents.md)
 
+- :material-language-go: **Embed in your Go program — no binary required**
+
+    `go get github.com/luowensheng/capy`, then your program defines
+    its own DSL inline:
+
+    ```go
+    lib, _ := capy.NewLibrary(`function greet ...`)
+    out, _ := lib.Run(userInput)
+    ```
+
+    Ship a CLI with a friendly config DSL, build a Prisma-style code
+    generator, give users hot-swappable grammars — in pure Go, no
+    subprocess. [Embedding guide →](embedding.md)
+
 </div>
 
 ---

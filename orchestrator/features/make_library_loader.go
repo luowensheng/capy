@@ -17,6 +17,27 @@ import (
 //   - args list → []ArgEntry → []PatternElement
 //   - run: snippet → InnerBlock AST (parsed via the outer lexer + inner parser)
 //   - types/context/file_template carried through
+// LoadLibraryFromBytes compiles an in-memory library — YAML or Capy-native,
+// detected by the `format` argument ("yaml" or "capy") — into a usable
+// domain.Library. Public so the top-level `capy` package can embed Capy
+// without filesystem round-trips.
+func LoadLibraryFromBytes(format string, src []byte, tokenize func(string) ([]domain.Token, error)) (domain.Library, error) {
+	var raw infra.RawLibrary
+	var err error
+	switch strings.ToLower(format) {
+	case "capy":
+		raw, err = infra.CapyLibParser{}.ParseBytes(src)
+	case "yaml", "yml", "":
+		raw, err = infra.YamlParser{}.ParseBytes(src)
+	default:
+		return domain.Library{}, fmt.Errorf("unknown library format %q (want \"yaml\" or \"capy\")", format)
+	}
+	if err != nil {
+		return domain.Library{}, err
+	}
+	return mapLibrary(raw, tokenize)
+}
+
 func MakeLibraryLoader(yp infra.YamlParser, tokenize func(string) ([]domain.Token, error)) features.LibraryLoader {
 	cp := infra.CapyLibParser{}
 	return features.LibraryLoader{

@@ -17,6 +17,60 @@ directory if you want to clone and run them yourself.
 
 ---
 
+## 🕹️ Playable games — Capy is not a toy
+
+The next two tabs are **fully playable HTML5 games** generated from
+3–4 lines of Capy DSL. Click into a canvas and play — keys are
+captured locally to the iframe.
+
+=== "Breakout (4 lines of DSL)"
+
+    **Source** (`script.capy`):
+
+    ```
+    game     "Breakout"  480 320
+    paddle   80 10  7
+    ball     6 4 4
+    bricks   5 8 56 14 4
+    ```
+
+    Four lines. The library generates a **174-line working game**:
+    paddle/ball physics, collision with spin off the paddle, 5×8
+    brick wall with per-row colors and score values, lives, win/lose
+    screens, restart.
+
+    <iframe src="../assets/demos/breakout.html" width="100%" height="400" style="border: 1px solid #444; background: #0a0a14;"></iframe>
+
+    ← / → to move · space to launch · R to restart
+
+    [Library + source → `samples/interactive-breakout/`](https://github.com/luowensheng/capy/tree/main/samples/interactive-breakout)
+
+=== "Snake (3 lines of DSL)"
+
+    **Source**:
+
+    ```
+    game  "Snake"  400 400
+    grid  20 20
+    speed 110
+    ```
+
+    Three lines. **131-line working Snake**: arrow + WASD controls,
+    anti-reverse, growing snake with per-segment gradient, food
+    spawning that avoids the body, best-score saved to
+    `localStorage`, pause (space), restart (R).
+
+    <iframe src="../assets/demos/snake.html" width="100%" height="460" style="border: 1px solid #2a3; background: #0a140a;"></iframe>
+
+    [Library + source → `samples/interactive-snake/`](https://github.com/luowensheng/capy/tree/main/samples/interactive-snake)
+
+These two demos prove Capy can produce real interactive artifacts —
+not just toy "hello world" code. The DSL is configuration; the
+*library* contains the game logic, written once, reused with
+different parameters per game.
+
+---
+
 ## 🎮 Interactive HTML — see the rendered output
 
 These are full HTML documents. The Capy source is short; the

@@ -60,11 +60,17 @@ type RawType struct {
 type YamlParser struct{}
 
 func (YamlParser) ParseFile(path string) (RawLibrary, error) {
-	var raw RawLibrary
 	b, err := os.ReadFile(path)
 	if err != nil {
-		return raw, err
+		return RawLibrary{}, err
 	}
+	return YamlParser{}.ParseBytes(b)
+}
+
+// ParseBytes parses a library directly from in-memory bytes, no filesystem
+// round-trip. Used by the embedding API (top-level `capy` package).
+func (YamlParser) ParseBytes(b []byte) (RawLibrary, error) {
+	var raw RawLibrary
 	if err := yaml.Unmarshal(b, &raw); err != nil {
 		return raw, err
 	}

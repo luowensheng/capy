@@ -49,6 +49,7 @@ nav:
   - Getting started: getting-started.md
   - Live demos: showcase.md
   - Use cases: use-cases.md
+  - Embed in Go: embedding.md
   - For AI agents:
     - Overview & patterns: ai-agents.md
     - Single-page brief: CAPY_FOR_LLMS.md
