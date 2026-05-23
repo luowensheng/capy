@@ -40,6 +40,81 @@ var funcs = template.FuncMap{
 	},
 	"lower": strings.ToLower,
 	"upper": strings.ToUpper,
+	// pascalCase converts a human-readable string ("Habit Tracker", "habit
+	// tracker", "habit-tracker", "habit_tracker") into a PascalCase
+	// identifier ("HabitTracker"). Useful when target languages require an
+	// identifier and the source has a friendly display name.
+	"pascalCase": func(s any) string {
+		text := toStringAny(s)
+		// First strip surrounding quotes from string captures.
+		if len(text) >= 2 && (text[0] == '"' || text[0] == '\'' || text[0] == '`') && text[0] == text[len(text)-1] {
+			text = text[1 : len(text)-1]
+		}
+		// Split on space, dash, underscore.
+		var b strings.Builder
+		nextUpper := true
+		for _, r := range text {
+			if r == ' ' || r == '_' || r == '-' || r == '.' {
+				nextUpper = true
+				continue
+			}
+			if nextUpper {
+				b.WriteRune(toUpperRune(r))
+				nextUpper = false
+			} else {
+				b.WriteRune(r)
+			}
+		}
+		return b.String()
+	},
+	// camelCase is pascalCase with the first char lowered.
+	"camelCase": func(s any) string {
+		text := toStringAny(s)
+		if len(text) >= 2 && (text[0] == '"' || text[0] == '\'' || text[0] == '`') && text[0] == text[len(text)-1] {
+			text = text[1 : len(text)-1]
+		}
+		var b strings.Builder
+		nextUpper := false
+		first := true
+		for _, r := range text {
+			if r == ' ' || r == '_' || r == '-' || r == '.' {
+				nextUpper = true
+				continue
+			}
+			if first {
+				b.WriteRune(toLowerRune(r))
+				first = false
+				continue
+			}
+			if nextUpper {
+				b.WriteRune(toUpperRune(r))
+				nextUpper = false
+			} else {
+				b.WriteRune(r)
+			}
+		}
+		return b.String()
+	},
+	// snakeCase converts to lower_snake_case.
+	"snakeCase": func(s any) string {
+		text := toStringAny(s)
+		if len(text) >= 2 && (text[0] == '"' || text[0] == '\'' || text[0] == '`') && text[0] == text[len(text)-1] {
+			text = text[1 : len(text)-1]
+		}
+		var b strings.Builder
+		for i, r := range text {
+			switch r {
+			case ' ', '-', '.':
+				b.WriteRune('_')
+			default:
+				if i > 0 && r >= 'A' && r <= 'Z' {
+					b.WriteRune('_')
+				}
+				b.WriteRune(toLowerRune(r))
+			}
+		}
+		return b.String()
+	},
 	// dasherize converts snake_case to kebab-case. Useful for CSS property
 	// names where the lexer doesn't allow hyphens in identifiers.
 	"dasherize": func(s any) string {
@@ -173,6 +248,19 @@ func pyLit(v any) string {
 		return "{" + strings.Join(parts, ", ") + "}"
 	}
 	return fmt.Sprintf("%v", v)
+}
+
+func toUpperRune(r rune) rune {
+	if r >= 'a' && r <= 'z' {
+		return r - 32
+	}
+	return r
+}
+func toLowerRune(r rune) rune {
+	if r >= 'A' && r <= 'Z' {
+		return r + 32
+	}
+	return r
 }
 
 func toStringAny(v any) string {

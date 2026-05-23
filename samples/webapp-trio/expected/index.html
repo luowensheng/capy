@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Habit Tracker</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header>
+        <h1>Habit Tracker</h1>
+        <p class="sub">A tiny daily-habit tracker that persists to localStorage.</p>
+        <p class="streak" id="streak"></p>
+      </header>
+
+      <ul class="habits">
+        <li>
+          <label>
+            <input type="checkbox" data-habit="drink_water" />
+            <span>Drink 8 glasses of water</span>
+          </label>
+        </li>
+        <li>
+          <label>
+            <input type="checkbox" data-habit="read" />
+            <span>Read 20 pages</span>
+          </label>
+        </li>
+        <li>
+          <label>
+            <input type="checkbox" data-habit="walk" />
+            <span>30 min walk</span>
+          </label>
+        </li>
+        <li>
+          <label>
+            <input type="checkbox" data-habit="code" />
+            <span>Practice coding</span>
+          </label>
+        </li>
+        <li>
+          <label>
+            <input type="checkbox" data-habit="meditate" />
+            <span>Meditate 10 min</span>
+          </label>
+        </li>
+      </ul>
+
+      <footer>
+        <button id="reset">Reset today</button>
+        <span id="today"></span>
+      </footer>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>

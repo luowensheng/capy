@@ -1,0 +1,15 @@
+app "Habit Tracker"
+    bundle_id "com.example.habits"
+    version "0.1.0"
+    build 1
+    deployment_target "16.0"
+
+    screen Home    "Today's habits"
+    screen History "Past 30 days"
+
+    feature Home    "Daily checklist"
+    feature Home    "Streak counter"
+    feature Home    "Reset day"
+    feature History "Calendar view"
+    feature History "Per-habit stats"
+end

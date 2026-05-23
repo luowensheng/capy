@@ -1,0 +1,18 @@
+model "MNIST classifier"
+    dataset MNIST
+    batch_size 64
+    epochs 10
+    learning_rate 0.001
+    optimizer adam
+
+    layer conv2d   in 1   out 32   kernel 3
+    layer relu
+    layer maxpool  kernel 2
+    layer conv2d   in 32  out 64   kernel 3
+    layer relu
+    layer maxpool  kernel 2
+    layer flatten
+    layer linear   in 1600 out 128
+    layer relu
+    layer linear   in 128  out 10
+end

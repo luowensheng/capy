@@ -273,7 +273,164 @@ absolute path. `@include` is a synonym of `@import`.
 
 ---
 
-## 🌳 Multi-file projects — one source, a whole project tree
+## 🛠️ Generate a whole project — web app, Android, iOS, libtorch
+
+The same multi-file mechanism scaffolds **real projects** across
+very different stacks. Below are four canonical demos. Each takes
+12–17 lines of plain DSL and emits a full, compilable file tree
+for its target.
+
+=== "Habit-tracker web app — 3 files"
+
+    Source:
+
+    ```
+    app "Habit Tracker"
+        description "A tiny daily-habit tracker."
+        color_primary "#4f46e5"
+        color_bg "#0f172a"
+
+        habit drink_water  "Drink 8 glasses of water"
+        habit read         "Read 20 pages"
+        habit walk         "30 min walk"
+        habit code         "Practice coding"
+        habit meditate     "Meditate 10 min"
+    end
+    ```
+
+    Output:
+
+    ```
+    out/
+    ├── index.html       (references styles.css + app.js)
+    ├── app.js           (localStorage persistence + streaks)
+    └── styles.css       (themed by source variables)
+    ```
+
+    [Full sample → `samples/webapp-trio/`](https://github.com/luowensheng/capy/tree/main/samples/webapp-trio)
+
+=== "Android app skeleton — 7 files"
+
+    ```
+    app "Habit Tracker"
+        package "com.example.habits"
+        min_sdk 24
+        target_sdk 34
+        version_name "0.1.0"
+
+        screen Home    "Today's habits"
+        screen History "Past 30 days"
+
+        feature Home    "Daily checklist"
+        feature History "Calendar view"
+    end
+    ```
+
+    →
+
+    ```
+    out/
+    ├── settings.gradle.kts
+    ├── README.md
+    └── app/
+        ├── build.gradle.kts
+        └── src/main/
+            ├── AndroidManifest.xml
+            ├── java/MainActivity.kt
+            └── res/{layout,values}/...
+    ```
+
+    [Full sample → `samples/android-app/`](https://github.com/luowensheng/capy/tree/main/samples/android-app)
+
+=== "iOS SwiftUI skeleton — 6 files"
+
+    **Same source shape as the Android demo** — only the library
+    swaps. One declaration, two platforms.
+
+    ```
+    app "Habit Tracker"
+        bundle_id "com.example.habits"
+        version "0.1.0"
+        deployment_target "16.0"
+
+        screen Home    "Today's habits"
+        feature Home   "Daily checklist"
+    end
+    ```
+
+    →
+
+    ```
+    out/
+    ├── Info.plist
+    ├── Package.swift
+    └── Sources/
+        ├── App.swift          (@main App entry)
+        ├── RootView.swift
+        └── Screens.swift
+    ```
+
+    `HabitTrackerApp` comes from `"Habit Tracker"` via the
+    `pascalCase` template helper.
+
+    [Full sample → `samples/ios-app/`](https://github.com/luowensheng/capy/tree/main/samples/ios-app)
+
+=== "libtorch C++ ML trainer — 5 files"
+
+    ```
+    model "MNIST classifier"
+        dataset MNIST
+        batch_size 64
+        epochs 10
+        optimizer adam
+
+        layer conv2d   in 1   out 32   kernel 3
+        layer relu
+        layer maxpool  kernel 2
+        layer conv2d   in 32  out 64   kernel 3
+        layer relu
+        layer maxpool  kernel 2
+        layer flatten
+        layer linear   in 1600 out 128
+        layer relu
+        layer linear   in 128  out 10
+    end
+    ```
+
+    →
+
+    ```
+    out/
+    ├── CMakeLists.txt
+    ├── run.sh
+    └── src/
+        ├── model.h        (torch::nn::Module + register_module + forward)
+        └── main.cpp       (training loop with optimizer + checkpointing)
+    ```
+
+    The same architecture could target PyTorch Python,
+    TensorFlow/Keras, ONNX, TFLite — write a new library, keep
+    the source.
+
+    [Full sample → `samples/libtorch-train/`](https://github.com/luowensheng/capy/tree/main/samples/libtorch-train)
+
+=== "How to use it"
+
+    Two flags:
+
+    ```sh
+    # Write a directory tree
+    capy run --out-dir build  lib.capy script.capy
+
+    # OR bundle to a zip
+    capy run --zip project.zip  lib.capy script.capy
+    ```
+
+    [Full pattern → `one-source-many-files.md`](one-source-many-files.md)
+
+---
+
+## 🌳 Multi-file projects (basic) — one source, a whole project tree
 
 A single Capy library can declare any number of output files. Run
 with `--out-dir generated` and Capy writes the entire tree

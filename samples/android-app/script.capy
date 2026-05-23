@@ -1,0 +1,16 @@
+app "Habit Tracker"
+    package "com.example.habits"
+    min_sdk 24
+    target_sdk 34
+    version_code 1
+    version_name "0.1.0"
+
+    screen Home    "Today's habits"
+    screen History "Past 30 days"
+
+    feature Home    "Daily checklist"
+    feature Home    "Streak counter"
+    feature Home    "Reset day"
+    feature History "Calendar view"
+    feature History "Per-habit stats"
+end

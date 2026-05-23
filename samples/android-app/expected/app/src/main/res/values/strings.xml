@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Habit Tracker</string>
+    <string name="screen_home_title">Today's habits</string>
+    <string name="screen_history_title">Past 30 days</string>
+</resources>

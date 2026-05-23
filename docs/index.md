@@ -103,13 +103,20 @@ in about thirty minutes.
     a `file:line:col` location editors can jump to.
     [Errors guide →](errors-and-debugging.md)
 
-- :material-file-tree: **Multi-file projects + library imports**
+- :material-file-tree: **Generate a whole project from one source**
 
-    Declare any number of `file "src/main.py":` blocks in one library
-    and `capy run --out-dir generated …` writes the whole project
-    tree. Libraries can `import` other libraries — and source files
-    can `@import` other source files — share types and
-    syntax helpers across many DSLs. [Multi-file docs →](multi-file-and-imports.md)
+    A single `script.capy` can scaffold a complete web app
+    (`index.html` + `app.js` + `styles.css`), an Android app
+    (Kotlin + XML + gradle), an iOS SwiftUI app, or a libtorch
+    C++ ML trainer (model.h + main.cpp + CMake). `--out-dir`
+    writes the tree; `--zip` bundles it as a single archive.
+    [One source → many files →](one-source-many-files.md)
+
+- :material-file-multiple-outline: **Library composition + content imports**
+
+    Libraries can `import` other libraries — and source files can
+    `@import` other source files — share types and syntax helpers
+    across many DSLs. [Multi-file & imports →](multi-file-and-imports.md)
 
 - :material-rocket-launch: **Supercharge an existing syntax**
 

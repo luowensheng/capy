@@ -8,6 +8,56 @@ may break between minor versions** (see `CONTRIBUTING.md`).
 
 ## [Unreleased]
 
+## [0.8.0] — 2026-05-24
+
+Multi-file generation matures: a `--zip` flag bundles output to a
+single archive, three template helpers convert human strings to
+language identifiers, and four samples demonstrate the full range —
+web app, Android, iOS, libtorch C++ ML trainer.
+
+### Added — CLI / engine
+
+- **`capy run --zip ARCHIVE.zip`** — bundles every declared
+  `file:` block into a single zip archive (alternative to
+  `--out-dir`). Internal paths use forward slashes for portability.
+- **Template helpers** for converting human strings to identifiers:
+  - `pascalCase` — `"Habit Tracker"` → `HabitTracker`
+  - `camelCase` — `"Habit Tracker"` → `habitTracker`
+  - `snakeCase` — `"Habit Tracker"` → `habit_tracker`
+  Each strips surrounding quotes so they compose with `string`-typed
+  captures.
+
+### Added — samples
+
+- **`samples/webapp-trio/`** — 12-line DSL → `index.html` +
+  `app.js` + `styles.css` (habit tracker with localStorage and
+  streak counting).
+- **`samples/android-app/`** — 15-line declaration → 7 files
+  across `app/src/main/{AndroidManifest.xml, java, res/...}` +
+  gradle config. Drop into Android Studio.
+- **`samples/ios-app/`** — same source shape as android-app →
+  SwiftUI App + RootView + Screens + Info.plist + Package.swift.
+- **`samples/libtorch-train/`** — 17-line neural-net architecture
+  → `model.h` (register_module + forward) + `main.cpp` (training
+  loop) + CMakeLists.txt + run.sh. Builds against libtorch with
+  CUDA when available.
+
+Each sample's committed `expected/` tree is diffed by CI.
+
+### Added — docs
+
+- **`docs/one-source-many-files.md`** — consistent story behind
+  every multi-file sample.
+- Homepage card rewritten to lead with project scaffolding.
+- Showcase opens with a "Generate a whole project" section.
+
+### Tests
+
+- **`cmd/capy/multitarget_test.go`** diffs every multi-target
+  sample against its committed `expected/` tree, plus a
+  TestZipOutput that confirms the archive matches the in-memory
+  file map.
+
 ## [0.7.0] — 2026-05-24
 
 Two complementary features: **actionable errors** with did-you-mean
