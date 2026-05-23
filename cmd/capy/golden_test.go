@@ -70,7 +70,10 @@ func runSampleGoldens(t *testing.T, dir string) {
 					writeFile(t, expectOkPath, output)
 					return
 				}
-				if output != want {
+				// Normalise line endings — on Windows checkouts the golden
+				// file may contain CRLF even though the engine emits LF.
+				// `.gitattributes` enforces LF in the repo but be defensive.
+				if normalizeLF(output) != normalizeLF(want) {
 					t.Fatalf("output mismatch:\nwant:\n%s\ngot:\n%s", want, output)
 				}
 			default:
@@ -127,4 +130,8 @@ func writeFile(t *testing.T, p, content string) {
 	if err := os.WriteFile(p, []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func normalizeLF(s string) string {
+	return strings.ReplaceAll(s, "\r\n", "\n")
 }

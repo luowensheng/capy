@@ -1,0 +1,23 @@
+# Force LF line endings for text files. Without this, Windows checkouts
+# may convert .txt/.capy/.go/etc. files to CRLF and golden tests fail
+# with line-ending-only mismatches.
+* text=auto eol=lf
+
+# Shell scripts must be LF regardless of host OS.
+*.sh    text eol=lf
+*.capy  text eol=lf
+*.yaml  text eol=lf
+*.yml   text eol=lf
+*.go    text eol=lf
+
+# Windows-native scripts keep CRLF.
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
+*.ps1   text eol=crlf
+
+# Binary files — never line-ending-convert.
+*.png   binary
+*.jpg   binary
+*.gif   binary
+*.ico   binary
+*.svg   binary
