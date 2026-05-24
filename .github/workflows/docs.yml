@@ -45,7 +45,12 @@ jobs:
         # deployed playground tracks the current engine.
         run: |
           set -euxo pipefail
-          GOOS=js GOARCH=wasm go build -ldflags="-s -w" -o docs/assets/playground/capy.wasm ./cmd/capy-wasm
+          # Inject the engine version into the wasm binary so the
+          # playground UI shows the correct release in its toolbar.
+          VERSION=$(git describe --tags --always 2>/dev/null || echo dev)
+          GOOS=js GOARCH=wasm go build \
+            -ldflags="-s -w -X main.version=$VERSION" \
+            -o docs/assets/playground/capy.wasm ./cmd/capy-wasm
           # wasm_exec.js moved between Go releases: lib/wasm/ in 1.24+,
           # misc/wasm/ in earlier versions. Try both so the build doesn't
           # break when CI updates its toolchain.

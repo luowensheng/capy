@@ -13,7 +13,12 @@ cd "$(dirname "$0")/.."
 OUT=docs/assets/playground
 
 echo "[playground] building capy.wasm…"
-GOOS=js GOARCH=wasm go build -ldflags="-s -w" -o "$OUT/capy.wasm" ./cmd/capy-wasm
+# Inject the engine version so the playground UI can display it.
+# `git describe` falls back gracefully when run outside a git tree
+# (e.g. from a downloaded tarball) — that's what `|| echo dev` is for.
+VERSION=$(git describe --tags --always 2>/dev/null || echo dev)
+GOOS=js GOARCH=wasm go build -ldflags="-s -w -X main.version=$VERSION" -o "$OUT/capy.wasm" ./cmd/capy-wasm
+echo "[playground] wasm built at version: $VERSION"
 
 echo "[playground] copying wasm_exec.js…"
 GOROOT=$(go env GOROOT)

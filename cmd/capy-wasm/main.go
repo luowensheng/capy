@@ -22,10 +22,19 @@ import (
 	"github.com/luowensheng/capy/domain"
 )
 
+// version is set at build time via:
+//
+//	go build -ldflags="-X main.version=v0.12.0" ...
+//
+// scripts/build-playground.sh and the docs CI workflow pass this so the
+// playground label tracks the current engine. Falls back to "dev" for
+// local one-off builds.
+var version = "dev"
+
 func main() {
 	js.Global().Set("capyRun", js.FuncOf(capyRun))
 	js.Global().Set("capyVersion", js.FuncOf(func(this js.Value, args []js.Value) any {
-		return "0.9.0"
+		return version
 	}))
 	// Block forever so the module stays alive for callbacks.
 	<-make(chan struct{})
