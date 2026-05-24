@@ -1,0 +1,65 @@
+# Schema DSL → Prisma schema file.
+extension prisma
+
+comments
+    line "#"
+end
+
+function datasource
+    arg literal "datasource"
+    arg capture provider any
+    arg capture url any
+    write `datasource db {
+  provider = ${provider}
+  url      = ${url}
+}
+`
+end
+
+function generator
+    arg literal "generator"
+    arg capture provider any
+    write `
+generator client {
+  provider = ${provider}
+}
+`
+end
+
+function model
+    arg literal "model"
+    arg capture name ident
+    block_closer end
+    write `
+model ${name} {
+${indent 2 body}
+}
+`
+end
+
+function id
+    arg literal "id"
+    arg capture name ident
+    write `${name} Int @id @default(autoincrement())
+`
+end
+
+function field
+    arg literal "field"
+    arg capture name ident
+    arg capture t any
+    write `${name} ${unquote t}
+`
+end
+
+function relation
+    arg literal "relation"
+    arg capture name ident
+    arg capture model ident
+    write `${name} ${model} @relation(fields: [${name}Id], references: [id])
+${name}Id Int
+`
+end
+
+function end
+end

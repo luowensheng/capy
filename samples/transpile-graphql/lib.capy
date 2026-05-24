@@ -1,0 +1,54 @@
+# Schema DSL → GraphQL SDL.
+extension graphql
+
+comments
+    line "#"
+end
+
+function type
+    arg literal "type"
+    arg capture name ident
+    block_closer end
+    write `type ${name} {
+${indent 2 body}
+}
+`
+end
+
+function enum
+    arg literal "enum"
+    arg capture name ident
+    block_closer end
+    write `enum ${name} {
+${indent 2 body}
+}
+`
+end
+
+function field
+    arg literal "field"
+    arg capture name ident
+    arg literal ":"
+    arg capture t any
+    write `${name}: ${unquote t}
+`
+end
+
+function required
+    arg literal "required"
+    arg capture name ident
+    arg literal ":"
+    arg capture t any
+    write `${name}: ${unquote t}!
+`
+end
+
+function variant
+    arg literal "variant"
+    arg capture name ident
+    write `${name}
+`
+end
+
+function end
+end

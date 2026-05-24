@@ -1,0 +1,54 @@
+# Schema DSL → .proto file.
+extension proto
+
+comments
+    line "#"
+end
+
+function syntax
+    arg literal "syntax"
+    arg capture v any
+    write `syntax = ${v};
+
+`
+end
+
+function package
+    arg literal "package"
+    arg capture name ident
+    write `package ${name};
+
+`
+end
+
+function message
+    arg literal "message"
+    arg capture name ident
+    block_closer end
+    write `message ${name} {
+${indent 2 body}
+}
+`
+end
+
+function field
+    arg capture t any
+    arg capture name ident
+    arg literal "="
+    arg capture tag int
+    write `${t} ${name} = ${tag};
+`
+end
+
+function repeated
+    arg literal "repeated"
+    arg capture t any
+    arg capture name ident
+    arg literal "="
+    arg capture tag int
+    write `repeated ${t} ${name} = ${tag};
+`
+end
+
+function end
+end

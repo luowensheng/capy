@@ -1,0 +1,39 @@
+# Form spec DSL → HTML form.
+extension html
+
+comments
+    line "#"
+end
+
+function form
+    arg literal "form"
+    arg capture action any
+    block_closer end
+    write `<form action="${unquote action}" method="post">
+${indent 2 body}
+  <button type="submit">Submit</button>
+</form>
+`
+end
+
+function field
+    arg literal "field"
+    arg capture name ident
+    arg capture t any
+    arg capture label any
+    write `<label for="${name}">${unquote label}</label>
+<input id="${name}" name="${name}" type="${unquote t}" />
+`
+end
+
+function textarea
+    arg literal "textarea"
+    arg capture name ident
+    arg capture label any
+    write `<label for="${name}">${unquote label}</label>
+<textarea id="${name}" name="${name}"></textarea>
+`
+end
+
+function end
+end
