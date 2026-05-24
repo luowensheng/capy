@@ -51,14 +51,6 @@ func (h *Hub) Broadcast(typ string, v any) {
     }
 }
 
-func handleChat(hub *Hub, conn *websocket.Conn, m ChatMsg) {
-    hub.Broadcast("chat", m)
-}
-
-func handleJoin(hub *Hub, conn *websocket.Conn, m JoinMsg) {
-    log.Printf("%s joined", m.User); hub.Broadcast("join", m)
-}
-
 func wsHandler(hub *Hub) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         conn, err := upgrader.Upgrade(w, r, nil)
@@ -77,11 +69,14 @@ func wsHandler(hub *Hub) http.HandlerFunc {
             case "chat":
                 var m ChatMsg
                 if err := json.Unmarshal(env.Data, &m); err != nil { log.Println("decode:", err); continue }
-                handleChat(hub, conn, m)
+                // verb=broadcast → echo to all clients.
+                hub.Broadcast("chat", m)
             case "join":
                 var m JoinMsg
                 if err := json.Unmarshal(env.Data, &m); err != nil { log.Println("decode:", err); continue }
-                handleJoin(hub, conn, m)
+                // verb=announce → log + broadcast.
+                log.Printf("join: %+v", m)
+                hub.Broadcast("join", m)
             default:
                 log.Println("unknown message type:", env.Type)
             }

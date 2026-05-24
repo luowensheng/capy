@@ -1,23 +1,21 @@
 # WebSocket-server DSL → a complete Go server (net/http +
-# gorilla/websocket) with typed message dispatch.
-#
-# Six keywords. The library encodes the entire ws plumbing: upgrade
-# loop, JSON envelope, per-message-type handler dispatch, broadcast
-# helper.
+# gorilla/websocket). Every source-side keyword is an ABSTRACT verb
+# — never a target-language literal — so the same source survives
+# unchanged when you swap the library to Node, Python, Rust, etc.
 extension go
 output_file "main.go"
 
-description "Declarative WebSocket-server DSL. Declare routes + message types + handlers; the library emits a complete, runnable Go server with typed JSON dispatch and a broadcast helper. The whole network stack — upgrade, read loop, JSON decode, dispatch, error handling — lives in the template, not in the source."
+description "Declarative WebSocket-server DSL. Source declares routes, typed fields per message, and abstract handler verbs (broadcast / announce); the library emits a complete runnable Go server with typed JSON dispatch and a broadcast helper. Every platform detail — channel plumbing, JSON envelope, dispatch switch — lives in the library, not the source. Swap the library to retarget another language without touching the script."
 
 context
     port "8080"
     path "/ws"
-    messages []
+    fields []
     handlers []
 end
 
 function server
-    description "Top-level: name the server's listening address (port number)."
+    description "Top-level: name the server's listening port."
     arg literal "server"
     arg capture port string  "Port number as a string, e.g. \"8080\"."
     template_str ""
@@ -26,7 +24,7 @@ function server
 end
 
 function route
-    description "WebSocket upgrade endpoint path (e.g. \"/chat\"). Default \"/ws\"."
+    description "WebSocket upgrade endpoint path. Default \"/ws\"."
     arg literal "route"
     arg capture path string  "URL path, e.g. \"/chat\"."
     template_str ""
@@ -34,24 +32,25 @@ function route
         set context.path path
 end
 
-function message
-    description "Declare an incoming message type. Each becomes a Go struct + a case in the dispatch switch."
-    arg literal "message"
-    arg capture name string    "Message type identifier (e.g. \"chat\")."
-    arg capture fields string  "Comma-separated field declarations, e.g. \"user:string,text:string\"."
+function field
+    description "Declare a typed field on a message. Flat shape so a message's fields can appear in any order without block ordering surprises."
+    arg literal "field"
+    arg capture msg ident    "Message type the field belongs to (e.g. `chat`)."
+    arg capture fname ident  "Field name."
+    arg capture ftype ident  "Field type: string | int | float | bool."
     template_str ""
     run:
-        append context.messages {name: name, fields: fields}
+        append context.fields {msg: msg, fname: fname, ftype: ftype}
 end
 
 function on
-    description "Bind a handler to a message type. The handler body becomes the Go function body."
+    description "Bind a handler to a message type by ABSTRACT verb. The library decides what each verb means in the target language."
     arg literal "on"
-    arg capture msg string   "Message type name to handle (must match a `message` decl)."
-    arg capture body string  "Go source for the handler body. Free-form."
+    arg capture msg ident   "Message type name (matched against `field` declarations)."
+    arg capture verb ident  "Handler verb. Built-in in this library: `broadcast` (echo to all clients), `announce` (log + broadcast). Add a new verb by adding a case to the switch in `wsHandler` below."
     template_str ""
     run:
-        append context.handlers {msg: msg, body: body}
+        append context.handlers {msg: msg, verb: verb}
 end
 
 function end
@@ -80,12 +79,14 @@ file_template:
         Data json.RawMessage `json:"data"`
     }
 
-    {{- range .context.messages }}
+    {{- /* Group fields by message and emit one struct per message. */}}
+    {{- range $h := .context.handlers }}
 
-    type {{ .name | unquote | pascalCase }}Msg struct {
-        {{- range (split (.fields | unquote) ",") }}
-        {{- $pair := (split . ":") }}
-        {{ (index $pair 0) | pascalCase }} {{ index $pair 1 }} `json:"{{ index $pair 0 }}"`
+    type {{ $h.msg | pascalCase }}Msg struct {
+        {{- range $f := $.context.fields }}
+        {{- if eq $f.msg $h.msg }}
+        {{ $f.fname | pascalCase }} {{ if eq $f.ftype "string" }}string{{ else if eq $f.ftype "int" }}int{{ else if eq $f.ftype "float" }}float64{{ else if eq $f.ftype "bool" }}bool{{ else }}any{{ end }} `json:"{{ $f.fname }}"`
+        {{- end }}
         {{- end }}
     }
     {{- end }}
@@ -112,13 +113,6 @@ file_template:
         }
     }
 
-    {{- range .context.handlers }}
-
-    func handle{{ .msg | unquote | pascalCase }}(hub *Hub, conn *websocket.Conn, m {{ .msg | unquote | pascalCase }}Msg) {
-        {{ .body | unquote }}
-    }
-    {{- end }}
-
     func wsHandler(hub *Hub) http.HandlerFunc {
         return func(w http.ResponseWriter, r *http.Request) {
             conn, err := upgrader.Upgrade(w, r, nil)
@@ -135,10 +129,20 @@ file_template:
                 }
                 switch env.Type {
                 {{- range .context.handlers }}
-                case "{{ .msg | unquote }}":
-                    var m {{ .msg | unquote | pascalCase }}Msg
+                case "{{ .msg }}":
+                    var m {{ .msg | pascalCase }}Msg
                     if err := json.Unmarshal(env.Data, &m); err != nil { log.Println("decode:", err); continue }
-                    handle{{ .msg | unquote | pascalCase }}(hub, conn, m)
+                    {{- if eq .verb "broadcast" }}
+                    // verb=broadcast → echo to all clients.
+                    hub.Broadcast("{{ .msg }}", m)
+                    {{- else if eq .verb "announce" }}
+                    // verb=announce → log + broadcast.
+                    log.Printf("{{ .msg }}: %+v", m)
+                    hub.Broadcast("{{ .msg }}", m)
+                    {{- else }}
+                    // verb={{ .verb }} → unknown; library should add a case.
+                    log.Printf("unhandled verb {{ .verb }} for {{ .msg }}: %+v", m)
+                    {{- end }}
                 {{- end }}
                 default:
                     log.Println("unknown message type:", env.Type)

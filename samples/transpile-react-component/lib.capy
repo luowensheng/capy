@@ -1,0 +1,120 @@
+# Component DSL → React function component with hooks.
+#
+# The source uses ABSTRACT widget primitives (heading_for,
+# button_inc, paragraph_when_not). This library translates each to
+# JSX with hooks. Drop in a sibling lib_vue.capy or lib_svelte.capy
+# to retarget without touching the script.
+extension tsx
+output_file "Counter.tsx"
+
+description "Compact component DSL → React function component with TypeScript hooks + JSX. Source uses abstract widget primitives (heading_for, button_inc, button_toggle, paragraph_when_not); the library translates each to JSX. Drop in a sibling Vue or Svelte library to retarget."
+
+context
+    props []
+    state []
+    widgets []
+end
+
+function component
+    arg literal "component"
+    arg capture name ident
+    block_closer end
+    template:
+        import React, { useState } from "react";
+
+        type {{ .name }}Props = {
+        {{- range .context.props }}
+          {{ .name }}: {{ if eq .type "string" }}string{{ else if eq .type "int" }}number{{ else if eq .type "bool" }}boolean{{ else }}any{{ end }};
+        {{- end }}
+        };
+
+        export function {{ .name }}(props: {{ .name }}Props) {
+        {{- range .context.state }}
+          const [{{ .name }}, set{{ .name | pascalCase }}] = useState<{{ if eq .type "string" }}string{{ else if eq .type "int" }}number{{ else if eq .type "bool" }}boolean{{ else }}any{{ end }}>({{ .init }});
+        {{- end }}
+
+          return (
+            <div>
+        {{- range .context.widgets }}
+              {{- if eq .verb "heading_for" }}
+              <h1>{props.{{ .arg1 }}}: {{ "{" }}{{ .arg2 }}{{ "}" }}</h1>
+              {{- else if eq .verb "button_inc" }}
+              <button onClick={() => set{{ .arg2 | pascalCase }}({{ .arg2 }} + 1)}>{{ .arg1 | unquote }}</button>
+              {{- else if eq .verb "button_toggle" }}
+              <button onClick={() => set{{ .arg2 | pascalCase }}(!{{ .arg2 }})}>{{ .arg1 | unquote }}</button>
+              {{- else if eq .verb "paragraph_when_not" }}
+              {!{{ .arg1 }} && <p>{{ .arg2 | unquote }}</p>}
+              {{- end }}
+        {{- end }}
+            </div>
+          );
+        }
+end
+
+function prop
+    arg literal "prop"
+    arg capture name ident
+    arg capture t ident
+    template_str ""
+    run:
+        append context.props {name: name, type: t}
+end
+
+function state
+    arg literal "state"
+    arg capture name ident
+    arg capture t ident
+    arg capture init any
+    template_str ""
+    run:
+        append context.state {name: name, Name: name, type: t, init: init}
+end
+
+# Widget primitives. Each one captures its verb and up to two args;
+# the component template above dispatches on the verb to emit JSX.
+
+function heading_for
+    description "Render an <h1> bound to a prop+state pair."
+    arg literal "heading_for"
+    arg capture prop_name ident
+    arg capture state_name ident
+    template_str ""
+    run:
+        append context.widgets {verb: "heading_for", arg1: prop_name, arg2: state_name}
+end
+
+function button_inc
+    description "Render a button that increments a numeric state variable."
+    arg literal "button_inc"
+    arg capture label string
+    arg capture target ident
+    template_str ""
+    run:
+        append context.widgets {verb: "button_inc", arg1: label, arg2: target}
+end
+
+function button_toggle
+    description "Render a button that toggles a boolean state variable."
+    arg literal "button_toggle"
+    arg capture label string
+    arg capture target ident
+    template_str ""
+    run:
+        append context.widgets {verb: "button_toggle", arg1: label, arg2: target}
+end
+
+function paragraph_when_not
+    description "Render a paragraph only when the named boolean state is false."
+    arg literal "paragraph_when_not"
+    arg capture cond ident
+    arg capture text string
+    template_str ""
+    run:
+        append context.widgets {verb: "paragraph_when_not", arg1: cond, arg2: text}
+end
+
+function end
+end
+
+file_template:
+    {{ .body }}

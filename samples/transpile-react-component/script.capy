@@ -1,11 +1,17 @@
+# A React component in 10 declarative lines. The widget primitives
+# below (`heading_for`, `button_inc`, `paragraph_when_not`) are
+# ABSTRACT — no JSX in the source — so the same script could target
+# Vue or Svelte by swapping the library.
+
 component Counter
-    prop  label : "string"
-    prop  initial : "number"
+    prop label string
+    prop initial int
 
-    state count : "number" = 0
-    state hidden : "boolean" = false
+    state count int 0
+    state hidden bool false
 
-    effect "count" "document.title = 'count: ' + count"
-
-    render "<div><h1>{props.label}: {count}</h1><button onClick={() => setCount(count + 1)}>+1</button><button onClick={() => setHidden(!hidden)}>toggle</button>{!hidden && <p>visible</p>}</div>"
+    heading_for label count
+    button_inc "+1" count
+    button_toggle "Toggle" hidden
+    paragraph_when_not hidden "visible"
 end

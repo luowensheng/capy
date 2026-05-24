@@ -1,0 +1,81 @@
+# Schema DSL → Zod validators in TypeScript.
+#
+# Source uses abstract types + refinement keywords; this library
+# translates each to a Zod chain. Swap the library to retarget
+# Yup, Joi, or pydantic without touching the source.
+extension ts
+output_file "schemas.ts"
+
+description "Compact schema DSL → Zod TypeScript validators. Source declares schemas, then fields with abstract type names (string / int / float / bool / string_list) and abstract refinement keywords (format_email, min_length N, max_length N, optional, default_empty). The library translates each to the matching Zod call. Swap the library to retarget Yup / Joi / pydantic."
+
+context
+    schemas []
+    fields []
+    refines []
+end
+
+function schema
+    description "Declare a schema by name. Followed by `field`/`refine` lines that name this schema."
+    arg literal "schema"
+    arg capture name ident
+    template_str ""
+    run:
+        append context.schemas name
+end
+
+function field
+    description "Add a typed field to a schema. Built-in types: string, int, float, bool, string_list."
+    arg literal "field"
+    arg capture schema ident
+    arg capture name ident
+    arg capture type ident
+    template_str ""
+    run:
+        append context.fields {schema: schema, name: name, type: type}
+end
+
+function refine
+    description "Apply a parameter-less refinement to a field. Verbs: format_email, optional, default_empty."
+    arg literal "refine"
+    arg capture schema ident
+    arg capture field ident
+    arg capture verb ident
+    template_str ""
+    run:
+        append context.refines {schema: schema, field: field, verb: verb, value: 0}
+end
+
+function refine_n
+    description "Apply a refinement that takes a numeric parameter. Verbs: min_length, max_length, min_value, max_value."
+    arg literal "refine_n"
+    arg capture schema ident
+    arg capture field ident
+    arg capture verb ident
+    arg capture value int
+    template_str ""
+    run:
+        append context.refines {schema: schema, field: field, verb: verb, value: value}
+end
+
+file_template:
+    import { z } from "zod";
+    {{ range .context.schemas }}
+    {{- $s := . }}
+    export const {{ $s }} = z.object({
+    {{- range $f := $.context.fields }}
+    {{- if eq $f.schema $s }}
+      {{ $f.name }}: {{ if eq $f.type "string" }}z.string(){{ else if eq $f.type "int" }}z.number().int(){{ else if eq $f.type "float" }}z.number(){{ else if eq $f.type "bool" }}z.boolean(){{ else if eq $f.type "string_list" }}z.array(z.string()){{ else }}z.any(){{ end }}
+      {{- range $r := $.context.refines }}
+      {{- if and (eq $r.schema $s) (eq $r.field $f.name) }}
+      {{- if eq $r.verb "format_email" }}.email(){{ else if eq $r.verb "optional" }}.optional(){{ else if eq $r.verb "default_empty" }}.default([]){{ else if eq $r.verb "min_length" }}.min({{ $r.value }}){{ else if eq $r.verb "max_length" }}.max({{ $r.value }}){{ else if eq $r.verb "min_value" }}.gte({{ $r.value }}){{ else if eq $r.verb "max_value" }}.lte({{ $r.value }}){{ end }}
+      {{- end }}
+      {{- end }},
+    {{- end }}
+    {{- end }}
+    });
+    {{ end }}
+    export type Schemas = {
+    {{- range .context.schemas }}
+      {{ . }}: z.infer<typeof {{ . }}>;
+    {{- end }}
+    };

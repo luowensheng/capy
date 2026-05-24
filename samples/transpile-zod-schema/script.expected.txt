@@ -4,16 +4,13 @@ export const UserInput = z.object({
   email: z.string().email(),
   password: z.string().min(8),
   name: z.string().optional(),
-
 });
 
 export const PostInput = z.object({
   title: z.string().min(1).max(200),
   body: z.string(),
   tags: z.array(z.string()).default([]),
-
 });
-
 
 export type Schemas = {
   UserInput: z.infer<typeof UserInput>;

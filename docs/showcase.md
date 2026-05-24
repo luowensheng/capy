@@ -357,23 +357,27 @@ one declaration.
 
 ---
 
-## 🔌 WebSocket server — 9 lines → 80 lines of Go
+## 🔌 WebSocket server — 10 lines → ~80 lines of Go
 
-A chat-server DSL declares routes + typed messages + handler bodies.
-The library emits the entire ws stack: upgrader, JSON envelope
-plumbing, per-type dispatch, broadcast hub.
+A chat-server DSL declares routes, typed fields, and **abstract
+handler verbs** (`broadcast`, `announce`). The source contains zero
+target-language code — no Go fragments, no JSON literals, no embedded
+expressions — so the same source survives unchanged when you swap the
+library to a Node / Python / Rust ws library.
 
-=== "Source (9 lines)"
+=== "Source (10 lines)"
 
     ```
     server "8080"
     route "/chat"
 
-    message chat "user:string,text:string"
-    message join "user:string"
+    field chat user string
+    field chat text string
 
-    on chat "hub.Broadcast(\"chat\", m)"
-    on join "log.Printf(\"%s joined\", m.User); hub.Broadcast(\"join\", m)"
+    field join user string
+
+    on chat broadcast
+    on join announce
     end
     ```
 
@@ -400,10 +404,13 @@ plumbing, per-type dispatch, broadcast hub.
                 switch env.Type {
                 case "chat":
                     var m ChatMsg; json.Unmarshal(env.Data, &m)
-                    handleChat(hub, conn, m)
+                    // verb=broadcast → echo to all clients.
+                    hub.Broadcast("chat", m)
                 case "join":
                     var m JoinMsg; json.Unmarshal(env.Data, &m)
-                    handleJoin(hub, conn, m)
+                    // verb=announce → log + broadcast.
+                    log.Printf("join: %+v", m)
+                    hub.Broadcast("join", m)
                 }
             }
         }
@@ -412,10 +419,15 @@ plumbing, per-type dispatch, broadcast hub.
 
 === "Why it matters"
 
+    - **Zero target-language code in the source.** No Go fragments
+      embedded as strings, no `hub.Broadcast(...)` literals to escape.
+      Every handler is an abstract verb the library translates.
+    - **Adding a verb = adding a library case.** Want `archive` or
+      `rate_limit`? Add it once to the dispatch switch in `lib.capy`;
+      every source that mentions the verb gets the new behaviour.
     - **Network plumbing is library territory.** Upgrade headers,
-      JSON envelope, dispatch — write it once in the library, never
-      again at every service.
-    - **Source = contract.** The 9-line source IS the protocol spec.
+      JSON envelope, dispatch — written once in the library.
+    - **Source = contract.** The 10-line source IS the protocol spec.
       Generate the server, a TypeScript client, and OpenAPI docs
       from the same declaration.
 

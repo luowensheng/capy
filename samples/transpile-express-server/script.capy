@@ -1,8 +1,11 @@
+# A mock REST API in 6 declarative lines. Every handler is an
+# ABSTRACT verb — never inline JavaScript — so the same source
+# survives if you swap the library to Flask, Rails, Gin, etc.
+
 port 8080
+use logging
 
-use "morgan('combined')"
-
-get  "/health"           "res.json({ok: true})"
-get  "/users"            "res.json([{id: 1, name: 'Alice'}])"
-post "/users"            "const u = req.body; res.status(201).json({id: 42, ...u})"
-get  "/users/:id"        "res.json({id: req.params.id, name: 'Mock'})"
+endpoint get  "/health"      health_check
+endpoint get  "/users"       list_mock_users
+endpoint post "/users"       create_user
+endpoint get  "/users/:id"   get_user_by_id

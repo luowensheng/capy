@@ -1,3 +1,6 @@
+# A tiny canvas game in 11 declarative lines. No JavaScript in the
+# source — every motion is an ABSTRACT verb the library translates.
+
 game "Block Hopper" 480 320
 
 sprite player "#4dd" 220 280 40 20
@@ -9,4 +12,4 @@ on_key "ArrowRight" player  4 0
 on_key "ArrowUp"    player  0 -4
 on_key "ArrowDown"  player  0 4
 
-tick enemy_bounce "sprites.enemy.x += 1; if (sprites.enemy.x > 450) sprites.enemy.x = 0;"
+motion enemy drift_right

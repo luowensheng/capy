@@ -1,11 +1,21 @@
-schema UserInput
-    field email : "z.string().email()"
-    field password : "z.string().min(8)"
-    field name : "z.string().optional()"
-end
+# Schema DSL with ABSTRACT refinements. No Zod chains in the source
+# — `format_email`, `min_length`, `optional`, etc. are keywords the
+# library translates. Swap the library to retarget Yup, Joi, or
+# Python pydantic without touching this script.
 
+schema UserInput
 schema PostInput
-    field title : "z.string().min(1).max(200)"
-    field body : "z.string()"
-    field tags : "z.array(z.string()).default([])"
-end
+
+field   UserInput email    string
+refine  UserInput email    format_email
+field   UserInput password string
+refine_n UserInput password min_length 8
+field   UserInput name     string
+refine  UserInput name     optional
+
+field    PostInput title   string
+refine_n PostInput title   min_length 1
+refine_n PostInput title   max_length 200
+field    PostInput body    string
+field    PostInput tags    string_list
+refine   PostInput tags    default_empty

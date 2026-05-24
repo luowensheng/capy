@@ -1,5 +1,9 @@
+# A mock Flask API in 4 declarative lines. Every handler is an
+# ABSTRACT verb — never inline Python — so the same source survives
+# if you swap the library to Express, FastAPI, Gin, etc.
+
 port 8000
 
-route get  "/health"      health    "return jsonify(ok=True)"
-route get  "/users"       list_users "return jsonify([{'id': 1, 'name': 'Alice'}])"
-route post "/users"       create_user "u = request.get_json(); u['id'] = 42; return jsonify(u), 201"
+endpoint get  "/health"      health_check
+endpoint get  "/users"       list_mock_users
+endpoint post "/users"       create_user

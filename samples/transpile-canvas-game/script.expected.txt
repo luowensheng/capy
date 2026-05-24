@@ -17,14 +17,15 @@
   <script>
     const canvas = document.getElementById("c");
     const ctx = canvas.getContext("2d");
+    const W = canvas.width, H = canvas.height;
     const keys = {};
     window.addEventListener("keydown", e => keys[e.key] = true);
     window.addEventListener("keyup",   e => keys[e.key] = false);
 
     const sprites = {
-      player: { x: 220, y: 280, w: 40, h: 20, color: "#4dd" },
-      enemy: { x: 100, y: 100, w: 30, h: 30, color: "#f64" },
-      goal: { x: 420, y: 20, w: 20, h: 20, color: "#fd0" },
+      player: { x: 220, y: 280, w: 40, h: 20, color: "#4dd", _vx: 1 },
+      enemy: { x: 100, y: 100, w: 30, h: 30, color: "#f64", _vx: 1 },
+      goal: { x: 420, y: 20, w: 20, h: 20, color: "#fd0", _vx: 1 },
     };
 
     function update() {
@@ -44,23 +45,20 @@
         sprites.player.x += 0;
         sprites.player.y += 4;
       }
-      // tick: enemy_bounce
-      sprites.enemy.x += 1; if (sprites.enemy.x > 450) sprites.enemy.x = 0;
+      // motion: drift_right on enemy
+      sprites.enemy.x += 1;
+      if (sprites.enemy.x > W - sprites.enemy.w) sprites.enemy.x = 0;
     }
 
     function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.clearRect(0, 0, W, H);
       for (const s of Object.values(sprites)) {
         ctx.fillStyle = s.color;
         ctx.fillRect(s.x, s.y, s.w, s.h);
       }
     }
 
-    function loop() {
-      update();
-      draw();
-      requestAnimationFrame(loop);
-    }
+    function loop() { update(); draw(); requestAnimationFrame(loop); }
     loop();
   </script>
 </body>
