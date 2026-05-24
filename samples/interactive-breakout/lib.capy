@@ -1,0 +1,359 @@
+# Event-driven Breakout DSL. Users declare entities, key bindings, AND
+# event handlers. The library compiles those declarations into a complete
+# HTML5 canvas game with input dispatch and event routing.
+extension html
+
+comments
+    line "#"
+end
+
+context
+    title ""
+    width 480
+    height 320
+    paddle_w 80
+    paddle_h 10
+    paddle_speed 7
+    paddle_color "#3df"
+    ball_r 6
+    ball_speed 4
+    ball_color "#fff"
+    rows 5
+    cols 8
+    brick_w 56
+    brick_h 14
+    brick_gap 4
+    brick_colors []
+    key_bindings []
+    event_handlers []
+    lives 3
+end
+
+function game
+    arg literal "game"
+    arg capture title any
+    arg capture w int
+    arg capture h int
+    set context.title title
+    set context.width w
+    set context.height h
+end
+
+function paddle
+    arg literal "paddle"
+    arg literal "width"
+    arg capture w int
+    arg literal "height"
+    arg capture h int
+    arg literal "color"
+    arg capture color any
+    arg literal "speed"
+    arg capture speed int
+    set context.paddle_w w
+    set context.paddle_h h
+    set context.paddle_color color
+    set context.paddle_speed speed
+end
+
+function ball
+    arg literal "ball"
+    arg literal "radius"
+    arg capture r int
+    arg literal "color"
+    arg capture color any
+    arg literal "speed"
+    arg capture speed int
+    set context.ball_r r
+    set context.ball_color color
+    set context.ball_speed speed
+end
+
+function bricks
+    arg literal "bricks"
+    arg literal "rows"
+    arg capture rows int
+    arg literal "cols"
+    arg capture cols int
+    arg literal "width"
+    arg capture w int
+    arg literal "height"
+    arg capture h int
+    arg literal "gap"
+    arg capture gap int
+    set context.rows rows
+    set context.cols cols
+    set context.brick_w w
+    set context.brick_h h
+    set context.brick_gap gap
+end
+
+function brick_color
+    arg literal "brick_color"
+    arg capture idx int
+    arg capture color any
+    append context.brick_colors {idx: idx, color: color}
+end
+
+function on_key
+    arg literal "on_key"
+    arg capture key any
+    arg capture action ident
+    append context.key_bindings {key: key, action: action}
+end
+
+function on_event
+    arg literal "on_event"
+    arg capture ev ident
+    arg capture action1 ident
+    append context.event_handlers {ev: ev, action1: action1, action2: "", value: 0}
+end
+
+function on_event_two
+    priority 100
+    arg literal "on_event"
+    arg capture ev ident
+    arg capture action1 ident
+    arg capture action2 ident
+    arg capture value int
+    append context.event_handlers {ev: ev, action1: action1, action2: action2, value: value}
+end
+
+function lives
+    arg literal "lives"
+    arg capture n int
+    set context.lives n
+end
+
+file_template
+    write `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>${unquote context.title}</title>
+  <style>
+    body { margin: 0; background: #0a0a14; display: grid; place-items: center; min-height: 100vh; font-family: ui-monospace, SFMono-Regular, monospace; color: #cfd; }
+    canvas { background: #11111a; border: 2px solid #333; box-shadow: 0 0 40px #2bf3; }
+    .wrap { text-align: center; }
+    .hud  { margin: 8px 0; font-size: 13px; letter-spacing: 0.08em; }
+    .hud span { color: #4ef; }
+    .hint { color: #678; font-size: 11px; margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hud">${unquote context.title} · score <span id="score">0</span> · lives <span id="lives">${context.lives}</span></div>
+    <canvas id="c" width="${context.width}" height="${context.height}"></canvas>
+    <div class="hint">arrow keys to move · space to launch · R to restart</div>
+  </div>
+  <script>
+    (() => {
+      const W = ${context.width}, H = ${context.height};
+      const PW = ${context.paddle_w}, PH = ${context.paddle_h}, PSPD = ${context.paddle_speed};
+      const PCOLOR = "${context.paddle_color}";
+      const BR = ${context.ball_r}, BSPD = ${context.ball_speed};
+      const BCOLOR = "${context.ball_color}";
+      const ROWS = ${context.rows}, COLS = ${context.cols};
+      const BW = ${context.brick_w}, BH = ${context.brick_h}, GAP = ${context.brick_gap};
+      const START_LIVES = ${context.lives};
+      const ROW_COLORS = [`
+    for bc in context.brick_colors
+        write ` "${bc.color}",`
+    end
+    write `
+      ];
+
+      const c = document.getElementById("c"), ctx = c.getContext("2d");
+      const scoreEl = document.getElementById("score"), livesEl = document.getElementById("lives");
+
+      let paddle, ball, bricks, score, lives, launched, keys, gameOver;
+
+      // -----------------------------------------------------------------
+      // Action implementations. Names here MUST match the action idents
+      // declared in the DSL via \`on_key ... <action>\` and \`on_event ...
+      // <action>\`. Library authors add to this table when extending the DSL.
+      // -----------------------------------------------------------------
+      const ACTIONS = {
+        paddle_left()       { paddle.x = Math.max(0, paddle.x - PSPD); },
+        paddle_right()      { paddle.x = Math.min(W - PW, paddle.x + PSPD); },
+        launch_ball()       {
+          if (launched || gameOver) return;
+          ball.vx = (Math.random() > 0.5 ? 1 : -1) * BSPD;
+          ball.vy = -BSPD;
+          launched = true;
+        },
+        reset()             { resetGame(); },
+
+        destroy_brick(b)    { b.alive = false; },
+        add_score(_b, value){
+          score += value;
+          scoreEl.textContent = score;
+        },
+        bounce_with_spin()  {
+          ball.y = paddle.y - BR;
+          ball.vy = -Math.abs(ball.vy);
+          const off = (ball.x - (paddle.x + PW / 2)) / (PW / 2);
+          ball.vx = off * (BSPD + 2);
+        },
+        lose_life()         {
+          lives--;
+          livesEl.textContent = lives;
+          if (lives <= 0) { gameOver = "lose"; return; }
+          ball.x = paddle.x + PW / 2;
+          ball.y = paddle.y - BR - 1;
+          ball.vx = 0; ball.vy = 0;
+          launched = false;
+        },
+        win()               { gameOver = "win"; },
+      };
+
+      // -----------------------------------------------------------------
+      // Generated bindings from the DSL.
+      // -----------------------------------------------------------------
+      const KEY_BINDINGS = {
+`
+    for kb in context.key_bindings
+        write `        "${kb.key}": "${kb.action}",
+`
+    end
+    write `      };
+
+      const EVENT_HANDLERS = {
+`
+    for eh in context.event_handlers
+        write `        ${eh.ev}: (arg) => {
+          ACTIONS["${eh.action1}"] && ACTIONS["${eh.action1}"](arg);
+`
+        if eh.action2
+            write `          ACTIONS["${eh.action2}"] && ACTIONS["${eh.action2}"](arg, ${eh.value});
+`
+        end
+        write `        },
+`
+    end
+    write `      };
+
+      function emit(event, arg) {
+        const h = EVENT_HANDLERS[event];
+        if (h) h(arg);
+      }
+
+      function resetGame() {
+        paddle = { x: (W - PW) / 2, y: H - PH - 8 };
+        ball = { x: W / 2, y: paddle.y - BR - 1, vx: 0, vy: 0 };
+        launched = false;
+        bricks = [];
+        const totalW = COLS * BW + (COLS - 1) * GAP;
+        const offX = (W - totalW) / 2;
+        const offY = 32;
+        for (let r = 0; r < ROWS; r++) {
+          for (let c = 0; c < COLS; c++) {
+            bricks.push({
+              x: offX + c * (BW + GAP),
+              y: offY + r * (BH + GAP),
+              w: BW, h: BH,
+              color: ROW_COLORS[r % ROW_COLORS.length],
+              alive: true,
+              value: (ROWS - r) * 10,
+            });
+          }
+        }
+        score = 0;
+        lives = START_LIVES;
+        gameOver = null;
+        scoreEl.textContent = score;
+        livesEl.textContent = lives;
+      }
+
+      function step() {
+        // Held-key actions: dispatch every frame for movement.
+        for (const k in KEY_BINDINGS) {
+          if (keys[k] && (k === "ArrowLeft" || k === "ArrowRight")) {
+            ACTIONS[KEY_BINDINGS[k]] && ACTIONS[KEY_BINDINGS[k]]();
+          }
+        }
+
+        if (!launched) {
+          ball.x = paddle.x + PW / 2;
+        } else {
+          ball.x += ball.vx;
+          ball.y += ball.vy;
+        }
+
+        if (ball.x - BR < 0)  { ball.x = BR; ball.vx = -ball.vx; }
+        if (ball.x + BR > W)  { ball.x = W - BR; ball.vx = -ball.vx; }
+        if (ball.y - BR < 0)  { ball.y = BR; ball.vy = -ball.vy; }
+        if (ball.y - BR > H)  emit("ball_lost");
+
+        if (
+          launched &&
+          ball.x > paddle.x && ball.x < paddle.x + PW &&
+          ball.y + BR > paddle.y && ball.y + BR < paddle.y + PH + 8
+        ) {
+          emit("paddle_hit");
+        }
+
+        for (const b of bricks) {
+          if (!b.alive) continue;
+          if (
+            ball.x + BR > b.x && ball.x - BR < b.x + b.w &&
+            ball.y + BR > b.y && ball.y - BR < b.y + b.h
+          ) {
+            const fromLeft = ball.x < b.x, fromRight = ball.x > b.x + b.w;
+            if (fromLeft || fromRight) ball.vx = -ball.vx;
+            else ball.vy = -ball.vy;
+            emit("brick_hit", b);
+            break;
+          }
+        }
+
+        if (bricks.every(b => !b.alive)) emit("all_cleared");
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, W, H);
+        for (const b of bricks) {
+          if (!b.alive) continue;
+          ctx.fillStyle = b.color;
+          ctx.fillRect(b.x, b.y, b.w, b.h);
+        }
+        ctx.fillStyle = PCOLOR;
+        ctx.fillRect(paddle.x, paddle.y, PW, PH);
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, BR, 0, Math.PI * 2);
+        ctx.fillStyle = BCOLOR;
+        ctx.fill();
+        if (gameOver) {
+          ctx.fillStyle = "rgba(10, 10, 20, 0.7)";
+          ctx.fillRect(0, 0, W, H);
+          ctx.fillStyle = "#cfd";
+          ctx.font = "bold 22px ui-monospace, monospace";
+          ctx.textAlign = "center";
+          ctx.fillText(gameOver === "win" ? "YOU WIN" : "GAME OVER", W / 2, H / 2 - 6);
+          ctx.font = "13px ui-monospace, monospace";
+          ctx.fillText("press R to restart", W / 2, H / 2 + 18);
+        }
+      }
+
+      function loop() { if (!gameOver) step(); draw(); requestAnimationFrame(loop); }
+
+      keys = {};
+      document.addEventListener("keydown", (e) => {
+        keys[e.key] = true;
+        const action = KEY_BINDINGS[e.key];
+        // One-shot actions fire on keydown; held-direction actions are
+        // dispatched every frame in step(). Discriminate by key.
+        if (action && e.key !== "ArrowLeft" && e.key !== "ArrowRight") {
+          ACTIONS[action] && ACTIONS[action]();
+          e.preventDefault();
+        }
+      });
+      document.addEventListener("keyup", (e) => { keys[e.key] = false; });
+
+      resetGame();
+      loop();
+    })();
+  </script>
+</body>
+</html>
+`
+end

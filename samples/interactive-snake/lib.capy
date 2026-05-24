@@ -1,0 +1,272 @@
+# Event-driven Snake DSL. The user declares key bindings and event
+# handlers; the library compiles them into a complete HTML5 canvas
+# game with input dispatch, game-state events, and localStorage scoring.
+extension html
+
+comments
+    line "#"
+end
+
+context
+    title ""
+    width 400
+    height 400
+    cols 20
+    rows 20
+    speed_ms 110
+    snake_color "#9fa"
+    food_color "#f44"
+    best_key ""
+    key_bindings []
+    event_handlers []
+end
+
+function game
+    arg literal "game"
+    arg capture title any
+    arg capture w int
+    arg capture h int
+    set context.title title
+    set context.width w
+    set context.height h
+end
+
+function grid
+    arg literal "grid"
+    arg literal "cols"
+    arg capture cols int
+    arg literal "rows"
+    arg capture rows int
+    set context.cols cols
+    set context.rows rows
+end
+
+function tick
+    arg literal "tick"
+    arg literal "every"
+    arg capture ms int
+    set context.speed_ms ms
+end
+
+function on_key
+    arg literal "on_key"
+    arg capture key any
+    arg capture action ident
+    append context.key_bindings {key: key, action: action}
+end
+
+function on_event
+    arg literal "on_event"
+    arg capture ev ident
+    arg capture action1 ident
+    append context.event_handlers {ev: ev, action1: action1, action2: "", value: 0}
+end
+
+function on_event_two
+    priority 100
+    arg literal "on_event"
+    arg capture ev ident
+    arg capture action1 ident
+    arg capture action2 ident
+    arg capture value int
+    append context.event_handlers {ev: ev, action1: action1, action2: action2, value: value}
+end
+
+function snake_color
+    arg literal "snake_color"
+    arg capture c any
+    set context.snake_color c
+end
+
+function food_color
+    arg literal "food_color"
+    arg capture c any
+    set context.food_color c
+end
+
+function save_best
+    arg literal "save_best"
+    arg capture k any
+    set context.best_key k
+end
+
+file_template
+    write `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>${unquote context.title}</title>
+  <style>
+    body { margin: 0; background: #0a140a; display: grid; place-items: center; min-height: 100vh; font-family: ui-monospace, SFMono-Regular, monospace; color: #cfc; }
+    canvas { background: #142014; border: 2px solid #2a3; box-shadow: 0 0 40px #2f63; image-rendering: pixelated; }
+    .wrap { text-align: center; }
+    .hud  { margin: 8px 0; font-size: 13px; letter-spacing: 0.08em; }
+    .hud span { color: #3f6; }
+    .hint { color: #586; font-size: 11px; margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hud">${unquote context.title} · score <span id="score">0</span> · best <span id="best">0</span></div>
+    <canvas id="c" width="${context.width}" height="${context.height}"></canvas>
+    <div class="hint">arrows / WASD to move · space to pause · R to restart</div>
+  </div>
+  <script>
+    (() => {
+      const W = ${context.width}, H = ${context.height};
+      const COLS = ${context.cols}, ROWS = ${context.rows};
+      const SPD = ${context.speed_ms};
+      const CW = W / COLS, CH = H / ROWS;
+      const SNAKE_COLOR = "${context.snake_color}";
+      const FOOD_COLOR = "${context.food_color}";
+      const BEST_KEY = "${context.best_key}";
+
+      const c = document.getElementById("c"), ctx = c.getContext("2d");
+      const scoreEl = document.getElementById("score"), bestEl = document.getElementById("best");
+      let best = parseInt(localStorage.getItem(BEST_KEY) || "0", 10);
+      bestEl.textContent = best;
+
+      let snake, dir, queuedDir, food, score, alive, paused, timer;
+
+      // -----------------------------------------------------------------
+      // Action implementations — names must match DSL action idents.
+      // -----------------------------------------------------------------
+      const ACTIONS = {
+        turn_up()    { queuedDir = { x: 0,  y: -1 }; },
+        turn_down()  { queuedDir = { x: 0,  y:  1 }; },
+        turn_left()  { queuedDir = { x: -1, y:  0 }; },
+        turn_right() { queuedDir = { x: 1,  y:  0 }; },
+        pause_toggle() {
+          paused = !paused;
+          if (!paused) schedule(); else draw();
+        },
+        reset()        { resetGame(); },
+
+        grow()         { /* growth is inherent: step() skips pop() on the eat-food tick */ },
+        add_score(_arg, value) {
+          score += value;
+          scoreEl.textContent = score;
+          if (score > best) {
+            best = score;
+            bestEl.textContent = best;
+            if (BEST_KEY) localStorage.setItem(BEST_KEY, String(best));
+          }
+        },
+        game_over()    { alive = false; },
+      };
+
+      const KEY_BINDINGS = {
+`
+    for kb in context.key_bindings
+        write `        "${kb.key}": "${kb.action}",
+`
+    end
+    write `      };
+
+      const EVENT_HANDLERS = {
+`
+    for eh in context.event_handlers
+        write `        ${eh.ev}: (arg) => {
+          ACTIONS["${eh.action1}"] && ACTIONS["${eh.action1}"](arg);
+`
+        if eh.action2
+            write `          ACTIONS["${eh.action2}"] && ACTIONS["${eh.action2}"](arg, ${eh.value});
+`
+        end
+        write `        },
+`
+    end
+    write `      };
+
+      function emit(event, arg) {
+        const h = EVENT_HANDLERS[event];
+        if (h) h(arg);
+      }
+
+      function spawnFood() {
+        while (true) {
+          const f = { x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS) };
+          if (!snake.some(s => s.x === f.x && s.y === f.y)) { food = f; return; }
+        }
+      }
+
+      function resetGame() {
+        snake = [
+          { x: Math.floor(COLS / 2),     y: Math.floor(ROWS / 2) },
+          { x: Math.floor(COLS / 2) - 1, y: Math.floor(ROWS / 2) },
+          { x: Math.floor(COLS / 2) - 2, y: Math.floor(ROWS / 2) },
+        ];
+        dir = { x: 1, y: 0 };
+        queuedDir = { x: 1, y: 0 };
+        score = 0;
+        alive = true;
+        paused = false;
+        scoreEl.textContent = score;
+        spawnFood();
+        schedule();
+      }
+
+      function schedule() {
+        if (timer) clearTimeout(timer);
+        if (!alive || paused) return;
+        timer = setTimeout(() => { step(); draw(); schedule(); }, SPD);
+      }
+
+      function step() {
+        if (queuedDir.x !== -dir.x || queuedDir.y !== -dir.y) dir = queuedDir;
+
+        const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
+        if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS) { emit("hit_wall"); return; }
+        if (snake.some(s => s.x === head.x && s.y === head.y))            { emit("hit_self"); return; }
+
+        snake.unshift(head);
+        if (head.x === food.x && head.y === food.y) {
+          emit("eat_food");      // event fires grow + add_score per DSL
+          spawnFood();
+        } else {
+          snake.pop();
+        }
+      }
+
+      function draw() {
+        ctx.fillStyle = "#142014";
+        ctx.fillRect(0, 0, W, H);
+
+        ctx.fillStyle = FOOD_COLOR;
+        ctx.fillRect(food.x * CW + 1, food.y * CH + 1, CW - 2, CH - 2);
+
+        for (let i = 0; i < snake.length; i++) {
+          const s = snake[i];
+          const t = i / Math.max(1, snake.length - 1);
+          ctx.fillStyle = i === 0 ? SNAKE_COLOR : \`rgb(\${64 + 80 * (1 - t)}, \${200 - 60 * t}, \${96 + 40 * (1 - t)})\`;
+          ctx.fillRect(s.x * CW + 1, s.y * CH + 1, CW - 2, CH - 2);
+        }
+
+        if (!alive || paused) {
+          ctx.fillStyle = "rgba(10, 20, 10, 0.7)";
+          ctx.fillRect(0, 0, W, H);
+          ctx.fillStyle = "#cfc";
+          ctx.font = "bold 22px ui-monospace, monospace";
+          ctx.textAlign = "center";
+          ctx.fillText(!alive ? "GAME OVER" : "PAUSED", W / 2, H / 2 - 6);
+          ctx.font = "13px ui-monospace, monospace";
+          ctx.fillText(!alive ? "press R to restart" : "press space to resume", W / 2, H / 2 + 18);
+        }
+      }
+
+      document.addEventListener("keydown", (e) => {
+        const action = KEY_BINDINGS[e.key];
+        if (action) {
+          ACTIONS[action] && ACTIONS[action]();
+          e.preventDefault();
+        }
+      });
+
+      resetGame();
+      draw();
+    })();
+  </script>
+</body>
+</html>
+`
+end

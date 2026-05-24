@@ -7,9 +7,7 @@ function meta
     arg literal "meta"
     arg capture key ident
     arg capture value string
-    template_str ""
-    run:
-        set context.meta[key] value
+    set context.meta[key] value
 end
 
 # `tag NAME` adds a string to the context.tags list. Standard across
@@ -17,16 +15,13 @@ end
 function tag
     arg literal "tag"
     arg capture name ident
-    template_str ""
-    run:
-        append context.tags name
+    append context.tags name
 end
 
 # `note "text"` adds a note to the rendered output.
 function note
     arg literal "note"
     arg capture text string
-    template:
-        > **Note:** {{ .text | unquote }}
-
+    write `> **Note:** ${unquote text}
+`
 end
