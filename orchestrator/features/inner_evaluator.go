@@ -153,6 +153,16 @@ func (e *InnerEvaluator) descend(parent any, step domain.PathStep, caps map[stri
 			if !ok {
 				return nil, fmt.Errorf("list index must be int")
 			}
+			// Negative indices count from the end: -1 → last element.
+			// Useful for "append to the last appended item" patterns
+			// inside nested blocks.
+			n := int64(len(p))
+			if i < 0 {
+				i += n
+			}
+			if i < 0 || i >= n {
+				return nil, fmt.Errorf("list index %d out of range (len=%d)", i, n)
+			}
 			return p[int(i)], nil
 		}
 		return nil, fmt.Errorf("cannot index into %T", parent)

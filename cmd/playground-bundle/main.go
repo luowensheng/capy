@@ -11,40 +11,199 @@ import (
 	"path/filepath"
 )
 
-// CURATED is the list of samples surfaced in the playground UI. Order
-// matters: the first entry is the default shown on page load.
+// CURATED is the ordered list of samples surfaced in the playground UI.
+// The Category field groups them in the dropdown.
 var CURATED = []struct {
-	ID          string
-	Title       string
-	Description string
-	Hint        string // shown under the run button
+	ID, Category, Title, Description, Hint string
 }{
-	{"recipe-card", "🍋 Recipe card",
+	// ─── Everyday / no-code-required ────────────────────────────────
+	{"recipe-card", "Everyday", "🍋 Recipe card",
 		"Write a recipe in plain words; get a printable HTML recipe card.",
 		"Try editing the title, ingredients, or steps."},
-	{"event-invite", "🎉 Party invitation",
+	{"event-invite", "Everyday", "🎉 Party invitation",
 		"Declare a party; get a pastel HTML invitation card.",
 		"Try changing the host, location, or RSVP date."},
-	{"weekly-meal-plan", "📅 Weekly meal plan",
+	{"weekly-meal-plan", "Everyday", "📅 Weekly meal plan",
 		"Seven dinners + notes → printable HTML grid for the fridge.",
 		"Swap meals or add notes."},
-	{"reading-log", "📚 Reading log",
+	{"reading-log", "Everyday", "📚 Reading log (for kids)",
 		"A kid's reading list → bright HTML certificate with progress bar.",
 		"Add more `book` lines; the progress bar updates."},
-	{"interactive-breakout", "🕹️ Breakout game",
-		"Declare entities + key bindings + event handlers → playable HTML5 Breakout.",
-		"Try changing `lives 3` to `lives 5`, or rebind keys."},
-	{"interactive-snake", "🐍 Snake game",
-		"3-line config + key bindings + event handlers → playable HTML5 Snake.",
+	{"trip-itinerary", "Everyday", "✈️ Trip itinerary",
+		"Day-by-day travel plan → polished HTML itinerary card.",
+		"Edit destinations, add activities, change the budget."},
+	{"transpile-resume", "Everyday", "📄 Resume",
+		"A resume DSL → a clean printable resume.",
+		"Edit experience and skills lines."},
+	{"transpile-invoice", "Everyday", "🧾 Invoice",
+		"Declare an invoice; get a polished HTML invoice you can print.",
+		"Edit the line items and rates."},
+	{"transpile-markdown-todo", "Everyday", "✅ To-do list",
+		"A tiny todo DSL → Markdown checklist.",
+		"Add tasks, mark them done."},
+
+	// ─── Interactive games ──────────────────────────────────────────
+	{"interactive-breakout", "Games", "🕹️ Breakout (playable)",
+		"Event-driven Breakout: entities + key bindings + event handlers → 226-line HTML5 game.",
+		"Change `lives 3` to `lives 5`, or rebind keys."},
+	{"interactive-snake", "Games", "🐍 Snake (playable)",
+		"Event-driven Snake: key bindings + event handlers → 180-line HTML5 game.",
 		"Try changing `tick every 110` to a smaller number for faster gameplay."},
+	{"transpile-canvas-game", "Games", "🎮 Canvas game",
+		"A tiny game DSL → full HTML5 canvas game with sprites + input handlers.",
+		"Add new sprites or key bindings."},
+	{"scene-dsl", "Games", "🎬 Scene description",
+		"High-level scene declaration → rendering-engine setup.",
+		"Add new entities."},
+
+	// ─── Web / UI ──────────────────────────────────────────────────
+	{"transpile-landing-page", "Web", "🌐 Landing page",
+		"Marketing landing page DSL → polished HTML.",
+		"Change the headline, hero text, CTAs."},
+	{"transpile-react-component", "Web", "⚛️ React component",
+		"Component declaration → React TSX with props + state.",
+		"Add new props or component fields."},
+	{"html-component", "Web", "✨ HTML component",
+		"Card / badge / hero primitives → ready-to-paste HTML+CSS.",
+		"Try different variants."},
+	{"transpile-css-animations", "Web", "🎨 CSS animations",
+		"Animation DSL → @keyframes + utility classes.",
+		"Tweak duration or easing."},
+	{"transpile-email-html", "Web", "📧 Email HTML",
+		"Email template DSL → inline-styled HTML for email clients.",
+		"Edit headline, body, CTA."},
+	{"transpile-form", "Web", "📝 HTML form",
+		"Form field declarations → a styled HTML form.",
+		"Add or remove fields."},
+	{"transpile-blog", "Web", "📰 Blog post",
+		"Blog-post DSL → Markdown with frontmatter + structured content.",
+		"Add new sections."},
+	{"supercharge-markdown", "Web", "📝 Markdown w/ callouts",
+		"Markdown extension DSL → real Markdown with HTML callouts + metric cards.",
+		"Add more `callout` or `card` blocks."},
+
+	// ─── Diagrams & data ───────────────────────────────────────────
+	{"transpile-mermaid", "Diagrams", "🌊 Mermaid diagram",
+		"High-level flow DSL → Mermaid syntax.",
+		"Add new nodes or edges."},
+	{"transpile-csv", "Diagrams", "📊 CSV",
+		"Tabular DSL → CSV with header row.",
+		"Add columns or rows."},
+	{"transpile-json", "Diagrams", "🗂️ JSON",
+		"Structured DSL → indented JSON output.",
+		"Add nested fields."},
+
+	// ─── DevOps & config ───────────────────────────────────────────
+	{"transpile-dockerfile", "DevOps", "🐳 Dockerfile",
+		"Multi-stage Docker build DSL → real Dockerfile.",
+		"Add layers or environment variables."},
+	{"transpile-kubernetes", "DevOps", "☸️ Kubernetes manifest",
+		"Deployment + service DSL → full K8s YAML.",
+		"Add containers, change replicas."},
+	{"transpile-terraform", "DevOps", "🏗️ Terraform module",
+		"Infrastructure DSL → Terraform HCL.",
+		"Add resources or variables."},
+	{"transpile-makefile", "DevOps", "⚙️ Makefile",
+		"Build-target DSL → real Makefile.",
+		"Add new targets and dependencies."},
+	{"transpile-nginx", "DevOps", "🌐 nginx config",
+		"Server block DSL → nginx configuration.",
+		"Add upstreams or rewrite rules."},
+	{"transpile-gh-actions", "DevOps", "⚡ GitHub Actions",
+		"Workflow DSL → GitHub Actions YAML.",
+		"Add new jobs or steps."},
+	{"transpile-cron", "DevOps", "⏰ Cron",
+		"Schedule + command DSL → crontab lines.",
+		"Add scheduled tasks."},
+	{"transpile-prometheus-alerts", "DevOps", "🚨 Prometheus alerts",
+		"Alert-rule DSL → Prometheus alerting rules YAML.",
+		"Add new alerts."},
+	{"transpile-env", "DevOps", "🔐 .env file",
+		"Env-var DSL → dotenv config.",
+		"Add new variables."},
+	{"transpile-systemd", "DevOps", "🐧 systemd unit",
+		"Service DSL → systemd .service unit file.",
+		"Edit ExecStart and dependencies."},
+	{"transpile-chrome-extension", "DevOps", "🌐 Chrome extension manifest",
+		"Extension config DSL → manifest.json v3.",
+		"Add permissions or content scripts."},
+	{"supercharge-sql", "DevOps", "💎 SQL DDL with macros",
+		"Macros (pk/fk/timestamps/soft_delete) → idiomatic Postgres DDL.",
+		"Add new tables."},
+
+	// ─── Schemas & APIs ────────────────────────────────────────────
+	{"transpile-postgres-schema", "Schemas", "🗃️ Postgres schema",
+		"Table DSL → CREATE TABLE + indexes + foreign keys.",
+		"Add tables and references."},
+	{"transpile-prisma-schema", "Schemas", "💠 Prisma schema",
+		"Model DSL → Prisma schema.prisma.",
+		"Add models or relations."},
+	{"transpile-openapi", "Schemas", "🔭 OpenAPI spec",
+		"Endpoint DSL → OpenAPI 3.0 YAML.",
+		"Add endpoints, parameters, responses."},
+	{"transpile-graphql", "Schemas", "📡 GraphQL schema",
+		"Type DSL → GraphQL SDL.",
+		"Add types and resolvers."},
+	{"transpile-zod-schema", "Schemas", "🛡️ Zod schema",
+		"Type DSL → Zod TypeScript validation schemas.",
+		"Add fields or refinements."},
+	{"transpile-typescript", "Schemas", "📑 TypeScript types",
+		"Struct DSL → TypeScript interfaces + types.",
+		"Add fields."},
+	{"transpile-protobuf", "Schemas", "📐 Protobuf",
+		"Message DSL → .proto definitions.",
+		"Add messages and services."},
+	{"transpile-api-docs", "Schemas", "📋 API docs",
+		"Endpoint DSL → Markdown API reference.",
+		"Add new endpoints."},
+	{"typed-config-dsl", "Schemas", "🔒 Typed config (HCL)",
+		"Service config DSL with custom types (Email, Semver, LogLevel) → HCL.",
+		"Add new services. Bad values give clear type errors."},
+
+	// ─── Code generation ───────────────────────────────────────────
+	{"transpile-py", "Code", "🐍 Python script",
+		"Source language DSL → Python.",
+		"Try adding more functions."},
+	{"transpile-express-server", "Code", "🚂 Express server",
+		"Route DSL → Express.js handlers.",
+		"Add new endpoints."},
+	{"transpile-flask-app", "Code", "🌶️ Flask app",
+		"Route DSL → Python Flask handlers.",
+		"Add new routes."},
+	{"transpile-fastapi-app", "Code", "⚡ FastAPI app",
+		"Route DSL → Python FastAPI handlers.",
+		"Add new endpoints with type hints."},
+	{"transpile-go", "Code", "🐹 Go",
+		"Source language DSL → idiomatic Go.",
+		"Add functions or types."},
+	{"transpile-cli", "Code", "💼 CLI app",
+		"Flag DSL → CLI argument parsing scaffold.",
+		"Add new flags."},
+	{"transpile-slack-blocks", "Code", "💬 Slack message",
+		"Block-kit DSL → Slack message JSON.",
+		"Try different block types."},
+	{"transpile-statemachine", "Code", "🔄 State machine",
+		"State + transition DSL → runnable state-machine code.",
+		"Add states or transitions."},
+	{"transpile-xstate-machine", "Code", "🎛️ XState machine",
+		"State-chart DSL → XState v5 machine config.",
+		"Add states or guards."},
+	{"transpile-bash", "Code", "🐚 Bash script",
+		"Command DSL → portable bash script.",
+		"Add new commands."},
+	{"transpile-changelog", "Code", "📋 Changelog",
+		"Release entry DSL → Keep-a-Changelog Markdown.",
+		"Add new releases."},
 }
 
 type bundle struct {
-	Samples []sample `json:"samples"`
+	Samples    []sample `json:"samples"`
+	Categories []string `json:"categories"`
 }
 
 type sample struct {
 	ID          string `json:"id"`
+	Category    string `json:"category"`
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	Hint        string `json:"hint"`
@@ -60,28 +219,38 @@ func main() {
 	samplesDir := filepath.Join(root, "samples")
 
 	var out bundle
+	seenCat := map[string]bool{}
 	for _, c := range CURATED {
 		libBytes, err := os.ReadFile(filepath.Join(samplesDir, c.ID, "lib.capy"))
 		if err != nil {
-			// Tolerate YAML libs by trying lib.yaml as a fallback.
 			libBytes, err = os.ReadFile(filepath.Join(samplesDir, c.ID, "lib.yaml"))
 		}
 		if err != nil {
-			fail(fmt.Errorf("%s: %v", c.ID, err))
+			fmt.Fprintf(os.Stderr, "playground-bundle: SKIP %s (%v)\n", c.ID, err)
+			continue
 		}
 		scriptBytes, err := os.ReadFile(filepath.Join(samplesDir, c.ID, "script.capy"))
 		if err != nil {
-			fail(fmt.Errorf("%s/script.capy: %v", c.ID, err))
+			fmt.Fprintf(os.Stderr, "playground-bundle: SKIP %s/script.capy (%v)\n", c.ID, err)
+			continue
 		}
 		out.Samples = append(out.Samples, sample{
 			ID:          c.ID,
+			Category:    c.Category,
 			Title:       c.Title,
 			Description: c.Description,
 			Hint:        c.Hint,
 			Library:     string(libBytes),
 			Script:      string(scriptBytes),
 		})
+		if !seenCat[c.Category] {
+			seenCat[c.Category] = true
+			out.Categories = append(out.Categories, c.Category)
+		}
 	}
+
+	fmt.Fprintf(os.Stderr, "playground-bundle: bundled %d samples across %d categories\n",
+		len(out.Samples), len(out.Categories))
 
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")

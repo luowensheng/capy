@@ -42,6 +42,9 @@
       padding: 6px 12px; font-size: 13px; cursor: pointer;
       font-family: inherit;
     }
+    header.toolbar select { min-width: 240px; max-width: 320px; }
+    header.toolbar select optgroup { color: var(--accent-2); font-style: normal; font-weight: 600; }
+    header.toolbar select option { color: var(--text); }
     header.toolbar button.primary { background: var(--accent); color: white; border-color: var(--accent); }
     header.toolbar button.primary:hover { filter: brightness(1.1); }
     header.toolbar button:hover { background: var(--bg); }
@@ -191,12 +194,30 @@
       const data = await resp.json();
       SAMPLES = data.samples;
       const picker = $("sample-picker");
+
+      // Group samples into <optgroup>s by category so the dropdown is
+      // scannable when there are many of them.
+      const byCat = {};
       SAMPLES.forEach((s, i) => {
-        const opt = document.createElement("option");
-        opt.value = i;
-        opt.textContent = s.title;
-        picker.appendChild(opt);
+        const cat = s.category || "Other";
+        (byCat[cat] ||= []).push({ idx: i, sample: s });
       });
+      const order = data.categories && data.categories.length
+        ? data.categories
+        : Object.keys(byCat);
+      for (const cat of order) {
+        const entries = byCat[cat] || [];
+        if (entries.length === 0) continue;
+        const group = document.createElement("optgroup");
+        group.label = cat;
+        for (const { idx, sample } of entries) {
+          const opt = document.createElement("option");
+          opt.value = idx;
+          opt.textContent = sample.title;
+          group.appendChild(opt);
+        }
+        picker.appendChild(group);
+      }
       picker.addEventListener("change", () => selectSample(parseInt(picker.value, 10)));
       selectSample(0);
     }

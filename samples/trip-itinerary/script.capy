@@ -1,0 +1,37 @@
+trip "Lisbon long weekend" travelers 2
+    dates "May 16 - May 19, 2026"
+    budget 1800
+
+    day "Friday — Arrive"
+        activity 18 "Check into Alfama guesthouse"
+        activity 19 "Sunset walk to Miradouro de Santa Luzia"
+        activity 21 "Dinner at Taberna Sal Grosso (fado)"
+    end
+
+    day "Saturday — Old town"
+        activity 9  "Pastel de nata + bica at Manteigaria"
+        activity 10 "Tram 28 from Praça da Figueira"
+        activity 12 "Castelo de São Jorge"
+        activity 14 "Lunch at Pateo 13 (grilled sardines)"
+        activity 16 "Time Out Market — wander + coffee"
+        activity 21 "Live music at Hot Clube de Portugal"
+    end
+
+    day "Sunday — Belém"
+        activity 9  "Train to Belém"
+        activity 10 "Mosteiro dos Jerónimos"
+        activity 12 "Original pastel de nata at Pastéis de Belém"
+        activity 14 "Lunch by the river"
+        activity 16 "MAAT museum"
+        activity 19 "Back to Alfama, easy dinner"
+    end
+
+    day "Monday — Slow morning + fly"
+        activity 9  "Coffee at Hello, Kristof"
+        activity 11 "Final stroll, last pastel"
+        activity 13 "Taxi to airport"
+    end
+
+    note "Pack layers — Lisbon evenings are cooler than the days."
+    note "Tram 28 gets crowded after 11 a.m. — start early."
+end
