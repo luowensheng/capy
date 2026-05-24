@@ -12,17 +12,17 @@ function table
     arg literal "table"
     arg capture name ident
     block_closer end
-    template:
-        CREATE TABLE {{ .name }} (
-        {{ .body | trimSuffix ",\n" }}
-        );
-
+    write `CREATE TABLE ${name} (
+${trimSuffix ",\\n" body}
+);
+`
 end
 
 function pk
     arg literal "pk"
     arg capture col ident
-    template_str "  {{ .col }} bigserial PRIMARY KEY,\n"
+    write `  ${col} bigserial PRIMARY KEY,
+`
 end
 
 function fk
@@ -30,31 +30,37 @@ function fk
     arg capture col ident
     arg literal "->"
     arg capture ref ident
-    template_str "  {{ .col }} bigint NOT NULL REFERENCES {{ .ref }}(id),\n"
+    write `  ${col} bigint NOT NULL REFERENCES ${ref}(id),
+`
 end
 
 function col
     arg literal "col"
     arg capture name ident
     arg capture spec string
-    template_str "  {{ .name }} {{ .spec | unquote }},\n"
+    write `  ${name} ${unquote spec},
+`
 end
 
 function timestamps
     arg literal "timestamps"
-    template_str "  created_at timestamptz NOT NULL DEFAULT now(),\n  updated_at timestamptz NOT NULL DEFAULT now(),\n"
+    write `  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+`
 end
 
 function soft_delete
     arg literal "soft_delete"
-    template_str "  deleted_at timestamptz,\n"
+    write `  deleted_at timestamptz,
+`
 end
 
 function index
     arg literal "index"
     arg capture tbl ident
     arg capture col ident
-    template_str "CREATE INDEX ix_{{ .tbl }}_{{ .col }} ON {{ .tbl }}({{ .col }});\n"
+    write `CREATE INDEX ix_${tbl}_${col} ON ${tbl}(${col});
+`
 end
 
 function end
@@ -65,6 +71,5 @@ file_template
 -- Source: a 4-keyword DSL (table / pk / fk / col / timestamps / soft_delete / index).
 
 ${body}
-
 `
 end

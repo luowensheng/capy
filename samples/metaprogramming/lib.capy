@@ -13,7 +13,6 @@ end
 function print
     arg literal "print"
     arg capture text string
-    template:
-        {{ .text | unquote }}
-
+    write `${unquote text}
+`
 end
