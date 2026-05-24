@@ -1,0 +1,5 @@
+# LEVEL 1 — minimal. 4 lines (the syntactic form is one statement
+# split across 4 lines for readability). The library decides everything
+# else: layout, fonts, colors, footer text.
+
+landing "Capy" tagline "Describe what you want. Capy produces what you need." cta_text "Open the playground" cta_link "https://luowensheng.github.io/capy/playground/"

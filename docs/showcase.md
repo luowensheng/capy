@@ -133,6 +133,83 @@ do more than twice.
 
 ---
 
+## 🎚️ Progressive abstraction — pick your level of control
+
+Same library, three abstraction levels. Start with a 4-line one-shot;
+take more control as your needs grow; drop to raw HTML/CSS via
+escape hatches when the abstraction isn't enough.
+
+=== "Level 1 — minimal (4 lines)"
+
+    ```
+    landing "Capy"
+            tagline "Describe what you want. Capy produces what you need."
+            cta_text "Open the playground"
+            cta_link "https://luowensheng.github.io/capy/playground/"
+    ```
+
+    You declare WHAT; the library decides EVERYTHING else.
+
+    <iframe src="../assets/demos/abstraction-level-1.html" width="100%" height="320" style="border: 1px solid #30363d; border-radius: 6px; background: #0f172a;" title="Level 1"></iframe>
+
+=== "Level 2 — block style (~12 lines)"
+
+    ```
+    landing "Capy"
+        hero "Capy" "Describe what you want. Capy produces what you need."
+
+        feature "Zero default grammar"  "Every keyword is defined by the library."
+        feature "55+ samples"           "Recipes, invoices, Android apps."
+        feature "Browser playground"    "Compiler runs as WebAssembly."
+        feature "MCP server included"   "Plug into Claude / Cursor / Zed."
+
+        cta "Open the playground" "https://..."
+    end
+    ```
+
+    You take control of WHICH sections appear and in what order;
+    visual identity stays library-owned.
+
+    <iframe src="../assets/demos/abstraction-level-2.html" width="100%" height="420" style="border: 1px solid #30363d; border-radius: 6px; background: #0f172a;" title="Level 2"></iframe>
+
+=== "Level 3 — escape hatches (~30 lines)"
+
+    ```
+    landing "Capy — Pro"
+        raw_head "<meta name='theme-color' content='#4f46e5'>"
+        style_override "body { background: linear-gradient(...); } .hero h1 { ... }"
+
+        hero "Capy — Pro" "Same engine. Same grammar. Take exactly the control you need."
+
+        feature "..." "..."
+        feature "Metaprogramming"  "Source declares its own DSL primitives."
+
+        raw_section "<section style='...'>...custom HTML...</section>"
+        cta "Open the playground" "..."
+        raw_footer "<a href='...'>github.com/luowensheng/capy</a>"
+    end
+    ```
+
+    Now you have **escape hatches**: literal HTML in `<head>`,
+    stylesheet overrides, custom sections, replaced footer. The
+    library never gets in your way.
+
+    <iframe src="../assets/demos/abstraction-level-3.html" width="100%" height="520" style="border: 1px solid #30363d; border-radius: 6px; background: #0f172a;" title="Level 3"></iframe>
+
+=== "Why it matters"
+
+    | Concern | Capy's answer |
+    |---|---|
+    | "Tools are great until you need something they didn't anticipate" | Same library exposes Level 1 → 2 → 3. Drop a level, never switch tools. |
+    | "Different teammates want different control" | Marketing uses Level 1, product uses Level 2, brand uses Level 3 — same library. |
+    | "Escape hatches are second-class citizens" | `raw_head` / `style_override` / `raw_section` are first-class primitives; libraries are designed around them. |
+    | "What if I need to go off-script for one launch?" | Drop to Level 3 for that page; revert to Level 1 for the next. |
+
+[Full sample → `samples/progressive-abstraction/`](https://github.com/luowensheng/capy/tree/main/samples/progressive-abstraction) ·
+[Pattern docs → `progressive-abstraction.md`](progressive-abstraction.md)
+
+---
+
 ## 🧬 Metaprogramming — source extends its own grammar
 
 A `define NAME ... end` block in a Capy source file introduces a new

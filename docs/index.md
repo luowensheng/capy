@@ -233,6 +233,7 @@ artifact.</p>
 | **"Multi-platform is exponentially expensive"** | One source → Android + iOS + web from three libraries. New platform = new library, not new project. |
 | **"Conventions in PR-review comments don't scale"** | A library is enforced by the tool, not by the reviewer. Whole categories of "you forgot the test / wrong package / missing audit field" disappear. |
 | **"Power users want to extend the DSL without forking"** | `define NAME ... end` in the source declares new functions [inline → see metaprogramming](metaprogramming.md). Library stays untouched. |
+| **"High-level tools trap you when you need more control"** | Libraries can expose [progressive abstraction](progressive-abstraction.md) — one-shot, block-style, AND escape hatches in the same library. Drop a level, never switch tools. |
 
 ---
 

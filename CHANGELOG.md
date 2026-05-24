@@ -8,6 +8,52 @@ may break between minor versions** (see `CONTRIBUTING.md`).
 
 ## [Unreleased]
 
+## [0.12.0] — 2026-05-24
+
+Progressive abstraction. One Capy library can expose primitives at
+multiple granularities — start with a one-liner, peel back layers as
+you need more control, drop to raw HTML/CSS via escape hatches when
+the abstraction isn't enough.
+
+### Added — sample
+
+- **`samples/progressive-abstraction/`** — one landing-page library
+  (`lib.capy`) plus THREE sources at three abstraction levels:
+  - `script_minimal.capy` (~4 lines) — one-shot `landing` declaration
+  - `script_medium.capy` (~12 lines) — block style with explicit
+    `hero` / `feature` / `cta` blocks
+  - `script_full.capy` (~30 lines) — block style PLUS escape hatches
+    (`raw_head`, `style_override`, `raw_section`, `raw_footer`)
+
+  All three produce HTML landing pages. The library never traps you —
+  drop a level when the abstraction isn't enough. Tests
+  (`cmd/capy/progressive_abstraction_test.go`) diff all three against
+  committed goldens on every commit.
+
+### Added — docs + playground
+
+- **`docs/progressive-abstraction.md`** — pattern docs with side-by-
+  side browser-frame previews of all three levels and a "when to
+  design libraries this way" decision matrix.
+- **Playground** gains a new **Patterns** category in the sample
+  dropdown with three entries (`🎚️ Abstraction · Level 1/2/3`)
+  sharing the same library. 59 total samples across 8 categories.
+- **Playground bundler** (`cmd/playground-bundle/main.go`) now
+  supports an optional `ScriptFile` field so multiple curated
+  entries can share one sample directory with different script
+  files — needed by progressive-abstraction.
+
+### Changed
+
+- Homepage "What enterprises ask for" table adds a row mapping
+  "High-level tools trap you when you need more control" to
+  progressive abstraction.
+- Showcase opens with a new "🎚️ Progressive abstraction" section
+  (5 tabs: Level 1 / 2 / 3 / Why-it-matters / docs link) above the
+  metaprogramming section.
+- MkDocs nav: new "Progressive abstraction (pick your level)"
+  entry under Patterns.
+
 ## [0.11.0] — 2026-05-24
 
 Source-level metaprogramming. A Capy source file can now declare

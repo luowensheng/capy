@@ -71,6 +71,7 @@ nav:
     - Supercharge existing syntax: extending-existing-syntax.md
     - One source → many files: one-source-many-files.md
     - Metaprogramming (source-defined functions): metaprogramming.md
+    - Progressive abstraction (pick your level): progressive-abstraction.md
 
   # Reference — everything technical you need when building a library.
   - Reference:

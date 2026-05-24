@@ -1,0 +1,15 @@
+# LEVEL 2 — block style. You take control of WHICH SECTIONS appear and
+# in what order, but the library still owns layout + styling. Use this
+# when the one-line spec isn't expressive enough but you don't need
+# escape-hatches.
+
+landing "Capy"
+    hero "Capy" "Describe what you want. Capy produces what you need."
+
+    feature "Zero default grammar"  "Every keyword is defined by the library. 0 reserved words."
+    feature "55+ samples"           "Recipes, invoices, Android apps, libtorch trainers — all from .capy sources."
+    feature "Browser playground"    "The compiler runs as WebAssembly. Edit + preview + download. No install."
+    feature "MCP server included"   "Plug into Claude Desktop, Claude Code, Cursor, Zed with one config entry."
+
+    cta "Open the playground" "https://luowensheng.github.io/capy/playground/"
+end

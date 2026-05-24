@@ -1,0 +1,201 @@
+# A landing-page library that exposes THREE abstraction levels.
+# Same library; same engine; user chooses how much control to take.
+#
+#   LEVEL 1 (highest abstraction): one `landing` line + a few key=val
+#           lines. Everything else is decided by the library.
+#
+#   LEVEL 2 (block style):       explicit `hero / feature / cta` blocks.
+#           Layout decisions surface; visual identity stays library-owned.
+#
+#   LEVEL 3 (escape hatches):     same blocks PLUS `raw_head`, `raw_section`,
+#           `style_override`, `raw_footer` — drop down to literal HTML and
+#           CSS whenever the abstraction isn't sufficient.
+#
+# All three scripts produce the same output type — an HTML landing page —
+# but the user picks how much they want to specify.
+extension html
+
+context
+    title ""
+    tagline ""
+    cta_text ""
+    cta_link ""
+    features []
+    extra_head ""
+    extra_style ""
+    extra_sections []
+    extra_footer ""
+end
+
+# ─── Level-1 primitives ─────────────────────────────────────────────
+# One-line `landing "Title" tagline "..." cta_text "..." cta_link "..."`
+# fills everything the library needs from a single declaration.
+
+function landing_oneshot
+    priority 200
+    arg literal "landing"
+    arg capture title string
+    arg literal "tagline"
+    arg capture tagline string
+    arg literal "cta_text"
+    arg capture cta_text string
+    arg literal "cta_link"
+    arg capture cta_link string
+    template_str ""
+    run:
+        set context.title title
+        set context.tagline tagline
+        set context.cta_text cta_text
+        set context.cta_link cta_link
+end
+
+# ─── Level-2 primitives ─────────────────────────────────────────────
+# A `landing "Title"` block that opens with `end`; inside it you place
+# `hero`, `feature`, `cta` blocks to take control of sections.
+
+function landing
+    arg literal "landing"
+    arg capture title string
+    block_closer end
+    template_str ""
+    run:
+        set context.title title
+end
+
+function hero
+    arg literal "hero"
+    arg capture headline string
+    arg capture tagline string
+    template_str ""
+    run:
+        set context.tagline tagline
+end
+
+function feature
+    arg literal "feature"
+    arg capture headline string
+    arg capture body string
+    template_str ""
+    run:
+        append context.features {headline: headline, body: body}
+end
+
+function cta
+    arg literal "cta"
+    arg capture text string
+    arg capture link string
+    template_str ""
+    run:
+        set context.cta_text text
+        set context.cta_link link
+end
+
+# ─── Level-3 escape hatches ─────────────────────────────────────────
+# Anything the higher-level primitives don't cover — append raw HTML,
+# override styles, inject content at specific points.
+
+function raw_head
+    arg literal "raw_head"
+    arg capture html string
+    template_str ""
+    run:
+        set context.extra_head html
+end
+
+function style_override
+    arg literal "style_override"
+    arg capture css string
+    template_str ""
+    run:
+        set context.extra_style css
+end
+
+function raw_section
+    arg literal "raw_section"
+    arg capture html string
+    template_str ""
+    run:
+        append context.extra_sections html
+end
+
+function raw_footer
+    arg literal "raw_footer"
+    arg capture html string
+    template_str ""
+    run:
+        set context.extra_footer html
+end
+
+function end
+end
+
+file_template:
+    <!doctype html>
+    <html lang="en">
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <title>{{ .context.title | unquote }}</title>
+      <style>
+        :root {
+          --bg: #0f172a;
+          --fg: #e2e8f0;
+          --muted: #94a3b8;
+          --accent: #4f46e5;
+          --card: #1e293b;
+        }
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--fg);
+               font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; padding: 0; }
+        .wrap { max-width: 880px; margin: 0 auto; padding: 64px 32px; }
+        .hero { text-align: center; padding: 40px 0 24px; }
+        .hero h1 { font-size: 44px; margin: 0 0 10px; letter-spacing: -0.02em; }
+        .hero p { font-size: 18px; color: var(--muted); margin: 0 0 28px; }
+        .cta { display: inline-block; background: var(--accent); color: white; padding: 12px 28px;
+               border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; }
+        .cta:hover { filter: brightness(1.1); }
+        .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+                    gap: 18px; margin: 48px 0; }
+        .feature { background: var(--card); padding: 22px 24px; border-radius: 12px;
+                   border: 1px solid rgba(255,255,255,0.04); }
+        .feature h3 { margin: 0 0 6px; font-size: 17px; color: var(--accent); }
+        .feature p { margin: 0; font-size: 14px; color: var(--muted); line-height: 1.6; }
+        footer { text-align: center; color: var(--muted); padding: 32px; font-size: 13px; }
+        {{ .context.extra_style }}
+      </style>
+      {{ .context.extra_head }}
+    </head>
+    <body>
+      <div class="wrap">
+        <div class="hero">
+          <h1>{{ .context.title | unquote }}</h1>
+          <p>{{ .context.tagline | unquote }}</p>
+          {{- if .context.cta_text }}
+          <a class="cta" href="{{ .context.cta_link | unquote }}">{{ .context.cta_text | unquote }}</a>
+          {{- end }}
+        </div>
+
+        {{- if .context.features }}
+        <div class="features">
+          {{- range .context.features }}
+          <div class="feature">
+            <h3>{{ .headline | unquote }}</h3>
+            <p>{{ .body | unquote }}</p>
+          </div>
+          {{- end }}
+        </div>
+        {{- end }}
+
+        {{- range .context.extra_sections }}
+        {{ . }}
+        {{- end }}
+      </div>
+      <footer>
+        {{- if .context.extra_footer }}
+        {{ .context.extra_footer }}
+        {{- else }}
+        Built with <a href="https://github.com/luowensheng/capy" style="color:var(--accent)">Capy</a>.
+        {{- end }}
+      </footer>
+    </body>
+    </html>
