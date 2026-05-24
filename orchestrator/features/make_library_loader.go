@@ -242,6 +242,21 @@ func mapLibrary(r infra.RawLibrary, tokenize func(string) ([]domain.Token, error
 			Description: c.Description,
 			BodyRaw:     c.Body,
 		}
+		for _, a := range c.Args {
+			cd.Args = append(cd.Args, domain.CommandArg{
+				Name:        a.Name,
+				Required:    a.Required,
+				Description: a.Description,
+			})
+		}
+		for _, f := range c.Flags {
+			cd.Flags = append(cd.Flags, domain.CommandFlag{
+				Name:        f.Name,
+				Description: f.Description,
+				Default:     f.Default,
+				IsBool:      f.IsBool,
+			})
+		}
 		if strings.TrimSpace(c.Body) != "" {
 			toks, err := tokenize(c.Body)
 			if err != nil {

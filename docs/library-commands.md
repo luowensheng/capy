@@ -149,19 +149,124 @@ DSL gives you (`set`, `append`, `if`, `for`, …) plus:
 | `(exec_capture CMD ARGS...)` | Run a subprocess; capture combined output. |
 | `cd PATH` | Change working directory. |
 
-### Positional args + context
+### Declarative args + flags (v0.19.1)
 
-When you run `capy recipe build my-script.recipe extra`:
+A command can declare its own positional args + flags. The CLI
+parses them, surfaces them via the context, and generates a
+`--help` screen from the declarations.
 
-- `context.arg0` = `"my-script.recipe"`
-- `context.arg1` = `"extra"`
-- `context.args` = `["my-script.recipe", "extra"]`
-- `context.lib_path` = path to the resolved library
-- `context.lib_dir` = directory containing the library
-- `context.lib_name` = name declared in the manifest
+```
+command "build"
+    description "Compile a script and write to a file."
+    arg "script" required "Path to the input script."
+    arg "out"    optional "Output path. Defaults to <script>.txt."
+    flag "--minify" bool "Strip whitespace from the output."
+    flag "--prefix"      "Optional prefix line." default ""
 
-`${context.arg0}` interpolation works inside backtick literals
-exactly like everywhere else in Capy.
+    let rendered = (compile context.script)
+    let target   = "${context.script}.txt"
+    if context.out
+        let target = context.out
+    end
+    if context.flags.prefix
+        let rendered = "${context.flags.prefix}\\n${rendered}"
+    end
+    write_file target rendered
+    print "wrote ${target} (minify=${context.flags.minify})"
+end
+```
+
+In the body, declared positional args appear under their declared
+name (`context.script`, `context.out`); flags appear under
+`context.flags.NAME` with the leading dashes trimmed.
+
+### Generated help
+
+`capy <lib> --help` lists all commands. `capy <lib> <cmd> --help`
+shows that command's args + flags:
+
+```
+$ capy myapp --help
+myapp 1.0.0
+A demo library.
+
+COMMANDS
+    build         Compile a script and write to a file.
+
+$ capy myapp build --help
+build — Compile a script and write to a file.
+
+USAGE
+    capy myapp build [--minify] [--prefix VALUE] <script> [out]
+
+ARGUMENTS
+    script        Path to the input script. (required)
+    out           Output path. Defaults to <script>.txt. (optional)
+
+FLAGS
+    --minify      Strip whitespace from the output.
+    --prefix      Optional prefix line.
+```
+
+### Cross-command composition (`call`)
+
+Inside one command body, run another command of the same library:
+
+```
+command "build"
+    arg "script" required
+    let out    = (compile context.script)
+    let target = "${context.script}.txt"
+    write_file target out
+end
+
+command "release"
+    description "Build then announce."
+    arg "script" required
+    call "build" context.script
+    print "🚀 released!"
+end
+```
+
+`call` accepts a command name and any number of positional args;
+it runs the named command end-to-end (including its own arg /
+flag parsing) and returns `""` so it can also be used in value
+position.
+
+### Built-in context paths
+
+Inside every command body:
+
+| Path | What it holds |
+|---|---|
+| `context.<declared-arg-name>` | The value of a declared positional. |
+| `context.flags.<name>` | The value of a declared flag (string or bool). |
+| `context.args` | The full positional args list. |
+| `context.extra` | Positional args beyond what the command declared. |
+| `context.lib_path` | Path to the resolved library. |
+| `context.lib_dir` | Directory containing the library. |
+| `context.lib_name` | Name from the manifest (or filename if unset). |
+| `context.lib_version` | Version from the manifest. |
+| `context.argN` | `arg0`/`arg1`/… legacy numeric aliases (when no args declared). |
+
+### Shebang scripts (v0.19.1)
+
+A `#!/usr/bin/env capy --lib <name>` line at the top of a script
+is stripped before lexing. With `chmod +x`, the file is directly
+executable:
+
+```sh
+$ cat cake.recipe
+#!/usr/bin/env capy --lib recipe
+greet "world"
+
+$ chmod +x cake.recipe
+$ ./cake.recipe
+Hello from recipe, world!
+```
+
+Works on POSIX systems where `/usr/bin/env` honours subsequent
+flags. Windows needs explicit `.capy` file associations.
 
 ### Built-in `run`
 
@@ -242,16 +347,25 @@ wrote hello.py.capy.py
 ## Security note
 
 Library commands can do arbitrary work — `exec`, write files,
-read environment. Today `capy` trusts every library on
-`CAPY_LIBS` by default; a richer trust model
-(`~/.capy/trusted.capy`, `--trust` flag, per-library SHA pins)
-is on the roadmap (see
-[future-features § 6.5](https://github.com/luowensheng/capy/blob/main/docs/design/future-features.md)).
+read environment. The trust model today:
 
-For now: only put libraries on `CAPY_LIBS` that you'd trust to
-run as yourself. Library files cloned from random URLs should
-land elsewhere first; review them, then move into the search
-path.
+- Libraries under `CAPY_LIBS` are trusted by default.
+- Libraries elsewhere print a one-line stderr warning before
+  every command runs:
+  ```
+  warning: library "/tmp/local.capy" is not on CAPY_LIBS —
+  its commands can shell out / write files / read env
+  ```
+- Set `CAPY_TRUST=1` to suppress the warning (use when you've
+  reviewed the library yourself).
+
+A richer trust model (`~/.capy/trusted.capy`, per-library SHA
+pins, `--dry-run`) is on the roadmap — see
+[future-features § 6.5](https://github.com/luowensheng/capy/blob/main/docs/design/future-features.md).
+
+Only put libraries on `CAPY_LIBS` that you'd trust to run as
+yourself. Library files cloned from random URLs should land
+elsewhere first; review them, then move into the search path.
 
 ## What's still on the roadmap
 

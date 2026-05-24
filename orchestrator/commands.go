@@ -21,6 +21,15 @@ import (
 //   - standard inner-DSL state mutation (set / append / let / if /
 //     for)
 func RunCommand(libraryPath, cmdName string, args []string) error {
+	// Trust check: warn when the library is NOT on CAPY_LIBS.
+	// Library commands can shell out arbitrarily; surface the
+	// surprise early. Suppressed via CAPY_TRUST=1 or --trust (CLI).
+	if shouldWarnUntrusted(libraryPath) {
+		fmt.Fprintf(os.Stderr,
+			"warning: library %q is not on CAPY_LIBS — its commands can shell out / write files / read env\n",
+			libraryPath)
+	}
+
 	lex := orchfeatures.MakeLexer()
 	yp := infra.YamlParser{}
 	loader := orchfeatures.MakeLibraryLoader(yp, lex.Tokenize)
@@ -34,23 +43,54 @@ func RunCommand(libraryPath, cmdName string, args []string) error {
 			libraryPath, cmdName, sortedCommandNames(lib))
 	}
 
+	// `--help` / `-h` short-circuit.
+	for _, a := range args {
+		if a == "--help" || a == "-h" {
+			PrintCommandHelp(lib, cmd)
+			return nil
+		}
+	}
+
+	// Parse declared positional args + flags. Anything not consumed
+	// overflows into `extra` (still surfaced via context.args).
+	posValues, flagValues, extra, err := ParseCommandArgs(cmd, args)
+	if err != nil {
+		return err
+	}
+
 	host := infra.OSHost{
 		UserArgs: args,
 		BaseDir:  filepath.Dir(libraryPath),
 	}
 
-	// Build a fresh execution context: command bodies see `args` and
-	// `lib_dir` and `args.N` paths.
+	// Build a fresh execution context.
 	ctx := map[string]any{
 		"lib_path":    libraryPath,
 		"lib_dir":     filepath.Dir(libraryPath),
 		"lib_name":    nameOrPath(lib, libraryPath),
 		"lib_version": lib.LibVersion,
 		"args":        anyList(args),
+		"extra":       anyList(extra),
 	}
-	// Expose args.0, args.1, … as named keys too for ergonomic access.
+	// Declared positional args appear under their declared names
+	// (e.g. `arg "script"` → context.script).
+	for name, val := range posValues {
+		ctx[name] = val
+	}
+	// Declared flags appear under context.flags.NAME (trimmed of
+	// leading dashes).
+	flagsMap := map[string]any{}
+	for name, val := range flagValues {
+		flagsMap[name] = val
+	}
+	ctx["flags"] = flagsMap
+	// Backwards-compatible numeric aliases for libraries that
+	// haven't declared positionals.
 	for i, a := range args {
-		ctx[fmt.Sprintf("arg%d", i)] = a
+		key := fmt.Sprintf("arg%d", i)
+		if _, exists := ctx[key]; !exists {
+			ctx[key] = a
+		}
 	}
 
 	// Eval the body.
@@ -63,6 +103,64 @@ func RunCommand(libraryPath, cmdName string, args []string) error {
 		return err
 	}
 	return nil
+}
+
+// shouldWarnUntrusted returns true when libraryPath is NOT a
+// descendant of any directory in CAPY_LIBS (or the default
+// fallbacks). Suppressed via CAPY_TRUST=1.
+func shouldWarnUntrusted(libraryPath string) bool {
+	if os.Getenv("CAPY_TRUST") == "1" {
+		return false
+	}
+	abs, err := filepath.Abs(libraryPath)
+	if err != nil {
+		return true
+	}
+	for _, dir := range libSearchPathRuntime() {
+		da, err := filepath.Abs(dir)
+		if err != nil {
+			continue
+		}
+		// Trust if libraryPath is under any search-path dir.
+		rel, err := filepath.Rel(da, abs)
+		if err == nil && !strings.HasPrefix(rel, "..") {
+			return false
+		}
+	}
+	return true
+}
+
+// libSearchPathRuntime mirrors the CLI's libSearchPath but lives
+// in the orchestrator package so we can share the trust check
+// between CLI dispatch and `call` (which loops back into this
+// package).
+func libSearchPathRuntime() []string {
+	env := os.Getenv("CAPY_LIBS")
+	if env != "" {
+		sep := ":"
+		if isWindows() {
+			sep = ";"
+		}
+		parts := strings.Split(env, sep)
+		var out []string
+		for _, p := range parts {
+			p = strings.TrimSpace(p)
+			if p != "" {
+				out = append(out, p)
+			}
+		}
+		return out
+	}
+	home, _ := os.UserHomeDir()
+	return []string{
+		filepath.Join(home, ".config", "capy", "libs"),
+		filepath.Join(home, ".capy", "libs"),
+		filepath.Join(home, "Library", "Application Support", "Capy", "libs"),
+	}
+}
+
+func isWindows() bool {
+	return strings.Contains(strings.ToLower(os.Getenv("OS")), "windows")
 }
 
 func sortedCommandNames(lib domain.Library) []string {
@@ -110,8 +208,9 @@ func newCommandEnv(libraryPath string, lib domain.Library, host domain.Host) *co
 }
 
 // dispatch is the fallback for unknown inner calls. It implements
-// command-only primitives that need access to the library (today:
-// `compile`).
+// command-only primitives that need access to the library:
+//   - `compile SCRIPT_PATH`  → run the library on a script
+//   - `call CMD_NAME arg…`    → invoke another command of THIS library
 func (c *commandEnv) dispatch(name string, args []any) (any, bool, error) {
 	switch name {
 	case "compile":
@@ -120,7 +219,6 @@ func (c *commandEnv) dispatch(name string, args []any) (any, bool, error) {
 			return nil, true, fmt.Errorf("compile expects 1 arg (script path)")
 		}
 		scriptPath := fmt.Sprintf("%v", args[0])
-		// Resolve relative to CWD; OS user typed it from the shell.
 		if !filepath.IsAbs(scriptPath) {
 			cwd, _ := os.Getwd()
 			scriptPath = filepath.Join(cwd, scriptPath)
@@ -130,6 +228,23 @@ func (c *commandEnv) dispatch(name string, args []any) (any, bool, error) {
 			return nil, true, err
 		}
 		return out, true, nil
+	case "call":
+		// call CMD_NAME arg… — invoke another command of the same
+		// library. Returns "" so it can be used either as a
+		// statement (`call build context.script`) or as a value
+		// expression (`let x = (call build context.script)`).
+		if len(args) == 0 {
+			return nil, true, fmt.Errorf("call expects at least 1 arg (command name)")
+		}
+		target := fmt.Sprintf("%v", args[0])
+		callArgs := make([]string, len(args)-1)
+		for i, a := range args[1:] {
+			callArgs[i] = fmt.Sprintf("%v", a)
+		}
+		if err := RunCommand(c.libraryPath, target, callArgs); err != nil {
+			return nil, true, err
+		}
+		return "", true, nil
 	}
 	return nil, false, nil
 }

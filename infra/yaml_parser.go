@@ -51,8 +51,29 @@ type RawLibrary struct {
 
 // RawCommand is one `command "X" ... end` declaration.
 type RawCommand struct {
+	Description string          `yaml:"description,omitempty"`
+	Body        string          `yaml:"body,omitempty"`
+	Args        []RawCommandArg `yaml:"args,omitempty"`
+	Flags       []RawCommandFlag `yaml:"flags,omitempty"`
+}
+
+// RawCommandArg is a positional argument declaration:
+//   arg "name" required "description"
+//   arg "outpath" optional "Output path. Default: stdout."
+type RawCommandArg struct {
+	Name        string `yaml:"name"`
+	Required    bool   `yaml:"required,omitempty"`
 	Description string `yaml:"description,omitempty"`
-	Body        string `yaml:"body,omitempty"`
+}
+
+// RawCommandFlag is a flag declaration:
+//   flag "--port" "Listen port" default "8080"
+//   flag "--verbose" bool "Verbose output"
+type RawCommandFlag struct {
+	Name        string `yaml:"name"`              // e.g. "--port"
+	Description string `yaml:"description,omitempty"`
+	Default     string `yaml:"default,omitempty"` // empty = no default
+	IsBool      bool   `yaml:"bool,omitempty"`    // presence-only flag
 }
 
 type RawFunction struct {

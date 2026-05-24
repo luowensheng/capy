@@ -631,6 +631,55 @@ func (p *capyLibParser) parseCommandBlock() (RawCommand, error) {
 				cmd.Description = toks[1]
 				p.nextLine()
 				continue
+			case "arg":
+				// arg "name"                          (optional, no description)
+				// arg "name" required                 (required, no description)
+				// arg "name" required "description"
+				// arg "name" optional "description"
+				if len(toks) < 2 {
+					return cmd, p.errf("arg requires a name string")
+				}
+				ra := RawCommandArg{Name: toks[1]}
+				if len(toks) >= 3 {
+					switch toks[2] {
+					case "required":
+						ra.Required = true
+					case "optional":
+						ra.Required = false
+					default:
+						return cmd, p.errf("arg: expected `required` or `optional` after name, got %q", toks[2])
+					}
+				}
+				if len(toks) >= 4 {
+					ra.Description = toks[3]
+				}
+				cmd.Args = append(cmd.Args, ra)
+				p.nextLine()
+				continue
+			case "flag":
+				// flag "--name"
+				// flag "--name" "description"
+				// flag "--name" "description" default "value"
+				// flag "--name" bool "description"
+				if len(toks) < 2 {
+					return cmd, p.errf("flag requires a name string")
+				}
+				rf := RawCommandFlag{Name: toks[1]}
+				i := 2
+				if i < len(toks) && toks[i] == "bool" {
+					rf.IsBool = true
+					i++
+				}
+				if i < len(toks) {
+					rf.Description = toks[i]
+					i++
+				}
+				if i+1 < len(toks) && toks[i] == "default" {
+					rf.Default = toks[i+1]
+				}
+				cmd.Flags = append(cmd.Flags, rf)
+				p.nextLine()
+				continue
 			}
 			// First non-header line marks the body's start.
 			headerDone = true

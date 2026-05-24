@@ -42,6 +42,21 @@ func dispatch(args []string) error {
 		printUsage(os.Stdout)
 		return nil
 	}
+	// Shebang-style scripts: `#!/usr/bin/env capy --lib recipe` makes
+	// the OS invoke `capy --lib recipe <script>`. Honour --lib as
+	// "treat the next positional as a script for this library."
+	if args[0] == "--lib" {
+		if len(args) < 3 {
+			return fmt.Errorf("usage: capy --lib <library> <script> [args...]")
+		}
+		libName := args[1]
+		libPath, err := resolveLib(libName)
+		if err != nil {
+			return err
+		}
+		// Treat remaining args as: <script> [extra args to command]
+		return orchestrator.RunCommand(libPath, "run", args[2:])
+	}
 	switch args[0] {
 	case "run":
 		return cmdRun(args[1:])
@@ -69,11 +84,26 @@ func dispatch(args []string) error {
 	// if the first arg looks like a library name AND resolves on
 	// CAPY_LIBS.
 	if libraryNameLooksValid(args[0]) {
-		if libPath, err := resolveLib(args[0]); err == nil {
+		libPath, resErr := resolveLib(args[0])
+		if resErr == nil {
+			// `capy <lib> --help` lists declared commands.
+			if len(args) >= 2 && (args[1] == "--help" || args[1] == "-h") {
+				return printLibraryHelp(libPath)
+			}
 			if len(args) < 2 {
 				return fmt.Errorf("library %q resolved at %s; pick a command (try: run, build, compile, docs)", args[0], libPath)
 			}
 			return orchestrator.RunCommand(libPath, args[1], args[2:])
+		}
+		// First arg didn't resolve as a library. If it also doesn't
+		// exist as a file on disk AND the user supplied a second
+		// arg that doesn't look like a script path, they clearly
+		// MEANT the short form — report the resolution failure
+		// instead of falling through to cmdRun's "no such file."
+		if _, statErr := os.Stat(args[0]); statErr != nil {
+			if len(args) < 2 || filepath.Ext(args[1]) == "" {
+				return resErr
+			}
 		}
 	}
 	// File-extension convention: `capy <script.<libname>>` auto-

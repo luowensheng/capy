@@ -3,7 +3,55 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"sort"
+	"strings"
+
+	"github.com/luowensheng/capy/infra"
+	orchfeatures "github.com/luowensheng/capy/orchestrator/features"
 )
+
+// printLibraryHelp loads a library and prints its declared commands.
+func printLibraryHelp(libPath string) error {
+	lex := orchfeatures.MakeLexer()
+	loader := orchfeatures.MakeLibraryLoader(infra.YamlParser{}, lex.Tokenize)
+	lib, err := loader.Load(libPath)
+	if err != nil {
+		return err
+	}
+	libName := lib.LibName
+	if libName == "" {
+		libName = strings.TrimSuffix(filepath.Base(libPath), filepath.Ext(libPath))
+	}
+	if lib.LibVersion != "" {
+		fmt.Printf("%s %s\n", libName, lib.LibVersion)
+	} else {
+		fmt.Printf("%s\n", libName)
+	}
+	if lib.Description != "" {
+		fmt.Printf("%s\n", lib.Description)
+	}
+	fmt.Println()
+	fmt.Println("COMMANDS")
+	if len(lib.Commands) == 0 {
+		fmt.Println("    (none declared — the default `run` renders to stdout)")
+	}
+	names := make([]string, 0, len(lib.Commands))
+	for n := range lib.Commands {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+	for _, n := range names {
+		c := lib.Commands[n]
+		desc := c.Description
+		if desc == "" {
+			desc = "(no description)"
+		}
+		fmt.Printf("    %-12s  %s\n", n, desc)
+	}
+	fmt.Printf("\nRun `capy %s <command> --help` for command-specific help.\n", libName)
+	return nil
+}
 
 func cmdHelp(name string) error {
 	switch name {

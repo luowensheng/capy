@@ -8,6 +8,60 @@ may break between minor versions**.
 
 ## [Unreleased]
 
+## [0.19.1] — 2026-05-24
+
+Round-out of the library-commands feature: declarative
+arg/flag parsing with auto-generated help, cross-command
+composition, shebang-style scripts, and a basic trust warning.
+
+### Added
+
+- **Declarative `arg` / `flag` declarations** inside `command`
+  blocks:
+  ```
+  command "build"
+      arg "script" required "Path to the input script."
+      arg "out" optional "Output path."
+      flag "--minify" bool "Strip whitespace."
+      flag "--prefix" "Optional prefix." default ""
+      …
+  end
+  ```
+  Declared positionals appear under their NAME in the context
+  (`context.script`, `context.out`). Flags appear under
+  `context.flags.NAME` (trimmed of leading dashes). Unknown
+  flags + missing-required-arg errors out cleanly.
+- **Auto-generated help** for every command and library:
+  - `capy <lib> --help` lists declared commands.
+  - `capy <lib> <cmd> --help` shows declared args, flags, and
+    descriptions for a specific command.
+- **Cross-command composition**: `call CMD_NAME args…` inside a
+  command body runs another command of the same library. Use it
+  as a statement (`call "build" context.script`) or as a value
+  (`let x = (call "build" context.script)`).
+- **Shebang-style scripts**: a `#!/usr/bin/env capy --lib X`
+  line at the top of a script is stripped before lexing. With
+  `chmod +x`, the file becomes a directly executable Capy script.
+- **`capy --lib <name> <script>`** flag form so the shebang
+  interpreter has somewhere to dispatch to.
+- **Trust warning**: a one-line stderr warning before running a
+  command from a library that's NOT under `CAPY_LIBS`. Suppress
+  with `CAPY_TRUST=1`.
+- **Better error** when `capy <lib> <cmd>` is used but the
+  library doesn't resolve — previously fell through to
+  `cmdRun`'s confusing "no such file" message; now surfaces the
+  resolver's "library X not found on CAPY_LIBS" error.
+
+### Engine surface
+
+- New types `domain.CommandArg` + `domain.CommandFlag` declared
+  on `CommandDef`.
+- New helpers `orchestrator.ParseCommandArgs` +
+  `orchestrator.PrintCommandHelp` for tools that want to
+  introspect command definitions.
+- `commandEnv.dispatch` learns the `call` primitive alongside
+  `compile`.
+
 ## [0.19.0] — 2026-05-24
 
 Libraries become CLIs. A library declares custom commands; the

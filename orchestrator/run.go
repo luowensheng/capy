@@ -25,15 +25,31 @@ func RunMulti(libraryPath, scriptPath string) (string, map[string]string, error)
 	return RunMultiWithArgs(libraryPath, scriptPath, nil)
 }
 
+// stripShebang removes a leading `#!` line if present. Lets scripts
+// be made executable via `#!/usr/bin/env capy --lib X` without
+// confusing the lexer with the shebang line.
+func stripShebang(src []byte) []byte {
+	if len(src) < 2 || src[0] != '#' || src[1] != '!' {
+		return src
+	}
+	for i := 0; i < len(src); i++ {
+		if src[i] == '\n' {
+			return src[i+1:]
+		}
+	}
+	return nil
+}
+
 // RunMultiWithArgs is like RunMulti but also passes positional CLI args
 // through to the inner `arg`/`args`/`arg_count` host primitives. The CLI
 // uses this so `capy run lib.capy script.capy a b c` makes "a", "b",
 // "c" visible to `arg 0`, `arg 1`, `arg 2`.
 func RunMultiWithArgs(libraryPath, scriptPath string, userArgs []string) (string, map[string]string, error) {
-	src, err := os.ReadFile(scriptPath)
+	rawSrc, err := os.ReadFile(scriptPath)
 	if err != nil {
 		return "", nil, err
 	}
+	src := stripShebang(rawSrc)
 	host := infra.OSHost{UserArgs: userArgs, BaseDir: filepath.Dir(scriptPath)}
 	_ = domain.Host(host) // compile-time interface check
 
