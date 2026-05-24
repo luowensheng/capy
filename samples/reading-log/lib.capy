@@ -2,10 +2,15 @@
 # Designed for parents and teachers to track progress without spreadsheets.
 extension html
 
+comments
+    line "#"
+end
+
 context
     title ""
     age 0
     goal 0
+    total_pages 0
     books []
 end
 
@@ -33,54 +38,56 @@ function book
     arg literal "rating"
     arg capture rating int
     append context.books {title: title, pages: pages, rating: rating}
+    set context.total_pages (add context.total_pages pages)
 end
 
 function end
 end
 
-file_template:
-    <!doctype html>
-    <html lang="en">
-    <head>
-      <meta charset="utf-8" />
-      <title>{{ .context.title | unquote }}</title>
-      <style>
-        body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: linear-gradient(135deg, #fff4d6, #ffe4b8); font-family: "Comic Sans MS", "Marker Felt", sans-serif; color: #5a3a14; padding: 24px; }
-        .log { background: white; border: 6px dashed #f4a83c; border-radius: 16px; box-shadow: 0 10px 30px rgba(120,80,20,0.12); max-width: 580px; width: 100%; padding: 32px 36px; }
-        h1 { margin: 0; font-size: 28px; color: #d18020; text-align: center; }
-        .age { text-align: center; color: #a06820; font-size: 14px; margin-bottom: 16px; }
-        .progress { background: #fff4d6; border-radius: 999px; height: 16px; overflow: hidden; margin: 16px 0; }
-        .progress-bar { background: linear-gradient(90deg, #f4a83c, #f78b3c); height: 100%; transition: width 0.5s; }
-        .progress-label { text-align: center; font-size: 13px; color: #6a4818; margin-bottom: 24px; }
-        table { width: 100%; border-collapse: collapse; }
-        th { text-align: left; padding: 8px 6px; color: #d18020; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; border-bottom: 2px solid #f4a83c; }
-        td { padding: 10px 6px; border-bottom: 1px dashed #f4d8a8; font-size: 15px; }
-        .pages { text-align: right; color: #a06820; font-variant-numeric: tabular-nums; }
-        .stars { color: #f4a83c; letter-spacing: 0.1em; }
-      </style>
-    </head>
-    <body>
-      <article class="log">
-        <h1>{{ .context.title | unquote }}</h1>
-        <div class="age">Age {{ .context.age }}</div>
+file_template
+    write `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>${unquote context.title}</title>
+  <style>
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: linear-gradient(135deg, #fff4d6, #ffe4b8); font-family: "Comic Sans MS", "Marker Felt", sans-serif; color: #5a3a14; padding: 24px; }
+    .log { background: white; border: 6px dashed #f4a83c; border-radius: 16px; box-shadow: 0 10px 30px rgba(120,80,20,0.12); max-width: 580px; width: 100%; padding: 32px 36px; }
+    h1 { margin: 0; font-size: 28px; color: #d18020; text-align: center; }
+    .age { text-align: center; color: #a06820; font-size: 14px; margin-bottom: 16px; }
+    .progress { background: #fff4d6; border-radius: 999px; height: 16px; overflow: hidden; margin: 16px 0; }
+    .progress-bar { background: linear-gradient(90deg, #f4a83c, #f78b3c); height: 100%; transition: width 0.5s; }
+    .progress-label { text-align: center; font-size: 13px; color: #6a4818; margin-bottom: 24px; }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 8px 6px; color: #d18020; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; border-bottom: 2px solid #f4a83c; }
+    td { padding: 10px 6px; border-bottom: 1px dashed #f4d8a8; font-size: 15px; }
+    .pages { text-align: right; color: #a06820; font-variant-numeric: tabular-nums; }
+    .stars { color: #f4a83c; letter-spacing: 0.1em; }
+  </style>
+</head>
+<body>
+  <article class="log">
+    <h1>${unquote context.title}</h1>
+    <div class="age">Age ${context.age}</div>
+    <div class="progress">
+      <div class="progress-bar" style="width: ${percent context.total_pages context.goal}%"></div>
+    </div>
+    <div class="progress-label">${context.total_pages} of ${context.goal} pages toward this year's goal</div>
 
-        {{- $total := 0 }}
-        {{- range .context.books }}{{ $total = add $total .pages }}{{ end }}
-        <div class="progress">
-          <div class="progress-bar" style="width: {{ percent $total .context.goal }}%"></div>
-        </div>
-        <div class="progress-label">{{ $total }} of {{ .context.goal }} pages toward this year's goal</div>
-
-        <table>
-          <tr><th>Book</th><th>Pages</th><th>Rating</th></tr>
-          {{- range .context.books }}
-          <tr>
-            <td>{{ .title | unquote }}</td>
-            <td class="pages">{{ .pages }}</td>
-            <td class="stars">{{ stars .rating }}</td>
-          </tr>
-          {{- end }}
-        </table>
-      </article>
-    </body>
-    </html>
+    <table>
+      <tr><th>Book</th><th>Pages</th><th>Rating</th></tr>
+`
+    for b in context.books
+        write `      <tr>
+        <td>${unquote b.title}</td>
+        <td class="pages">${b.pages}</td>
+        <td class="stars">${stars b.rating}</td>
+      </tr>
+`
+    end
+    write `    </table>
+  </article>
+</body>
+</html>
+`
+end

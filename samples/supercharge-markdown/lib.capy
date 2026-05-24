@@ -3,6 +3,10 @@
 # any static site generator (Hugo, Jekyll, MkDocs, Next.js) renders.
 extension md
 
+comments
+    line "#"
+end
+
 context
     tags []
 end
@@ -15,54 +19,63 @@ function post
     arg literal "author"
     arg capture author string
     block_closer end
-    template:
-        ---
-        title: {{ .title }}
-        date: {{ .date }}
-        author: {{ .author }}
-        tags: [{{ range $i, $t := .context.tags }}{{ if $i }}, {{ end }}"{{ $t }}"{{ end }}]
-        ---
+    write `---
+title: ${title}
+date: ${date}
+author: ${author}
+tags: [`
+    for i, t in context.tags
+        if i > 0
+            write `, `
+        end
+        write `"${t}"`
+    end
+    write `]
+---
 
-        # {{ .title | unquote }}
+# ${unquote title}
 
-        *By {{ .author | unquote }} · {{ .date | unquote }}*
+*By ${unquote author} · ${unquote date}*
 
-        {{ .body }}
+${body}
+`
 end
 
 function tag
     arg literal "tag"
     arg capture name ident
-    template_str ""
-    run:
-        append context.tags name
+    append context.tags name
 end
 
 function para
     arg literal "para"
     arg capture text string
-    template_str "{{ .text | unquote }}\n\n"
+    write `${unquote text}
+
+`
 end
 
 function h2
     arg literal "h2"
     arg capture text string
-    template_str "## {{ .text | unquote }}\n\n"
+    write `## ${unquote text}
+
+`
 end
 
 function bullet
     arg literal "bullet"
     arg capture text string
-    template_str "- {{ .text | unquote }}\n"
+    write `- ${unquote text}
+`
 end
 
 function callout
     arg literal "callout"
     arg capture kind ident
     arg capture text string
-    template:
-        > **{{ .kind | upper }}:** {{ .text | unquote }}
-
+    write `> **${upper kind}:** ${unquote text}
+`
 end
 
 function card
@@ -70,25 +83,23 @@ function card
     arg capture title string
     arg capture metric string
     arg capture caption string
-    template:
-
-        <div class="metric-card">
-          <h3>{{ .title | unquote }}</h3>
-          <p class="metric">{{ .metric | unquote }}</p>
-          <p class="caption">{{ .caption | unquote }}</p>
-        </div>
-
+    write `
+<div class="metric-card">
+  <h3>${unquote title}</h3>
+  <p class="metric">${unquote metric}</p>
+  <p class="caption">${unquote caption}</p>
+</div>
+`
 end
 
 function code
     arg literal "code"
     arg capture lang ident
     arg capture text string
-    template:
-        ```{{ .lang }}
-        {{ .text | unquote }}
-        ```
-
+    write `\`\`\`${lang}
+${unquote text}
+\`\`\`
+`
 end
 
 function end

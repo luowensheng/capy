@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/luowensheng/capy/domain"
+	"github.com/luowensheng/capy/infra"
 )
 
 // osChdir is a thin wrapper kept here so command bodies can call
@@ -535,16 +536,26 @@ func (e *InnerEvaluator) eval(x domain.Expr, caps map[string]domain.CaptureValue
 			}
 			return e.host().ExecCapture(vs[0], vs[1:]...)
 		}
+		// Evaluate arg values once for the remaining lookups.
+		argVals := make([]any, len(n.Args))
+		for i, a := range n.Args {
+			v, err := e.eval(a, caps, locals)
+			if err != nil {
+				return nil, err
+			}
+			argVals[i] = v
+		}
+		// Template-helper bridge: `add`, `upper`, `toQuoted`, etc.
+		// are the same helpers the renderer uses. Letting them be
+		// called from inner-DSL expression positions means libraries
+		// can pre-compute values (`set context.total (add x y)`,
+		// `set context.path (toQuoted (upper x))`) instead of having
+		// to do the work in template position.
+		if v, ok, err := infra.ApplyHelper(name, argVals); ok {
+			return v, err
+		}
 		// Hook fallback (e.g. command-runner adds `compile script`).
 		if e.OnUnknownCall != nil {
-			argVals := make([]any, len(n.Args))
-			for i, a := range n.Args {
-				v, err := e.eval(a, caps, locals)
-				if err != nil {
-					return nil, err
-				}
-				argVals[i] = v
-			}
 			v, handled, err := e.OnUnknownCall(name, argVals)
 			if handled {
 				return v, err

@@ -239,6 +239,69 @@ var funcs = template.FuncMap{
 	},
 }
 
+// ApplyHelper invokes a template helper by name from outside the
+// template renderer (e.g. the inner-DSL expression evaluator, so
+// libraries can write `set context.total (add context.total n)`
+// and `${add x y}` interpolations get the same semantics as if
+// they were called in template position). Returns ok=false if
+// the name isn't a known helper.
+func ApplyHelper(name string, args []any) (result any, ok bool, err error) {
+	fn, found := funcs[name]
+	if !found {
+		return nil, false, nil
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("helper %q: %v", name, r)
+		}
+	}()
+	switch f := fn.(type) {
+	case func(any) string:
+		if len(args) != 1 {
+			return nil, true, fmt.Errorf("helper %q: expected 1 arg, got %d", name, len(args))
+		}
+		return f(args[0]), true, nil
+	case func(string) string:
+		if len(args) != 1 {
+			return nil, true, fmt.Errorf("helper %q: expected 1 arg, got %d", name, len(args))
+		}
+		return f(toStringAny(args[0])), true, nil
+	case func(a, b any) int64:
+		if len(args) != 2 {
+			return nil, true, fmt.Errorf("helper %q: expected 2 args, got %d", name, len(args))
+		}
+		return f(args[0], args[1]), true, nil
+	case func(int, string) string:
+		if len(args) != 2 {
+			return nil, true, fmt.Errorf("helper %q: expected 2 args, got %d", name, len(args))
+		}
+		return f(int(toInt(args[0])), toStringAny(args[1])), true, nil
+	case func(string, any) string:
+		if len(args) != 2 {
+			return nil, true, fmt.Errorf("helper %q: expected 2 args, got %d", name, len(args))
+		}
+		return f(toStringAny(args[0]), args[1]), true, nil
+	case func(string, []any) string:
+		if len(args) != 2 {
+			return nil, true, fmt.Errorf("helper %q: expected 2 args, got %d", name, len(args))
+		}
+		items, _ := args[1].([]any)
+		return f(toStringAny(args[0]), items), true, nil
+	case func(any, string) []string:
+		if len(args) != 2 {
+			return nil, true, fmt.Errorf("helper %q: expected 2 args, got %d", name, len(args))
+		}
+		return f(args[0], toStringAny(args[1])), true, nil
+	case func([]string) []string:
+		if len(args) != 1 {
+			return nil, true, fmt.Errorf("helper %q: expected 1 arg, got %d", name, len(args))
+		}
+		ss, _ := args[0].([]string)
+		return f(ss), true, nil
+	}
+	return nil, false, nil
+}
+
 // toInt coerces common numeric types to int64. Tolerates strings holding
 // digit sequences so `{{ add .x 1 }}` works even when .x came from a
 // string-typed capture.

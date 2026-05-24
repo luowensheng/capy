@@ -9,6 +9,10 @@ import "common/syntax.capy"
 
 extension md
 
+comments
+    line "#"
+end
+
 context
     title ""
     meta {}
@@ -20,28 +24,34 @@ function post
     arg literal "post"
     arg capture title string
     block_closer end
-    template:
-        # {{ .title | unquote }}
+    set context.title title
+    write `# ${unquote title}
+`
+    if context.meta.author
+        write `*By ${unquote context.meta.author}*
 
-        {{- if .context.meta.author }}
-        *By {{ .context.meta.author | unquote }}*
-        {{- end }}
+`
+    end
+    write `Tags: `
+    for i, t in context.tags
+        if i > 0
+            write `, `
+        end
+        write `#${t}`
+    end
+    write `
 
-        Tags: {{ range $i, $t := .context.tags }}{{ if $i }}, {{ end }}#{{ $t }}{{ end }}
+---
 
-        ---
-
-        {{ .body }}
-    run:
-        set context.title title
+${body}
+`
 end
 
 function para
     arg literal "para"
     arg capture text string
-    template:
-        {{ .text | unquote }}
-
+    write `${unquote text}
+`
 end
 
 function end
