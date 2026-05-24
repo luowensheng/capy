@@ -303,8 +303,8 @@ capy run --out-dir generated  lib.capy script.capy
 capy run --zip   project.zip   lib.capy script.capy
 ```
 
-The library has one `file "..."` block per output file. File paths
-are Go templates rendered against the same context as file bodies —
-so you can name outputs dynamically (`file "{{ .name | pascalCase | unquote }}Page.tsx":`).
+The library has one `file "..." ... end` block per output file. File
+paths support the same `${...}` interpolation as `write` literals — so
+you can name outputs dynamically (`file "${name | pascalCase | unquote}Page.tsx" ... end`).
 
-[Multi-file `file:` block reference →](multi-file-and-imports.md)
+[Multi-file `file` block reference →](multi-file-and-imports.md)

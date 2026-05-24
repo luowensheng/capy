@@ -118,9 +118,9 @@ Keys may be either quoted strings (`"name"`) or bare identifiers (`name`):
 
 Every capture has two faces:
 
-- **In templates** — captures resolve to **source text**. `if x > 0` exposes
-  `cond` as the literal `x > 0` so a Python emitter can write `if {{ .cond }}:`.
-- **In `run:` snippets** — captures resolve to **evaluated values**.
+- **In `write` literals** — captures resolve to **source text**. `if x > 0` exposes
+  `cond` as the literal `x > 0` so a Python emitter can write `if ${cond}:`.
+- **In state-mutation statements** — captures resolve to **evaluated values**.
   `say "hello"` exposes `msg` as the Go string `"hello"` (no quotes) so
   `append context.greetings msg` stores the raw value.
 

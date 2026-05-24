@@ -161,7 +161,7 @@ references both `${context...}` and `${body}` / `write body`.
 - Add an `else` companion by defining a second pattern: `else_if` that
   emits `else:` inside the parent if's body. (Hint: harder than it
   looks; you might need to accumulate body parts into context.)
-- Make `say` use `{{ .msg | toQuoted }}` so the source can be
+- Make `say` use `${msg | toQuoted}` so the source can be
   `say hello` (without quotes).
 - Add `import_as <name> as <alias>` that emits Python `import name as
   alias`.

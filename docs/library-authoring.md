@@ -4,12 +4,9 @@ A Capy library is the entire grammar of one source language, plus the
 recipe for generating output from it. This doc is the reference
 walkthrough.
 
-Libraries are written in **`.capy`** — Capy's native syntax. Terser
-than YAML, multi-line templates read natively, same indentation and
-string rules as the source files the library will parse. Every example
-below is `.capy`. YAML is also accepted as a secondary format for
-teams that need it — see [§ Also supported: YAML](#also-supported-yaml)
-at the end. Both formats produce byte-identical output.
+Libraries are written in **`.capy`** — Capy's native syntax. Multi-line
+`write` blocks read natively, same indentation and string rules as the
+source files the library will parse. Every example below is `.capy`.
 
 ## File shape
 

@@ -5,8 +5,6 @@ Python-transpiling sample and understand the four things every Capy library
 controls: `functions`, `types`, `context`, and `file_template`.
 
 A Capy library is **a file written in Capy's own syntax** (`.capy`).
-YAML is also accepted as a secondary format for teams that need
-yq / JSON-schema tooling — see [§ Also supported: YAML](library-authoring.md#also-supported-yaml).
 Examples in this doc are all `.capy`.
 
 ## 1. Install
