@@ -174,7 +174,98 @@ were single-helper.)
 
 | Status | Count |
 |---|---|
-| Migrated (40 this session) | 40 / ~107 lib files |
-| Remaining .capy with `{{}}` | 62 |
+| Migrated total | 59 / ~107 lib files |
+| Remaining .capy with `{{}}` | ~26 |
 | Remaining YAML (blocked on inner-DSL features) | 7 |
 | `template_engine.go` deletable? | No — still load-bearing |
+
+## Inner-DSL gaps the remaining libs need
+
+The remaining libraries can't be migrated with the current inner DSL.
+Each gap is a small, well-bounded engine change. Listed roughly in
+order of how many libs each unblocks:
+
+### 1. Two-var `for` (8+ libs)
+
+Today: `for x in y` only.
+
+Needed:
+```
+for k, v in MAP ... end           # iterate map entries
+for i, x in LIST ... end          # iterate with index
+```
+
+Blockers:
+- `transpile-blog` — `range $k, $v := .meta`
+- `transpile-systemd` — same
+- `transpile-makefile` — same
+- `transpile-gh-actions` — `range $i, $t :=` for separator-unless-first
+- `transpile-xstate-machine` — nested ranges with index
+- `lib-composition` — index iteration for hashtag join
+- `supercharge-markdown` — same
+- `interactive-breakout`, `interactive-snake` — many nested patterns
+
+### 2. Chained / nested helper calls in interpolations (10+ libs)
+
+Today: `${fn arg1 arg2}` only. `${a | helper}` fails. `${outer (inner x)}`
+fails with `unexpected "(" in operand`.
+
+Needed: either pipe support (`${x | upper | toQuoted}`) or
+parenthesised nested calls (`${toQuoted (upper x)}`).
+
+Blockers:
+- `transpile-flask-app`, `transpile-express-server` — `{{ .method | upper | toQuoted }}`
+- `design-system-components/{react,svelte,vue}` — `{{ .x | unquote | toQuoted }}` and dynamic file paths `{{ ... | pascalCase | unquote }}Page.tsx`
+- `transpile-react-component`
+- `progressive-abstraction`
+- `webapp-trio`, multiple others
+
+### 3. Arithmetic in expression positions (3+ libs)
+
+Today: `set context.x (add a b)` → `inner call "add" not allowed in
+expression`. `add` / `sub` / `mul` / `percent` exist only in template
+helpers.
+
+Needed: a small set of arithmetic primitives callable from inner-DSL
+expressions (not just templates).
+
+Blockers:
+- `reading-log` — `{{ $total = add $total .pages }}` accumulator
+- Anything that wants to compute totals/percentages before rendering
+
+### 4. State mutation inside `file_template` (1+ libs)
+
+Today: `file_template` translator rejects residual `set/append/let`.
+
+Needed: relax the rule, OR provide a `let X = EXPR` inside the renderer
+that doesn't count as state mutation.
+
+Blockers:
+- `lib-composition` — separator-unless-first via a `first` flag
+- Workaround for libs that need a small loop-local counter
+
+### 5. Multi-file (`file "X":`) bodies (6 libs)
+
+Today: legacy Go-template form parses fine. Write-style form
+(`\x00NEW_SHAPE\x00` sentinel + translation) works but each lib
+has several big bodies that need converting.
+
+Mechanical work, no engine blocker. Done last because each is large.
+
+Blockers:
+- `android-app`, `ios-app` — 6-7 file blocks each
+- `multi-file-project`, `libtorch-train` — 5-6 file blocks
+- `backend-with-tests`, `webapp-trio` — 3 each
+
+### 6. `transpile-threejs` weirdness (1 lib)
+
+Threejs file_template, when converted to write-style with nested
+`for` / `if eq m.kind "X"` chains, produced `state-mutation
+statements aren't allowed in file_template` despite none being
+visible in source. Some statement inside the JS body string is
+being parsed as a CallStmt. Needs investigation before threejs can
+migrate.
+
+Cleanest reproducer: take the migrated threejs lib (in git history at
+the `feat(samples/threejs)` commit, reverted shortly after) and bisect
+the file_template body to find the offending fragment.
