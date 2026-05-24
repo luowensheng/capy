@@ -27,9 +27,10 @@ theme:
     - navigation.instant
     - navigation.tabs
     - navigation.sections
-    - navigation.expand
     - navigation.top
     - navigation.footer
+    # navigation.expand intentionally OFF — sections collapse by default so
+    # the sidebar stays scannable. Sections expand when their tab is active.
     - content.code.copy
     - content.code.annotate
     - content.action.edit
@@ -45,43 +46,56 @@ theme:
     code: JetBrains Mono
 
 nav:
+  # Three single-page tabs at the top — the quickest entry points.
   - Home: index.md
-  - Playground (try in browser): playground.md
-  - For everyone: for-everyone.md
-  - Getting started: getting-started.md
-  - Live demos: showcase.md
-  - Use cases: use-cases.md
-  - Grammar as contract: grammar-as-contract.md
-  - Idea language: idea-language.md
-  - Design systems & components: design-systems.md
-  - Backend code-gen with tests: backend-codegen.md
-  - Supercharge existing syntax: extending-existing-syntax.md
-  - Multi-file output & imports: multi-file-and-imports.md
-  - One source → many files: one-source-many-files.md
-  - Errors & debugging: errors-and-debugging.md
-  - Embed in Go: embedding.md
-  - For AI agents:
-    - Overview & patterns: ai-agents.md
-    - MCP server setup: mcp.md
-    - Integration cookbook: cookbook-ai.md
-    - Single-page brief: CAPY_FOR_LLMS.md
-  - Guide:
+  - Playground: playground.md
+  - Showcase: showcase.md
+
+  # Learn — for newcomers, ordered by ramp-up.
+  - Learn:
+    - For everyone (no code): for-everyone.md
+    - Getting started (5 min): getting-started.md
+    - "Tutorial 1 · Hello world DSL": tutorials/01-hello-world.md
+    - "Tutorial 2 · Building a config DSL": tutorials/02-config-dsl.md
+    - "Tutorial 3 · Transpiling to Python": tutorials/03-transpile-python.md
+    - "Tutorial 4 · Custom operators": tutorials/04-custom-operators.md
+    - Use cases: use-cases.md
+
+  # Patterns — the "how to think about Capy" docs. Read these to
+  # understand what's possible before you start building.
+  - Patterns:
+    - Capy as an idea language: idea-language.md
+    - Grammar as contract: grammar-as-contract.md
+    - Design systems (React + Vue + Svelte): design-systems.md
+    - Backend code with auto-wired tests: backend-codegen.md
+    - Supercharge existing syntax: extending-existing-syntax.md
+    - One source → many files: one-source-many-files.md
+
+  # Reference — everything technical you need when building a library.
+  - Reference:
     - Library authoring: library-authoring.md
-    - ".capy libraries": capy-libraries.md
-    - Language reference: language-reference.md
-    - Inner DSL: inner-dsl.md
-    - Types: types.md
+    - ".capy library syntax": capy-libraries.md
+    - Language reference (source side): language-reference.md
     - Templates: templates.md
+    - Types: types.md
+    - Inner DSL (run blocks): inner-dsl.md
     - Block functions: block-functions.md
+    - Multi-file output & imports: multi-file-and-imports.md
+    - Errors & debugging: errors-and-debugging.md
     - Transpiler patterns: transpiler-patterns.md
     - CLI reference: cli.md
-  - Tutorials:
-    - "1 · Hello world DSL": tutorials/01-hello-world.md
-    - "2 · Building a config DSL": tutorials/02-config-dsl.md
-    - "3 · Transpiling to Python": tutorials/03-transpile-python.md
-    - "4 · Custom operators": tutorials/04-custom-operators.md
-  - Reference:
     - Feature list: features.md
+
+  # Integrate — connect Capy to other systems.
+  - Integrate:
+    - Embed in your Go program: embedding.md
+    - MCP server (for AI agents): mcp.md
+    - AI integration cookbook: cookbook-ai.md
+    - Capy for AI agents (overview): ai-agents.md
+    - One-page LLM brief: CAPY_FOR_LLMS.md
+
+  # More — supplementary material.
+  - More:
     - Cookbook: cookbook.md
     - FAQ: faq.md
     - Architecture: architecture.md
