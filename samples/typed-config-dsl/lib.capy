@@ -53,10 +53,10 @@ function service
     arg literal "version"
     arg capture ver Semver
     block_closer end
-    template:
-        service {{ .name }} {
-          version = {{ .ver }}
-        {{- "\n" }}{{ .body | indent 2 }}}
+    write `service ${name} {
+  version = ${ver}
+${indent 2 body}}
+`
 end
 
 function env
