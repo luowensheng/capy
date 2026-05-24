@@ -15,9 +15,7 @@ function api
     arg capture title string
     arg literal "version"
     arg capture ver string
-    template_str ""
-    run:
-        set context.title title
+    set context.title title
 end
 
 function endpoint
@@ -25,19 +23,20 @@ function endpoint
     arg capture method ident
     arg capture path string
     block_closer end
-    template:
-
-        // {{ .method }} {{ .path }}
-        export async function {{ .method }}_handler(path: string): Promise<unknown> {
-          const res = await fetch(path, { method: "{{ .method }}" });
-          return res.json();
-        }
+    write `
+// ${method} ${path}
+export async function ${method}_handler(path: string): Promise<unknown> {
+  const res = await fetch(path, { method: "${method}" });
+  return res.json();
+}
+`
 end
 
 function summary
     arg literal "summary"
     arg capture text string
-    template_str "// {{ .text }}\n"
+    write `// ${text}
+`
 end
 
 function param
@@ -45,7 +44,8 @@ function param
     arg capture loc ident
     arg capture name ident
     arg capture typ ident
-    template_str "// @param {{ .loc }} {{ .name }}: {{ .typ }}\n"
+    write `// @param ${loc} ${name}: ${typ}
+`
 end
 
 function param_body
@@ -53,21 +53,25 @@ function param_body
     arg literal "param"
     arg literal "body"
     arg capture schema string
-    template_str "// @param body {{ .schema }}\n"
+    write `// @param body ${schema}
+`
 end
 
 function returns
     arg literal "returns"
     arg capture schema string
-    template_str "// @returns {{ .schema }}\n"
+    write `// @returns ${schema}
+`
 end
 
 function end
 end
 
-file_template:
-    // ──────────────────────────────────────────────────────────
-    // {{ .context.title }} — generated TypeScript client.
-    // Source: script.capy
-    // ──────────────────────────────────────────────────────────
-    {{ .body }}
+file_template
+    write `// ──────────────────────────────────────────────────────────
+// ${context.title} — generated TypeScript client.
+// Source: script.capy
+// ──────────────────────────────────────────────────────────
+${body}
+`
+end

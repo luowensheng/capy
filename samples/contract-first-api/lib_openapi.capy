@@ -16,10 +16,8 @@ function api
     arg capture title string
     arg literal "version"
     arg capture ver string
-    template_str ""
-    run:
-        set context.title title
-        set context.version ver
+    set context.title title
+    set context.version ver
 end
 
 function endpoint
@@ -27,16 +25,16 @@ function endpoint
     arg capture method ident
     arg capture path string
     block_closer end
-    template:
-        - path: {{ .path }}
-          method: {{ .method }}
-        {{ .body | indent 2 -}}
+    write `- path: ${path}
+  method: ${method}
+${indent 2 body}`
 end
 
 function summary
     arg literal "summary"
     arg capture text string
-    template_str "summary: {{ .text }}\n"
+    write `summary: ${text}
+`
 end
 
 function param
@@ -44,7 +42,8 @@ function param
     arg capture loc ident
     arg capture name ident
     arg capture typ ident
-    template_str "param: { in: {{ .loc }}, name: {{ .name }}, type: {{ .typ }} }\n"
+    write `param: { in: ${loc}, name: ${name}, type: ${typ} }
+`
 end
 
 function param_body
@@ -52,22 +51,25 @@ function param_body
     arg literal "param"
     arg literal "body"
     arg capture schema string
-    template_str "param: { in: body, schema: {{ .schema }} }\n"
+    write `param: { in: body, schema: ${schema} }
+`
 end
 
 function returns
     arg literal "returns"
     arg capture schema string
-    template_str "returns: {{ .schema }}\n"
+    write `returns: ${schema}
+`
 end
 
 function end
 end
 
-file_template:
-    openapi: 3.0.3
-    info:
-      title: {{ .context.title }}
-      version: {{ .context.version }}
-    paths:
-    {{ .body | indent 2 -}}
+file_template
+    write `openapi: 3.0.3
+info:
+  title: ${context.title}
+  version: ${context.version}
+paths:
+${indent 2 body}`
+end

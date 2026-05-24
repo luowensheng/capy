@@ -15,10 +15,8 @@ function api
     arg capture title string
     arg literal "version"
     arg capture ver string
-    template_str ""
-    run:
-        set context.title title
-        set context.version ver
+    set context.title title
+    set context.version ver
 end
 
 function endpoint
@@ -26,17 +24,19 @@ function endpoint
     arg capture method ident
     arg capture path string
     block_closer end
-    template:
+    write `
+## \`${method} ${path}\`
 
-        ## `{{ .method }} {{ .path }}`
-
-        {{ .body }}
+${body}
+`
 end
 
 function summary
     arg literal "summary"
     arg capture text string
-    template_str "{{ .text }}\n\n"
+    write `${text}
+
+`
 end
 
 function param
@@ -44,7 +44,8 @@ function param
     arg capture loc ident
     arg capture name ident
     arg capture typ ident
-    template_str "- **`{{ .name }}`** ({{ .loc }}, `{{ .typ }}`)\n"
+    write `- **\`${name}\`** (${loc}, \`${typ}\`)
+`
 end
 
 function param_body
@@ -52,20 +53,24 @@ function param_body
     arg literal "param"
     arg literal "body"
     arg capture schema string
-    template_str "- **Request body**: `{{ .schema }}`\n"
+    write `- **Request body**: \`${schema}\`
+`
 end
 
 function returns
     arg literal "returns"
     arg capture schema string
-    template_str "- **Returns**: `{{ .schema }}`\n"
+    write `- **Returns**: \`${schema}\`
+`
 end
 
 function end
 end
 
-file_template:
-    # {{ .context.title }} API — v{{ .context.version }}
+file_template
+    write `# ${context.title} API — v${context.version}
 
-    *Generated from the canonical Capy contract. Edit `script.capy`, not this file.*
-    {{ .body }}
+*Generated from the canonical Capy contract. Edit \`script.capy\`, not this file.*
+${body}
+`
+end
