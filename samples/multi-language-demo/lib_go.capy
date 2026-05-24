@@ -1,6 +1,10 @@
 # Same Capy source → Go — written in Capy's native library syntax.
 extension go
 
+comments
+    line "#"
+end
+
 function fn
     arg literal "fn"
     arg capture name ident
@@ -69,9 +73,11 @@ end
 function end
 end
 
-file_template:
-    package main
+file_template
+    write `package main
 
-    import "fmt"
+import "fmt"
 
-    {{ .body }}
+${body}
+`
+end

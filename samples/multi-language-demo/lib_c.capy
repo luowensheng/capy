@@ -1,6 +1,10 @@
 # Same Capy source → C — written in Capy's native library syntax.
 extension c
 
+comments
+    line "#"
+end
+
 function fn
     arg literal "fn"
     arg capture name ident
@@ -71,7 +75,9 @@ end
 function end
 end
 
-file_template:
-    #include <stdio.h>
+file_template
+    write `#include <stdio.h>
 
-    {{ .body }}
+${body}
+`
+end
