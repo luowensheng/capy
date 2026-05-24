@@ -1,0 +1,25 @@
+# JSX-ish component DSL → HTML.
+extension html
+
+comments
+    line "#"
+end
+
+function component
+    arg literal "component"
+    arg capture id ident
+    arg capture title any
+    block_open "{" close "}"
+    write `<div id="${id}" class="card">
+  <h3>${title}</h3>
+${indent 2 body}
+</div>
+`
+end
+
+function text
+    arg literal "text"
+    arg capture content any
+    write `<p>${content}</p>
+`
+end

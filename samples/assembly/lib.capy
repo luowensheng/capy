@@ -1,0 +1,93 @@
+# A tiny high-level source DSL → x86-64 NASM assembly.
+#
+# The source has variable declarations, arithmetic, and an `exit`
+# primitive. The library lowers each construct to real assembly: vars
+# accumulate into a `.data` section; statements lower to `.text`
+# instructions; the `program` block emits the whole file.
+
+extension asm
+
+comments
+    line "#"
+end
+
+context
+    vars []
+end
+
+function program
+    arg literal "program"
+    arg capture name any
+    block_closer end
+    write `; program: ${unquote name}
+
+section .data
+`
+    for v in context.vars
+        write `    ${v}: dq 0
+`
+    end
+    write `
+section .text
+    global _start
+
+_start:
+${indent 4 body}
+`
+end
+
+function var
+    arg literal "var"
+    arg capture name ident
+    arg literal "="
+    arg capture val int
+    append context.vars name
+    write `; var ${name} = ${val}
+mov rax, ${val}
+mov [${name}], rax
+`
+end
+
+function add
+    arg literal "add"
+    arg capture a ident
+    arg capture b ident
+    write `; add ${a} ${b}
+mov rax, [${a}]
+add rax, [${b}]
+`
+end
+
+function store
+    arg literal "store"
+    arg capture name ident
+    write `mov [${name}], rax
+`
+end
+
+function mov
+    arg literal "mov"
+    arg capture dst ident
+    arg capture src any
+    write `mov ${dst}, ${src}
+`
+end
+
+function syscall
+    arg literal "syscall"
+    write `syscall
+`
+end
+
+function exit
+    arg literal "exit"
+    arg capture code int
+    write `; exit ${code}
+mov rdi, ${code}
+mov rax, 60
+syscall
+`
+end
+
+function end
+end
