@@ -128,6 +128,20 @@ func mergeRaw(dst *infra.RawLibrary, src infra.RawLibrary) {
 	for k, v := range src.Files {
 		dst.Files[k] = v
 	}
+	// Preprocess directives are unioned; imports widen what the
+	// downstream library can opt into without overriding.
+	for _, d := range src.Preprocess {
+		seen := false
+		for _, e := range dst.Preprocess {
+			if e == d {
+				seen = true
+				break
+			}
+		}
+		if !seen {
+			dst.Preprocess = append(dst.Preprocess, d)
+		}
+	}
 }
 
 func mapLibrary(r infra.RawLibrary, tokenize func(string) ([]domain.Token, error)) (domain.Library, error) {
@@ -140,6 +154,7 @@ func mapLibrary(r infra.RawLibrary, tokenize func(string) ([]domain.Token, error
 		Context:      r.Context,
 		FileTemplate: r.FileTemplate,
 		Files:        r.Files,
+		Preprocess:   r.Preprocess,
 	}
 	if lib.Files == nil {
 		lib.Files = map[string]string{}

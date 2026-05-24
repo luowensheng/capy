@@ -21,7 +21,7 @@ func writeTmp(t *testing.T, dir, name, content string) string {
 }
 
 func TestPreprocess_NoImports(t *testing.T) {
-	got, err := Preprocess("hello\nworld\n", "/tmp")
+	got, err := Preprocess("hello\nworld\n", "/tmp", []string{"@import", "@include"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -34,7 +34,7 @@ func TestPreprocess_BasicImport(t *testing.T) {
 	dir := t.TempDir()
 	writeTmp(t, dir, "shared.capy", "shared line one\nshared line two\n")
 	main := "before\n@import \"shared.capy\"\nafter\n"
-	got, err := Preprocess(main, dir)
+	got, err := Preprocess(main, dir, []string{"@import", "@include"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -48,7 +48,7 @@ func TestPreprocess_IndentationPreserved(t *testing.T) {
 	dir := t.TempDir()
 	writeTmp(t, dir, "inner.capy", "first\nsecond\n")
 	main := "outer\n    @import \"inner.capy\"\n"
-	got, err := Preprocess(main, dir)
+	got, err := Preprocess(main, dir, []string{"@import", "@include"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -67,7 +67,7 @@ func TestPreprocess_NestedImport(t *testing.T) {
 	dir := t.TempDir()
 	writeTmp(t, dir, "a.capy", "from-a\n@import \"b.capy\"\nback-from-a\n")
 	writeTmp(t, dir, "b.capy", "from-b\n")
-	got, err := Preprocess("@import \"a.capy\"\n", dir)
+	got, err := Preprocess("@import \"a.capy\"\n", dir, []string{"@import", "@include"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,14 +80,14 @@ func TestPreprocess_DetectsCycle(t *testing.T) {
 	dir := t.TempDir()
 	writeTmp(t, dir, "a.capy", "@import \"b.capy\"\n")
 	writeTmp(t, dir, "b.capy", "@import \"a.capy\"\n")
-	_, err := Preprocess("@import \"a.capy\"\n", dir)
+	_, err := Preprocess("@import \"a.capy\"\n", dir, []string{"@import", "@include"})
 	if err == nil || !strings.Contains(err.Error(), "cycle") {
 		t.Errorf("expected cycle error, got %v", err)
 	}
 }
 
 func TestPreprocess_MissingFile(t *testing.T) {
-	_, err := Preprocess("@import \"nope.capy\"\n", t.TempDir())
+	_, err := Preprocess("@import \"nope.capy\"\n", t.TempDir(), []string{"@import", "@include"})
 	if err == nil {
 		t.Error("expected error for missing file")
 	}
@@ -96,7 +96,7 @@ func TestPreprocess_MissingFile(t *testing.T) {
 func TestPreprocess_IncludeIsSynonym(t *testing.T) {
 	dir := t.TempDir()
 	writeTmp(t, dir, "x.capy", "included\n")
-	got, err := Preprocess("@include \"x.capy\"\n", dir)
+	got, err := Preprocess("@include \"x.capy\"\n", dir, []string{"@import", "@include"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -108,11 +108,52 @@ func TestPreprocess_IncludeIsSynonym(t *testing.T) {
 func TestPreprocess_LinesWithoutImportAreUntouched(t *testing.T) {
 	// "@import 'no quotes around path'" should NOT be treated as an import.
 	src := "@import broken\nother line\n"
-	got, err := Preprocess(src, t.TempDir())
+	got, err := Preprocess(src, t.TempDir(), []string{"@import", "@include"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if got != src {
 		t.Errorf("malformed import should be passthrough, got %q", got)
 	}
+}
+
+func TestPreprocess_NoDirectivesIsNoOp(t *testing.T) {
+	// With no library-declared directives, every `@import` line
+	// passes through untouched — even if the file would exist.
+	dir := t.TempDir()
+	writeTmp(t, dir, "x.capy", "should-not-appear\n")
+	src := "@import \"x.capy\"\nkept\n"
+	got, err := Preprocess(src, dir, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != src {
+		t.Errorf("expected source unchanged when no directives declared; got %q", got)
+	}
+}
+
+func TestPreprocess_UnknownDirectiveIgnored(t *testing.T) {
+	// Library declares only @use; @import lines stay as plain text.
+	dir := t.TempDir()
+	writeTmp(t, dir, "x.capy", "inlined\n")
+	src := "@import \"x.capy\"\n@use \"x.capy\"\n"
+	got, err := Preprocess(src, dir, []string{"@use"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !contains(got, "@import \"x.capy\"") {
+		t.Errorf("@import should be passthrough when not in directives; got %q", got)
+	}
+	if !contains(got, "inlined") {
+		t.Errorf("@use should expand; got %q", got)
+	}
+}
+
+func contains(s, sub string) bool {
+	for i := 0; i+len(sub) <= len(s); i++ {
+		if s[i:i+len(sub)] == sub {
+			return true
+		}
+	}
+	return false
 }

@@ -32,6 +32,11 @@ type RawLibrary struct {
 	// types, and context get merged in before this library's own
 	// declarations (which take precedence on conflict).
 	Imports []string `yaml:"import,omitempty"`
+
+	// Preprocess — names of source-level inclusion directives this
+	// library opts into (e.g. ["@import", "@include"]). When empty,
+	// no preprocessing runs. Keeps "zero predefined grammar" honest.
+	Preprocess []string `yaml:"preprocess,omitempty"`
 }
 
 type RawFunction struct {

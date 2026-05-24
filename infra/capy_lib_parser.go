@@ -211,6 +211,46 @@ func (p *capyLibParser) parseTop() (RawLibrary, error) {
 				return lib, p.errf("import requires one path string")
 			}
 			lib.Imports = append(lib.Imports, tokens[1])
+		case "preprocess":
+			// preprocess
+			//     include "@import"
+			//     include "@include"
+			// end
+			//
+			// Each `include "X"` line opts the library into recognising
+			// X as a text-level inclusion directive at the start of a
+			// source line. With no `preprocess` block, NO directive
+			// works — Capy stays true to "zero predefined grammar".
+			p.nextLine()
+			for {
+				ln, indent, ok := p.peekLine()
+				if !ok {
+					return lib, p.errf("unexpected EOF inside preprocess")
+				}
+				toks, err := tokenizeLibLine(ln)
+				if err != nil {
+					return lib, p.errf("%v", err)
+				}
+				// `end` at indent 0 closes the block (matches context's
+				// behaviour).
+				if indent == 0 && len(toks) == 1 && toks[0] == "end" {
+					p.nextLine()
+					break
+				}
+				if indent == 0 {
+					return lib, p.errf("expected `end` to close preprocess, got %q", strings.TrimSpace(ln))
+				}
+				if len(toks) == 0 {
+					p.nextLine()
+					continue
+				}
+				if len(toks) == 2 && toks[0] == "include" {
+					lib.Preprocess = append(lib.Preprocess, toks[1])
+					p.nextLine()
+					continue
+				}
+				return lib, p.errf("inside preprocess: expected `include \"@NAME\"` or `end`, got %q", strings.TrimSpace(ln))
+			}
 		case "file":
 			// `file "path":` declares one of many output files.
 			// Multiple `file` blocks may appear.

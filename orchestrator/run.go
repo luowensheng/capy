@@ -36,9 +36,28 @@ func RunMultiWithArgs(libraryPath, scriptPath string, userArgs []string) (string
 	}
 	host := infra.OSHost{UserArgs: userArgs, BaseDir: filepath.Dir(scriptPath)}
 	_ = domain.Host(host) // compile-time interface check
-	// Expand any @import / @include preprocessor directives. Path
-	// resolution is relative to the script's directory.
-	expanded, err := infra.Preprocess(string(src), filepath.Dir(scriptPath))
+
+	yp := infra.YamlParser{}
+	tplE := infra.TemplateEngine{}
+	lex := orchfeatures.MakeLexer()
+	parser := orchfeatures.MakeParser()
+	tpl := orchfeatures.MakeTemplateRenderer(tplE)
+	eval := orchfeatures.MakeEvaluatorWithHost(tpl, host)
+
+	// Library FIRST — we need its `preprocess` declarations before we
+	// can know which (if any) source-level inclusion directives are
+	// allowed. Capy has no built-in preprocessor; everything is opt-in
+	// per library.
+	libLoader := orchfeatures.MakeLibraryLoader(yp, lex.Tokenize)
+	lib, err := libLoader.Load(libraryPath)
+	if err != nil {
+		return "", nil, err
+	}
+
+	// Now expand any inclusion directives the library declared. With
+	// no `preprocess` block in the library, Preprocess returns the
+	// source unchanged.
+	expanded, err := infra.Preprocess(string(src), filepath.Dir(scriptPath), lib.Preprocess)
 	if err != nil {
 		return "", nil, err
 	}
@@ -52,18 +71,6 @@ func RunMultiWithArgs(libraryPath, scriptPath string, userArgs []string) (string
 		return "", nil, err
 	}
 	expanded = cleaned
-	yp := infra.YamlParser{}
-	tplE := infra.TemplateEngine{}
-	lex := orchfeatures.MakeLexer()
-	parser := orchfeatures.MakeParser()
-	tpl := orchfeatures.MakeTemplateRenderer(tplE)
-	eval := orchfeatures.MakeEvaluatorWithHost(tpl, host)
-
-	libLoader := orchfeatures.MakeLibraryLoader(yp, lex.Tokenize)
-	lib, err := libLoader.Load(libraryPath)
-	if err != nil {
-		return "", nil, err
-	}
 	// Merge source-defined functions into the library. Source defines
 	// WIN on conflict — `define foo ... end` in the script overrides
 	// `function foo` from the library.

@@ -47,6 +47,31 @@ wrote generated/src/__init__.py (...)
 
 Subdirectories are created automatically.
 
+### Dynamic filenames
+
+The path on each `file "..."` block is **itself a Go template**,
+rendered against the same `.context` + `.body` data as the body.
+That means filenames can be parameterised by anything the source
+declares:
+
+```
+file "{{ .context.name | pascalCase | unquote }}Page.tsx":
+    export function {{ .context.name | pascalCase | unquote }}Page() { ... }
+
+file "components/{{ .context.name | dasherize | unquote }}.css":
+    .{{ .context.name | dasherize | unquote }} { ... }
+```
+
+A source that says `page "Account Settings"` then emits
+`AccountSettingsPage.tsx` and `components/account-settings.css`
+side by side. See
+[`samples/design-system-components/`](https://github.com/luowensheng/capy/tree/main/samples/design-system-components)
+for a real one.
+
+Tip: subdirectories work fine in the template too —
+`"{{ .context.feature }}/index.ts"` lets the source choose its own
+folder.
+
 ### What's in scope inside `file:` templates
 
 Same as `file_template:`:
@@ -154,13 +179,29 @@ loader stops with `import cycle detected at ...`. Cycles are
 tracked by absolute path so symlinks and `..` shortcuts don't fool
 it.
 
-## Source-file imports (`@import "path"`)
+## Source-file inclusion (library-declared `@import`)
 
-The library-import mechanism above is for the LIBRARY file. There's
-a parallel mechanism for SCRIPT files — `@import "path"` (or its
-synonym `@include "path"`) is a line-level preprocessor directive
-that splices the contents of another `.capy` file into the current
-source before tokenization.
+The library-import mechanism above is for the LIBRARY file. For
+SCRIPT files, Capy offers an OPT-IN line-level preprocessor: a
+library can declare one or more inclusion directives, and the engine
+recognises only the ones the library named. **Zero directives are
+built in** — Capy's "no predefined grammar" promise extends to
+source-level inclusion.
+
+A library opts in with a top-level `preprocess` block:
+
+```
+preprocess
+    include "@import"      # canonical name
+    include "@include"     # optional synonym
+end
+```
+
+With this in place, lines like `@import "shared/drinks.capy"` (or
+the synonym, or any other names you declared, e.g. `@use "..."`)
+are replaced with the contents of the referenced file BEFORE
+lexing. With no `preprocess` block, the same `@import` line is
+just regular text and the lexer will treat it as unknown tokens.
 
 ```
 menu "Capy Cafe — Spring 2026"
@@ -189,11 +230,13 @@ so imported content nests naturally inside the surrounding block.
   indent) inlines the imported content with 4 spaces prepended to
   each non-blank line.
 - **Cycles** are detected by absolute path.
-- **`@import` and `@include`** are synonyms; pick whichever reads
-  better in context.
-- **Library-agnostic**: the preprocessor runs before the lexer, so
-  no library declaration is required. Authors can use it with any
-  library.
+- **Directive names are whatever the library declared.** `@import`
+  and `@include` are conventional, but a library could equally name
+  the directive `@use`, `@require`, or `@from` — the script must
+  use whatever names the library opts into via `preprocess`.
+- **Default = nothing.** A library with no `preprocess` block
+  recognises NO inclusion directive. That's the zero-grammar
+  promise: even universal-looking constructs are library-declared.
 
 ### When to reach for source vs. library imports
 

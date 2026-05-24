@@ -1,11 +1,24 @@
 # source-imports
 
-**`@import "path"` — pull other Capy source files into the current one.**
+**`@import "path"` — pull other Capy source files into the current
+one. Library-declared, NOT a built-in.**
 
 This sample shows the source-side counterpart to library imports.
 A menu file imports shared "drinks" and "desserts" sections from
 adjacent files. Multiple menus can reuse the same shared sections
 without copy-paste.
+
+The library opts the directives in via a `preprocess` block:
+
+```
+preprocess
+    include "@import"
+    include "@include"
+end
+```
+
+Without that block, the engine recognises NO `@import` line —
+Capy ships zero default source-level grammar.
 
 ## File layout
 
@@ -68,9 +81,13 @@ plus the note.
 
 ## Rules
 
+- **The library opts in** via `preprocess { include "@import" }`.
+  Without it, `@import` is just regular text the lexer chokes on.
 - **Path resolution** is relative to the file containing the
   `@import` line.
-- **`@import` and `@include`** are synonyms.
+- **`@import` and `@include`** are synonyms IN THIS LIBRARY because
+  it declared both. A different library could declare only `@use`,
+  or `@from`, or no directive at all.
 - **Indentation auto-tracks**: a `    @import "x.capy"` line (4
   spaces of indent) inlines the imported content with each line
   re-indented 4 spaces.

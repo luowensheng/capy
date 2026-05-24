@@ -139,6 +139,14 @@ func (l *Library) Run(scriptSrc string) (string, error) {
 // library before evaluation, exactly as the CLI does. Embedded callers
 // (including the wasm playground) get the same behavior.
 func (l *Library) RunMulti(scriptSrc string) (string, map[string]string, error) {
+	// Honour any inclusion directives the library declared via its
+	// `preprocess` block. The wasm/embedded sandbox has no filesystem
+	// (NoOpHost), so most directives will fail to read — but the
+	// engine still defers entirely to the library on what shapes count.
+	scriptSrc, err := infra.Preprocess(scriptSrc, ".", l.lib.Preprocess)
+	if err != nil {
+		return "", nil, err
+	}
 	// Extract `define ... end` blocks from the script and merge them
 	// into a copy of the library. The CLI does this in
 	// orchestrator.RunMulti; replicate it here so embedding/wasm

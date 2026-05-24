@@ -27,7 +27,32 @@ type Library struct {
 	// writes every entry to disk and ignores FileTemplate/OutputFile.
 	// When empty, behavior is unchanged: FileTemplate goes to stdout (or
 	// OutputFile if set).
+	//
+	// Each path key is itself a Go template rendered against the same
+	// .context + .body data, so libraries can name outputs dynamically:
+	//   file "{{ .context.name | pascalCase }}.tsx":
+	//       …
 	Files map[string]string
+
+	// Preprocess is the list of source-level inclusion directives the
+	// library OPTS INTO. The engine ships zero default preprocessing —
+	// if Preprocess is empty, lines like `@import "x.capy"` are NOT
+	// recognised and flow into the lexer as ordinary tokens (where
+	// they'll likely fail to match a function). A library that wants
+	// text-level file inclusion declares the directives explicitly:
+	//
+	//   preprocess
+	//       include "@import"
+	//       include "@include"
+	//   end
+	//
+	// Each declared directive is processed identically (read the quoted
+	// path, splice the file's bytes into the source, recurse). The
+	// declaration is just an opt-in switch on a per-name basis. This
+	// keeps Capy's "zero predefined grammar" promise intact: even
+	// directives that look universal come from the library, not the
+	// engine.
+	Preprocess []string
 }
 
 // FuncDef is a single library-defined source-language construct.

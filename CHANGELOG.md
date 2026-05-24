@@ -8,6 +8,50 @@ may break between minor versions**.
 
 ## [Unreleased]
 
+## [0.17.0] — 2026-05-24
+
+Honour "zero predefined grammar" all the way down: source-level
+inclusion (`@import` / `@include`) was the last engine-level
+preprocessor surface left over. It now requires explicit library
+opt-in via a top-level `preprocess` block.
+
+### Changed (BREAKING for scripts using `@import` without library
+opt-in)
+
+- `infra.Preprocess(source, dir, directives)` now takes an opt-in
+  list of directive names. With an empty list it's a no-op.
+- `orchestrator.RunMulti` and `capy.Library.RunMulti` now load the
+  library FIRST, then run the preprocessor with the library's
+  declared directives.
+- Libraries that want `@import`/`@include` (or any other surface
+  name) must declare them:
+
+      preprocess
+          include "@import"
+          include "@include"
+      end
+
+  Library imports through the loader (`mergeRaw`) union the
+  `preprocess` lists so a child library can inherit directives.
+- Domain: `Library.Preprocess []string`. Raw DTO: `preprocess:` in
+  YAML / `preprocess … end` block in `.capy`.
+
+### Updated
+
+- `samples/source-imports/lib.capy` — declares both directives.
+- README + multi-file-and-imports docs updated to spell out the
+  opt-in and to call out that `file "..."` paths are themselves Go
+  templates (so filenames can be dynamic, e.g.
+  `file "{{ .context.name | pascalCase }}.tsx":`).
+
+### Added — tests
+
+- `infra/preprocessor_test.go`:
+  - `TestPreprocess_NoDirectivesIsNoOp` — empty opt-in list leaves
+    `@import` lines untouched even when the file exists.
+  - `TestPreprocess_UnknownDirectiveIgnored` — a library that opts
+    into `@use` only doesn't see `@import` expanded.
+
 ## [0.16.0] — 2026-05-24
 
 Custom assembly DSL targeting multiple ISAs. A 5-op

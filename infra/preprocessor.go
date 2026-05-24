@@ -7,30 +7,34 @@ import (
 	"strings"
 )
 
-// Preprocess walks a source string line by line and expands any top-level
-// `@import "path"` / `@include "path"` directives into the contents of the
-// referenced file (recursively). The result is the merged source that the
-// lexer then tokenizes.
+// Preprocess walks a source string line by line and expands any
+// inclusion directives the LIBRARY has opted into (passed as
+// `directives`). Each directive name (e.g. `"@import"`,
+// `"@include"`) when seen at the start of a source line is replaced
+// by the contents of the referenced file (recursively).
 //
-// Path resolution: relative paths are resolved against `dir`. Absolute
-// paths are honored as-is.
+// The engine ships with NO default directives — pass an empty
+// `directives` slice and Preprocess is a no-op. This keeps Capy's
+// "zero predefined grammar" promise intact: even universal-looking
+// constructs like `@import` are opt-in per library.
 //
-// Cycle detection: imports are tracked by absolute path. If file A imports
-// B which imports A, the loader stops with a clear error.
+// Path resolution: relative paths are resolved against `dir`.
+// Absolute paths are honored as-is.
 //
-// The directive itself must be at the START of a line (after optional
-// leading whitespace, which is preserved on the inlined content for visual
-// nesting). Both `@import` and `@include` are accepted as synonyms.
+// Cycle detection: imports are tracked by absolute path. If file A
+// imports B which imports A, the loader stops with a clear error.
 //
-// This is library-agnostic — the engine knows about the directive
-// regardless of which library is loaded. Libraries that want a different
-// surface keyword (e.g. `use "x.capy"`) can define a thin wrapper function
-// that emits an `@import` line, or build their own pre-parsing layer.
-func Preprocess(source, dir string) (string, error) {
-	return preprocess(source, dir, map[string]bool{})
+// The directive itself must be at the START of a line (after
+// optional leading whitespace, which is preserved on the inlined
+// content for visual nesting).
+func Preprocess(source, dir string, directives []string) (string, error) {
+	if len(directives) == 0 {
+		return source, nil
+	}
+	return preprocess(source, dir, directives, map[string]bool{})
 }
 
-func preprocess(source, dir string, visited map[string]bool) (string, error) {
+func preprocess(source, dir string, directives []string, visited map[string]bool) (string, error) {
 	var out strings.Builder
 	lines := strings.Split(source, "\n")
 	for i, line := range lines {
@@ -42,7 +46,7 @@ func preprocess(source, dir string, visited map[string]bool) (string, error) {
 			indentLen++
 		}
 		trimmed := line[indentLen:]
-		if d, path, ok := matchImport(trimmed); ok {
+		if d, path, ok := matchImport(trimmed, directives); ok {
 			absPath := resolvePath(path, dir)
 			if visited[absPath] {
 				return "", fmt.Errorf("line %d: import cycle: %s", i+1, absPath)
@@ -52,7 +56,7 @@ func preprocess(source, dir string, visited map[string]bool) (string, error) {
 				return "", fmt.Errorf("line %d: %s %q: %v", i+1, d, path, err)
 			}
 			visited[absPath] = true
-			expanded, err := preprocess(string(b), filepath.Dir(absPath), visited)
+			expanded, err := preprocess(string(b), filepath.Dir(absPath), directives, visited)
 			if err != nil {
 				return "", err
 			}
@@ -81,10 +85,12 @@ func preprocess(source, dir string, visited map[string]bool) (string, error) {
 	return out.String(), nil
 }
 
-// matchImport recognizes `@import "path"` or `@include "path"`. Returns the
-// directive name, the path, and ok=true on match.
-func matchImport(line string) (string, string, bool) {
-	for _, d := range []string{"@import", "@include"} {
+// matchImport recognises any directive in `directives` (e.g.
+// `@import`, `@include`, or library-chosen names like `@use`) at the
+// start of a line, followed by a quoted path. Returns the directive
+// name, the path, and ok=true on match.
+func matchImport(line string, directives []string) (string, string, bool) {
+	for _, d := range directives {
 		if !strings.HasPrefix(line, d) {
 			continue
 		}
