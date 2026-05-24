@@ -9,19 +9,21 @@ copyright: Copyright &copy; 2026 Capy authors
 theme:
   name: material
   palette:
+    # Light: monochromatic — white surface, near-black ink, grey accents.
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: teal
-      accent: amber
+      primary: black
+      accent: black
       toggle:
-        icon: material/brightness-7
+        icon: material/weather-sunny
         name: Switch to dark mode
+    # Dark: near-black surface, near-white ink. Same monochrome spirit.
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: teal
-      accent: amber
+      primary: black
+      accent: white
       toggle:
-        icon: material/brightness-4
+        icon: material/weather-night
         name: Switch to light mode
   features:
     - navigation.instant
@@ -145,6 +147,7 @@ markdown_extensions:
 
 extra_css:
   - assets/styles/home.css
+  - assets/styles/monochrome.css
 
 plugins:
   - search

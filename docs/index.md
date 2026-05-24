@@ -52,7 +52,7 @@ build for live interaction.</p>
 </div>
 </div>
 <div class="footer">
-<a href="one-source-many-files.md#mobile-same-source-two-platforms">Read the mobile pattern →</a>
+<a href="one-source-many-files/#mobile-same-source-two-platforms">Read the mobile pattern →</a>
 <code>samples/android-app + ios-app</code>
 </div>
 </div>
@@ -68,7 +68,7 @@ event handlers. 226 lines of working JS generated.</p>
 <iframe src="assets/demos/breakout.html" sandbox="allow-scripts allow-same-origin" style="width: 100%; max-width: 480px; height: 320px; border: 1px solid #333; border-radius: 6px; background: #0a0a14;" title="Breakout"></iframe>
 </div>
 <div class="footer">
-<a href="showcase.md">More playable demos →</a>
+<a href="showcase/">More playable demos →</a>
 <code>samples/interactive-breakout</code>
 </div>
 </div>
@@ -84,7 +84,7 @@ event handlers. 226 lines of working JS generated.</p>
 <iframe src="assets/demos/recipe-card.html" sandbox="allow-scripts allow-same-origin" style="width: 100%; max-width: 480px; height: 480px; border: 1px solid #e8d9b0; border-radius: 6px; background: #fdf6e3;" title="Recipe card"></iframe>
 </div>
 <div class="footer">
-<a href="for-everyone.md">Capy for non-programmers →</a>
+<a href="for-everyone/">Capy for non-programmers →</a>
 <code>samples/recipe-card</code>
 </div>
 </div>
@@ -114,7 +114,7 @@ ok    example/handlers   <span class="ok">0.448s</span>
 </div>
 </div>
 <div class="footer">
-<a href="backend-codegen.md">Backend codegen →</a>
+<a href="backend-codegen/">Backend codegen →</a>
 <code>samples/backend-with-tests</code>
 </div>
 </div>
@@ -141,7 +141,7 @@ that matches you:
 <p>One component declaration compiles to all three frameworks with
 **identical Tailwind classes**, identical layout, identical sizing.
 Add new components in the library once — every framework regenerates.</p>
-<a href="design-systems.md">Pattern docs →</a>
+<a href="design-systems/">Pattern docs →</a>
 </div>
 
 <div class="audience-card" markdown>
@@ -151,7 +151,7 @@ Add new components in the library once — every framework regenerates.</p>
 layout, "every handler has a test", router placement — encoded in
 the library. New contributors can't violate them. Generated `go test`
 passes.</p>
-<a href="backend-codegen.md">Pattern docs →</a>
+<a href="backend-codegen/">Pattern docs →</a>
 </div>
 
 <div class="audience-card" markdown>
@@ -161,7 +161,7 @@ passes.</p>
 libraries (`lib_android.capy`, `lib_ios.capy`) emit Kotlin + manifest
 + gradle, or SwiftUI + Info.plist + Package.swift. Drop into Android
 Studio / Xcode.</p>
-<a href="one-source-many-files.md#mobile-same-source-two-platforms">Mobile demo →</a>
+<a href="one-source-many-files/#mobile-same-source-two-platforms">Mobile demo →</a>
 </div>
 
 <div class="audience-card" markdown>
@@ -171,7 +171,7 @@ Studio / Xcode.</p>
 any MCP client (Claude Desktop, Claude Code, Cursor, Zed). The
 library is the agent's contract — sandboxed by design, 5–10× fewer
 tokens than emitting target code directly.</p>
-<a href="mcp.md">MCP setup →</a>
+<a href="mcp/">MCP setup →</a>
 </div>
 
 <div class="audience-card" markdown>
@@ -180,7 +180,7 @@ tokens than emitting target code directly.</p>
 <p>Dockerfile, Kubernetes, Terraform, GitHub Actions, Prometheus,
 nginx — all become libraries that absorb your house style. The
 output is plain target syntax; your runtime doesn't know Capy ran.</p>
-<a href="extending-existing-syntax.md">Pattern docs →</a>
+<a href="extending-existing-syntax/">Pattern docs →</a>
 </div>
 
 <div class="audience-card" markdown>
@@ -190,7 +190,7 @@ output is plain target syntax; your runtime doesn't know Capy ran.</p>
 in the library; every consumer produces identical visuals. The
 designer reads the library once and knows every shape the system
 can ever produce.</p>
-<a href="design-systems.md">Design systems →</a>
+<a href="design-systems/">Design systems →</a>
 </div>
 
 <div class="audience-card" markdown>
@@ -199,7 +199,7 @@ can ever produce.</p>
 <p>Capy is for ideas; libraries are implementations. When Go isn't
 fast enough and you want Rust — swap the library, not rewrite the
 system. The contract stays stable while the implementation evolves.</p>
-<a href="idea-language.md">Idea-language thesis →</a>
+<a href="idea-language/">Idea-language thesis →</a>
 </div>
 
 <div class="audience-card" markdown>
@@ -209,7 +209,7 @@ system. The contract stays stable while the implementation evolves.</p>
 reading log / trip itinerary / resume / invoice / to-do) use
 plain-English keywords. Edit a few lines, get a polished printable
 artifact.</p>
-<a href="for-everyone.md">Start here →</a>
+<a href="for-everyone/">Start here →</a>
 </div>
 
 </div>
