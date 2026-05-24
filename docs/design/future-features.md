@@ -20,10 +20,11 @@ where one depends on another.
 | 3 | **Versioning** | library version, impl version, pin/resolve |
 | 4 | **Authoring & publishing** | scaffolding, local libs, git distribution |
 | 5 | **Invocation ergonomics** | file-extension conventions, shebang, short form, compile/run/build subcommands |
-| 6 | **Distribution** | WASM packaging, single-binary compiler |
-| 7 | **Editor / tooling** | LSP, formatter, watch, local playground, sourcemaps |
-| 8 | **SDKs and embedding** | Go, Python, JS, Rust |
-| 9 | **Big ideas** | `capy transform`, provenance, capy-on-capy, bundle |
+| 6 | **Library commands** | declare `run` / `build` / `serve` / custom verbs; exec subprocesses; trust model |
+| 7 | **Distribution** | WASM packaging, single-binary compiler |
+| 8 | **Editor / tooling** | LSP, formatter, watch, local playground, sourcemaps |
+| 9 | **SDKs and embedding** | Go, Python, JS, Rust |
+| 10 | **Big ideas** | `capy transform`, provenance, capy-on-capy, bundle |
 
 A summary recommendation table at the bottom (§ Decisions)
 collects every feature with effort vs. value scores and a
@@ -1188,9 +1189,538 @@ $ ./py-tool app.py > app.out      # py-tool is now self-contained
 
 ---
 
-# § 6 Distribution
+# § 6 Library commands
 
-## 6.1 WASM packaging
+### Motivation
+
+Today `capy <lib> <script>` always means the same thing: render
+the script through the library, print the output. That's the
+right default — but real DSLs want more verbs:
+
+- A `python` library wants `capy python run script.py` to
+  generate code AND immediately execute it via `python3`.
+- A `react-component` library wants `capy react-component
+  preview comp.react` to generate the file, drop it into a Vite
+  scaffold, run `vite dev`, and open a browser.
+- An `android-app` library wants `capy android build app.android`
+  to generate a Kotlin project tree, shell out to Gradle, and
+  emit a signed APK.
+- A `terraform` library wants `capy tf plan infra.tf` to
+  generate the `.tf` files, then run `terraform plan` against
+  them.
+
+Common shape: **generate → side-effect → report**. Without
+library commands, every user reinvents this scaffolding with
+ad-hoc shell scripts. With them, the library author defines the
+workflow once, and every consumer gets `capy <lib> <command>` for
+free.
+
+### Who benefits
+
+- **End users** — `capy android build counter.android` produces an
+  APK. They don't need to know that Gradle exists.
+- **Library authors** — ship a complete dev workflow, not just a
+  transpiler. The library IS the build tool.
+- **Teams** — internal libraries become internal CLIs. New
+  contributors get `capy <our-lib> serve` and an entire dev loop.
+
+## 6.1 Declaring commands
+
+### Design
+
+Commands live in the library's `capy.capy` manifest:
+
+```
+# ~/.capy/libs/python/capy.capy
+name    "python"
+version "0.18.0"
+
+impl "py" "python.capy"
+    default
+end
+
+command "run"
+    description "Generate Python and run it with `python3`."
+    arg     "script"  required  "Path to a .py script."
+    flag    "--python"          "Python interpreter."  default "python3"
+    body:
+        let out = (compile script)
+        let tmp = (mktemp ".py")
+        write_file tmp out
+        exec flags.python tmp
+end
+
+command "build"
+    description "Generate the Python file."
+    arg     "script"  required
+    flag    "-o"      "Output path (defaults to <script>.py)"
+    body:
+        let out    = (compile script)
+        let target = (if flags.o flags.o (replace_ext script ".py"))
+        write_file target out
+        print "wrote ${target}"
+end
+
+command "serve"
+    description "Generate a Flask app and run it on a port."
+    arg     "script"  required
+    flag    "--port"  default "8080"
+    body:
+        let project = mktemp_dir
+        write_file "${project}/app.py" (compile script)
+        cd project
+        exec "python3" "app.py" "--port" flags.port
+end
+```
+
+Each command has a header (name, description, args, flags) and a
+body (the inner DSL extended with shell-like primitives — see
+§ 6.4).
+
+## 6.2 Built-in commands (always available)
+
+Every library implicitly ships these unless the manifest overrides
+them:
+
+| Command | Behaviour |
+|---|---|
+| `run` | Render to stdout. (Today's default.) |
+| `compile` | Render to the library's `output_file`, or `-o PATH`. |
+| `check` | Validate the library; no script needed. |
+| `docs` | Print the auto-generated reference. |
+| `help` | List declared commands + built-ins. |
+
+A library author can OVERRIDE any of these by declaring `command
+"run" …` in their manifest (e.g. the Python library's `run`
+overrides the default to also `exec` the generated file).
+
+## 6.3 The command body sub-DSL
+
+The body of a `command` block is an extended inner DSL — same
+syntax as `run:` blocks today, plus shell-style primitives:
+
+### Variable binding
+
+```
+let x = (some_expression)
+let project = mktemp_dir
+let out = (compile script)
+```
+
+### Compile primitive
+
+```
+let out = (compile script)                    # uses default impl
+let out = (compile script "--impl" "json")    # override impl
+let out = (compile script_path)               # script can be a path string
+```
+
+`compile` runs the library on the script. Returns the output as
+a string. For multi-file output (libraries with `file "X" … end`
+blocks), use:
+
+```
+let files = (compile_multi script)            # returns map<path → contents>
+for path in (keys files)
+    write_file "${out_dir}/${path}" files[path]
+end
+```
+
+### Filesystem
+
+```
+write_file PATH CONTENTS                      # create / overwrite
+read_file PATH                                # already in inner DSL
+mktemp ".ext"                                 # → "/tmp/capy-X.ext"
+mktemp_dir                                    # → "/tmp/capy-XXX/"
+mkdir PATH                                    # parent-creating
+remove PATH                                   # rm -rf
+exists PATH                                   # boolean
+copy SRC DST                                  # file or dir
+list_dir PATH                                 # → list of entries
+replace_ext PATH ".new"                       # path manipulation
+```
+
+### Subprocess execution
+
+```
+exec CMD ARGS...                              # stream stdout/stderr to user
+exec_capture CMD ARGS...                      # capture stdout, no streaming
+exec_with                                     # block form with extra options:
+    cmd CMD
+    arg ARG
+    arg ARG
+    env "KEY" "VALUE"
+    cwd PATH
+    quiet              # suppress stdout/stderr
+end
+```
+
+Exit-code handling: non-zero exit aborts the command unless the
+body catches it (`try: ... on_error: ... end`).
+
+### Working directory
+
+```
+cd PATH                                       # change CWD for the rest of body
+pushd PATH ... popd                           # scoped
+```
+
+### User I/O
+
+```
+print STR                                     # stdout
+print_err STR                                 # stderr
+prompt "Continue? [y/N]"                      # returns user input
+confirm "Delete?"                             # → bool
+```
+
+### Error reporting
+
+```
+error "message"                               # abort with exit code 1
+warn "message"                                # non-fatal warning
+```
+
+### Control flow
+
+`if`/`else`/`for`/`loop` work as in the regular inner DSL. The
+loop variable is in scope inside the body.
+
+## 6.4 Argument parsing and help
+
+The manifest declares positional args and flags:
+
+```
+arg "script"           required
+arg "out_dir"          optional
+flag "--port"          default "8080"
+flag "-v" "--verbose"  bool                      # presence-only
+flag "--target"        choices "linux" "darwin" "windows"
+```
+
+`capy <lib> <command> --help` is generated from these
+declarations:
+
+```
+$ capy python serve --help
+serve  Generate a Flask app and run it on a port.
+
+USAGE
+    capy python serve [--port PORT] <script>
+
+ARGUMENTS
+    <script>     Path to a .py script. (required)
+
+FLAGS
+    --port       Port number. (default: 8080)
+```
+
+`capy <lib> --help` lists all commands:
+
+```
+$ capy python --help
+python 0.18.0 — Tiny imperative DSL → runnable Python.
+
+COMMANDS
+    run        Generate Python and run it with `python3`.
+    build      Generate the Python file.
+    serve      Generate a Flask app and run it on a port.
+    test       Generate and run tests.
+    (+ standard: compile, check, docs, help)
+```
+
+## 6.5 Security and trust
+
+Commands can shell out to anything. The trust model:
+
+1. **`CAPY_LIBS`-installed libraries are trusted.** You installed
+   them; you trust them. Commands run without prompts.
+2. **Bare-path invocation** (`capy run ./untrusted/lib.capy
+   script`) is **untrusted**. Commands that need exec / write
+   abort with:
+   `error: library './untrusted/lib.capy' is not in CAPY_LIBS;
+    pass --trust to allow side-effecting commands.`
+3. **WASM** has no exec / fs surface. Library commands degrade:
+   `run` works (renders in-browser), `build` / `serve` / etc.
+   error with "not available in this runtime."
+4. **`--trust` flag** opts in once; **`capy lib trust <path>`**
+   adds a library directory to a persistent trust list in
+   `~/.capy/trusted.capy`.
+5. **`--dry-run`** prints every filesystem / exec action the
+   command WOULD take without performing it. Useful for code
+   review of an unfamiliar library.
+
+```sh
+$ capy run ./local-lib/python script.py
+error: library './local-lib/python' is not in CAPY_LIBS;
+       pass --trust to allow side-effecting commands.
+
+$ capy --trust run ./local-lib/python script.py
+…
+
+$ capy lib trust ./local-lib/python
+✓ added ./local-lib/python (sha256:abc…) to ~/.capy/trusted.capy
+
+$ capy run ./local-lib/python script.py     # works without --trust now
+```
+
+The trust list is keyed by library SHA so trust doesn't carry
+across an upstream change.
+
+## 6.6 Walkthrough — a Python library with three workflows
+
+### Library manifest
+
+```
+# ~/.capy/libs/python/capy.capy
+name        "python"
+version     "0.18.0"
+description "Tiny imperative DSL → runnable Python."
+
+impl "py" "python.capy"
+    default
+end
+
+command "run"
+    description "Generate Python and run it."
+    arg "script" required
+    body:
+        let out = (compile script)
+        let tmp = (mktemp ".py")
+        write_file tmp out
+        exec "python3" tmp
+end
+
+command "build"
+    description "Generate the .py file."
+    arg "script" required
+    flag "-o" "Output path (defaults to <script-stem>.py)"
+    body:
+        let out    = (compile script)
+        let target = (if flags.o flags.o (replace_ext script ".py"))
+        write_file target out
+        print "wrote ${target}"
+end
+
+command "test"
+    description "Generate then pytest."
+    arg "script" required
+    body:
+        let project = mktemp_dir
+        write_file "${project}/main.py" (compile script)
+        # Library ships a stub test file; copy it in.
+        copy "${lib_dir}/test_stub.py" "${project}/test_main.py"
+        cd project
+        exec "pytest" "-v"
+end
+```
+
+### Consumer session
+
+```sh
+$ cat hello.py
+say "Hello, world"
+loop i in [1 2 3]
+    say i
+end
+
+$ capy python run hello.py
+Hello, world
+1
+2
+3
+
+$ capy python build hello.py -o hello.gen.py
+wrote hello.gen.py
+
+$ capy python test hello.py
+============================= test session starts ==============================
+collected 1 item
+test_main.py::test_smoke PASSED                                          [100%]
+============================== 1 passed in 0.04s ===============================
+```
+
+## 6.7 Walkthrough — Android library that builds an APK
+
+```
+# ~/.capy/libs/android/capy.capy
+name        "android"
+version     "1.0.0"
+
+impl "kotlin" "android.capy"
+    default
+end
+
+command "build"
+    description "Generate the Android project and build the APK."
+    arg  "script"     required
+    flag "--release"  bool   "Build release APK instead of debug."
+    body:
+        let project = mktemp_dir
+        let files   = (compile_multi script)
+        for path in (keys files)
+            write_file "${project}/${path}" files[path]
+        end
+        cd project
+        let mode = (if flags.release "assembleRelease" "assembleDebug")
+        exec "./gradlew" mode
+        let out_dir = (if flags.release
+                        "app/build/outputs/apk/release"
+                        "app/build/outputs/apk/debug")
+        print "APK: ${project}/${out_dir}/app-${mode}.apk"
+end
+
+command "run"
+    description "Build APK and adb-install on connected device."
+    arg "script" required
+    body:
+        # `call` invokes another command of THIS library.
+        call build script
+        # After `call build`, the APK path is bound in $last_command.apk_path
+        # (see § 6.9 — command output binding).
+        exec "adb" "install" last_command.apk_path
+end
+```
+
+### Session
+
+```sh
+$ capy android build counter.android
+:app:compileDebugKotlin
+:app:packageDebug
+:app:assembleDebug
+BUILD SUCCESSFUL in 24s
+APK: /tmp/capy-android-7a3b/app/build/outputs/apk/debug/app-assembleDebug.apk
+
+$ capy android run counter.android
+…
+Performing Streamed Install
+Success
+```
+
+## 6.8 Walkthrough — React component preview
+
+```
+# ~/.capy/libs/react-component/capy.capy
+name "react-component"
+version "1.0.0"
+
+impl "tsx" "component.capy"
+    default
+end
+
+command "preview"
+    description "Generate the component, scaffold a Vite app around it, open in browser."
+    arg "script" required
+    flag "--port" default "5173"
+    body:
+        let project = mktemp_dir
+        # Copy a pre-built Vite scaffold from the library.
+        copy "${lib_dir}/scaffold" project
+        # Render the user's component into src/Counter.tsx.
+        write_file "${project}/src/Component.tsx" (compile script)
+        cd project
+        exec "npm" "install" "--silent"
+        # Open browser to the dev server.
+        let url = "http://localhost:${flags.port}"
+        spawn "open" url            # `spawn` returns immediately; doesn't wait
+        exec "npm" "run" "dev" "--" "--port" flags.port
+end
+```
+
+```sh
+$ capy react-component preview counter.react
+🚀 vite v5.0.0 ready in 320 ms
+   ➜  Local:   http://localhost:5173/
+# Browser opens automatically.
+```
+
+## 6.9 Command output binding (`last_command`)
+
+When one command `call`s another within the same library:
+
+```
+command "deploy"
+    body:
+        call build script             # invokes the build command above
+        # Anything `build` `print`ed into a binding shows up here:
+        upload last_command.apk_path
+end
+```
+
+The called command exposes its bindings via the `last_command`
+scope. Commands declare what they bind via a `binds` block:
+
+```
+command "build"
+    binds:
+        apk_path  "Path to the produced APK."
+    body:
+        …
+        bind apk_path "${project}/app/.../app-debug.apk"
+end
+```
+
+## 6.10 Anti-goals
+
+- **No general scripting language.** The command body sub-DSL is
+  intentionally small. If you need to write a 200-line program,
+  shell out to one (`exec "python3" "script.py"`) — don't try to
+  write it inside a command body.
+- **No network primitives** (HTTP, sockets). Use `exec "curl" …`.
+  Keeps the trust surface tractable.
+- **No `eval` / dynamic code loading.** Same reason.
+- **No long-running daemons** declared by libraries. `exec` blocks
+  until the subprocess exits; if you want a daemon, your
+  subprocess can fork.
+
+## 6.11 Trade-offs
+
+- **Pro:** A library becomes the entire user experience —
+  workflow, not just transpilation. The "one tool ships the dev
+  loop" idea everyone wants.
+- **Pro:** New domain CLIs cost a library, not a fork of the
+  engine. Anyone can ship `capy <their-tool>` workflows.
+- **Pro:** Custom commands compose: `call build` from inside `run`.
+- **Con:** Security surface. Trust model is essential and adds
+  friction on first run.
+- **Con:** The command body grammar is a real piece of new
+  surface area. Risk of feature creep ("can we have HTTP? regex?
+  …"). Mitigation: keep the anti-goals list above public.
+
+## 6.12 Effort
+
+**Large.** This is the single biggest item in the doc:
+
+- New section in the manifest grammar (`command` blocks).
+- New inner-DSL primitives: `exec`, `mktemp`, `write_file`,
+  `cd`, `read_file`, `let`, etc.
+- Subprocess execution with stream-or-capture stdout/stderr.
+- Argument / flag parser with help generation.
+- Trust model + `~/.capy/trusted.capy`.
+- WASM: gracefully disable side-effecting primitives.
+
+Rough split: 1 week for grammar + primitives, 1 week for trust +
+argument parsing, 1 week for tests + docs + edge cases. Three
+focused weeks.
+
+## 6.13 Recommendation
+
+**SHIP — high value, biggest single item.** Slot it as v0.22 (the
+"distribution & polish" release) — alongside the single-binary
+compiler. They share the "this library IS the tool" thesis.
+
+If we ship them together, library authors get one coherent
+story: "declare functions for the language; declare commands for
+the workflow; `capy build` produces a standalone tool that ships
+to your users with both."
+
+---
+
+# § 7 Distribution
+
+## 7.1 WASM packaging
 
 ### Design
 
@@ -1261,7 +1791,7 @@ $ npm run dev    # works
 **SHIP — after § 1 / 2 stabilise.** Wasm is how Capy reaches
 non-Go users.
 
-## 6.2 `capy build` — single-binary compiler
+## 7.2 `capy build` — single-binary compiler
 
 ### What it is
 
@@ -1338,9 +1868,9 @@ feature.
 
 ---
 
-# § 7 Editor / tooling
+# § 8 Editor / tooling
 
-## 7.1 LSP server
+## 8.1 LSP server
 
 ### What it is
 
@@ -1408,7 +1938,7 @@ generates everything an LSP needs from a library file).
 **SHIP — high value once ecosystem grows.** Worth it once
 people have ~5+ libraries.
 
-## 7.2 `capy fmt`
+## 8.2 `capy fmt`
 
 ### Design
 
@@ -1463,7 +1993,7 @@ RawLibrary back to text using consistent rules.
 **SHIP — after LSP** (or together; they share the parser
 infrastructure).
 
-## 7.3 Watch mode
+## 8.3 Watch mode
 
 ### Design
 
@@ -1512,7 +2042,7 @@ $ capy watch chart revenue.chart --browser
 
 **SHIP — early polish.** Big quality-of-life win.
 
-## 7.4 Local playground (`capy play`)
+## 8.4 Local playground (`capy play`)
 
 ### Design
 
@@ -1557,7 +2087,7 @@ spins an HTTP server.
 
 **SHIP — after the hosted playground stabilises.**
 
-## 7.5 Sourcemaps
+## 8.5 Sourcemaps
 
 ### What it is
 
@@ -1591,13 +2121,13 @@ now.
 
 ---
 
-# § 8 SDKs
+# § 9 SDKs
 
-## 8.1 Go SDK (current — already shipped)
+## 9.1 Go SDK (current — already shipped)
 
 `import "github.com/luowensheng/capy"` works today.
 
-## 8.2 Python SDK
+## 9.2 Python SDK
 
 ### Design
 
@@ -1642,21 +2172,21 @@ wrapper.
 **SHIP Python first** (largest non-Go developer base).
 JavaScript and Rust follow on demand.
 
-## 8.3 JavaScript SDK
+## 9.3 JavaScript SDK
 
 Same as 8.2, packaged for Node + browser. Already half-built
 (the playground's loader).
 
-## 8.4 Rust SDK
+## 9.4 Rust SDK
 
 `capy = "0.1"` via crates.io. Uses `wasmtime` crate. Useful for
 Rust-based CLIs that want Capy as a config layer.
 
 ---
 
-# § 9 Big ideas
+# § 10 Big ideas
 
-## 9.1 `capy transform`
+## 10.1 `capy transform`
 
 ### What it is
 
@@ -1686,7 +2216,7 @@ declarative.
 **RESEARCH** — explore as a v0.x sample; commit to engine
 support only once a real use case proves it.
 
-## 9.2 Generated-code provenance
+## 10.2 Generated-code provenance
 
 ### Design
 
@@ -1710,7 +2240,7 @@ CI checks the header against current state and fails if drifted.
 **SHIP — small, high value for teams with generated code in
 git.**
 
-## 9.3 Capy-on-Capy
+## 10.3 Capy-on-Capy
 
 ### What it is
 
@@ -1739,7 +2269,7 @@ required — it's just a Capy library.
 
 **SHIP as a sample** to demonstrate the meta-pattern.
 
-## 9.4 Bundle / vendor
+## 10.4 Bundle / vendor
 
 ### Design
 
@@ -1779,20 +2309,22 @@ day one." **Effort** is "developer-weeks at one full-time."
 | § 5.2 Shebang scripts | XS | ⭐⭐⭐ | **SHIP** | 4 |
 | § 5.3 Short form | XS | ⭐⭐⭐ | **SHIP** | 4 |
 | § 5.4 compile/run/build verbs | XS | ⭐⭐⭐ | **SHIP** | 4 |
-| § 6.1 WASM packaging | M | ⭐⭐⭐⭐ | **SHIP** | 5 |
-| § 6.2 Single-binary compiler | M | ⭐⭐⭐⭐⭐ | **SHIP** | 5 |
-| § 7.1 LSP | M | ⭐⭐⭐⭐ | **SHIP** | 6 |
-| § 7.2 `capy fmt` | M | ⭐⭐⭐ | **SHIP** | 6 |
-| § 7.3 Watch mode | S | ⭐⭐⭐⭐ | **SHIP** | 5 |
-| § 7.4 `capy play` | M | ⭐⭐⭐ | **SHIP** | 7 |
-| § 7.5 Sourcemaps | M | ⭐⭐ | **DEFER** | — |
-| § 8.2 Python SDK | M | ⭐⭐⭐⭐ | **SHIP** (after 6.1) | 6 |
-| § 8.3 JS SDK | S | ⭐⭐⭐⭐ | **SHIP** (after 6.1) | 6 |
-| § 8.4 Rust SDK | M | ⭐⭐⭐ | **SHIP** (after 6.1) | 8 |
-| § 9.1 `capy transform` | L | ⭐⭐ | **RESEARCH** | — |
-| § 9.2 Provenance metadata | XS | ⭐⭐⭐⭐ | **SHIP** | 5 |
-| § 9.3 Capy-on-Capy | XS | ⭐⭐ | **SHIP as sample** | 4 |
-| § 9.4 Bundle/vendor | S | ⭐⭐⭐ | **SHIP** | 7 |
+| § 6.1–6.4 Library commands (declare + body sub-DSL) | L | ⭐⭐⭐⭐⭐ | **SHIP** | 5 |
+| § 6.5 Trust model | S | ⭐⭐⭐⭐ | **SHIP** (with 6.1) | 5 |
+| § 7.1 WASM packaging | M | ⭐⭐⭐⭐ | **SHIP** | 5 |
+| § 7.2 Single-binary compiler | M | ⭐⭐⭐⭐⭐ | **SHIP** | 5 |
+| § 8.1 LSP | M | ⭐⭐⭐⭐ | **SHIP** | 6 |
+| § 8.2 `capy fmt` | M | ⭐⭐⭐ | **SHIP** | 6 |
+| § 8.3 Watch mode | S | ⭐⭐⭐⭐ | **SHIP** | 5 |
+| § 8.4 `capy play` | M | ⭐⭐⭐ | **SHIP** | 7 |
+| § 8.5 Sourcemaps | M | ⭐⭐ | **DEFER** | — |
+| § 9.2 Python SDK | M | ⭐⭐⭐⭐ | **SHIP** (after 7.1) | 6 |
+| § 9.3 JS SDK | S | ⭐⭐⭐⭐ | **SHIP** (after 7.1) | 6 |
+| § 9.4 Rust SDK | M | ⭐⭐⭐ | **SHIP** (after 7.1) | 8 |
+| § 10.1 `capy transform` | L | ⭐⭐ | **RESEARCH** | — |
+| § 10.2 Provenance metadata | XS | ⭐⭐⭐⭐ | **SHIP** | 5 |
+| § 10.3 Capy-on-Capy | XS | ⭐⭐ | **SHIP as sample** | 4 |
+| § 10.4 Bundle/vendor | S | ⭐⭐⭐ | **SHIP** | 7 |
 
 ## Recommended release plan
 
@@ -1800,36 +2332,40 @@ day one." **Effort** is "developer-weeks at one full-time."
 - `CAPY_LIBS` + manifest + library directory site (§ 1).
 - `capy lib new` + local path libs (§ 4.1, 4.2).
 - Multiple impls + selection (§ 2).
-- Capy-on-Capy as a sample (§ 9.3).
+- Capy-on-Capy as a sample (§ 10.3).
 
 **v0.20** — Versioning + distribution (Priority 3)
 - Library/impl versions + lockfile (§ 3).
 - Git-based `capy lib add` (§ 4.3).
-- Bundle/vendor (§ 9.4).
+- Bundle/vendor (§ 10.4).
 
 **v0.21** — Ergonomics (Priority 4)
 - File-extension convention (§ 5.1).
 - Shebang + short form (§ 5.2, 5.3).
 - compile/run/build subcommand split (§ 5.4).
 
-**v0.22** — Distribution & polish (Priority 5)
-- Single-binary compiler (§ 6.2).
-- WASM packaging (§ 6.1).
-- Watch mode (§ 7.3).
-- Provenance metadata (§ 9.2).
+**v0.22** — Library commands + Distribution (Priority 5).
+This is the "every library is a CLI" release. Pair the commands
+sub-DSL with the single-binary compiler so library authors ship
+complete tools to their users.
+- Library commands + trust model (§ 6).
+- Single-binary compiler (§ 7.2).
+- WASM packaging (§ 7.1).
+- Watch mode (§ 8.3).
+- Provenance metadata (§ 10.2).
 
 **v0.23** — Tooling (Priority 6)
-- LSP (§ 7.1).
-- `capy fmt` (§ 7.2).
-- Python + JS SDKs (§ 8.2, 8.3).
+- LSP (§ 8.1).
+- `capy fmt` (§ 8.2).
+- Python + JS SDKs (§ 9.2, 9.3).
 
 **v0.24** — Inner-loop polish (Priority 7)
-- Local `capy play` (§ 7.4).
+- Local `capy play` (§ 8.4).
 
 **v0.25+** — Out of the way bets (Priority 8 / research)
-- Rust SDK (§ 8.4).
-- Sourcemaps (§ 7.5).
-- `capy transform` research (§ 9.1).
+- Rust SDK (§ 9.4).
+- Sourcemaps (§ 8.5).
+- `capy transform` research (§ 10.1).
 
 ## Out of scope (intentionally)
 
