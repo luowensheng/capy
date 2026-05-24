@@ -1,0 +1,32 @@
+# Row DSL → CSV file.
+extension csv
+
+comments
+    line "#"
+end
+
+context
+    header []
+    rows_list []
+end
+
+function header
+    arg literal "header"
+    arg capture cols any
+    set context.header cols
+end
+
+function row
+    arg literal "row"
+    arg capture vals any
+    append context.rows_list vals
+end
+
+file_template
+    write `${join "," context.header}
+`
+    for r in context.rows_list
+        write `${join "," r}
+`
+    end
+end

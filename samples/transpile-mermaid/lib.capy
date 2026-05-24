@@ -1,0 +1,44 @@
+# Flowchart DSL → Mermaid syntax.
+extension mmd
+
+comments
+    line "#"
+end
+
+function flowchart
+    arg literal "flowchart"
+    arg capture dir ident
+    block_closer end
+    write `flowchart ${dir}
+${indent 4 body}
+`
+end
+
+function node
+    arg literal "node"
+    arg capture id ident
+    arg capture label any
+    write `${id}[${unquote label}]
+`
+end
+
+function edge
+    arg capture from ident
+    arg literal "->"
+    arg capture to ident
+    write `${from} --> ${to}
+`
+end
+
+function edge_label
+    arg capture from ident
+    arg literal "->"
+    arg capture to ident
+    arg literal ":"
+    arg capture label any
+    write `${from} -->|${unquote label}| ${to}
+`
+end
+
+function end
+end

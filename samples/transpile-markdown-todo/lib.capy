@@ -1,0 +1,34 @@
+# Todo DSL → Markdown checklist.
+extension md
+
+comments
+    line "#"
+end
+
+function todo
+    arg literal "todo"
+    arg capture text any
+    write `- [ ] ${unquote text}
+`
+end
+
+function done
+    arg literal "done"
+    arg capture text any
+    write `- [x] ${unquote text}
+`
+end
+
+function section
+    arg literal "section"
+    arg capture title any
+    write `
+## ${unquote title}
+
+`
+end
+
+file_template
+    write `# Tasks
+${body}`
+end
