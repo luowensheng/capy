@@ -1,0 +1,26 @@
+# Typed config DSL → .env file.
+#
+# Source:
+#   set DATABASE_URL "postgres://..."
+#   set PORT 5432
+#   set DEBUG true
+#
+# Output: KEY=value lines, with validation that names are SCREAMING_SNAKE.
+
+extension env
+
+comments
+    line "#"
+end
+
+type EnvName
+    pattern "^[A-Z][A-Z0-9_]*$"
+end
+
+function set
+    arg literal "set"
+    arg capture key EnvName
+    arg capture value any
+    write `${key}=${value}
+`
+end

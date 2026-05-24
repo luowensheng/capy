@@ -1,0 +1,33 @@
+# Schedule DSL → crontab entries.
+extension cron
+
+comments
+    line "#"
+end
+
+function every
+    arg literal "every"
+    arg capture spec any
+    arg literal "do"
+    arg capture cmd any
+    write `${unquote spec} ${unquote cmd}
+`
+end
+
+function daily
+    arg literal "daily"
+    arg capture hour int
+    arg literal "do"
+    arg capture cmd any
+    write `0 ${hour} * * * ${unquote cmd}
+`
+end
+
+function weekly
+    arg literal "weekly"
+    arg capture dow int
+    arg literal "do"
+    arg capture cmd any
+    write `0 0 * * ${dow} ${unquote cmd}
+`
+end

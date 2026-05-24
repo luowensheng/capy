@@ -1,0 +1,55 @@
+# Changelog DSL → Keep-a-Changelog markdown.
+extension md
+
+comments
+    line "#"
+end
+
+function version
+    arg literal "version"
+    arg capture v any
+    arg capture date any
+    block_closer end
+    write `## [${unquote v}] — ${unquote date}
+
+${body}
+`
+end
+
+function added
+    arg literal "added"
+    arg capture msg any
+    write `- Added: ${unquote msg}
+`
+end
+
+function changed
+    arg literal "changed"
+    arg capture msg any
+    write `- Changed: ${unquote msg}
+`
+end
+
+function fixed
+    arg literal "fixed"
+    arg capture msg any
+    write `- Fixed: ${unquote msg}
+`
+end
+
+function removed
+    arg literal "removed"
+    arg capture msg any
+    write `- Removed: ${unquote msg}
+`
+end
+
+function end
+end
+
+file_template
+    write `# Changelog
+
+${body}
+`
+end
