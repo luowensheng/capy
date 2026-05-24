@@ -70,6 +70,12 @@ func dispatch(args []string) error {
 		return cmdLib(args[1:])
 	case "new":
 		return cmdNew(args[1:])
+	case "watch":
+		return cmdWatch(args[1:])
+	case "fmt":
+		return cmdFmt(args[1:])
+	case "build":
+		return cmdBuild(args[1:])
 	case "version", "--version", "-v":
 		fmt.Println("capy", version)
 		return nil

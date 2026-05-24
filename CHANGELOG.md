@@ -8,6 +8,71 @@ may break between minor versions**.
 
 ## [Unreleased]
 
+## [0.20.0] — 2026-05-24
+
+Dev-loop tools that complete the "libraries as CLIs" story:
+watch, formatter, git-based install, and a single-binary
+compiler so library authors can ship their tools to users who
+don't have Capy installed.
+
+### Added — CLI subcommands
+
+- **`capy watch <library> [args…]`** — polling-based file
+  watcher (250ms). Re-runs the command whenever any watched
+  file changes. Watches every `.capy` in the library's directory
+  plus any file-path args. Works for both new-shape (library
+  command dispatch) and legacy (`capy run lib.capy script.capy`)
+  invocations.
+
+- **`capy fmt <files…>`** — conservative formatter for `.capy`
+  files: strips trailing whitespace, converts leading tabs to
+  4-space indent, collapses multi-blank-line runs, ensures one
+  trailing newline. Does NOT touch the inside of backtick
+  literals (whitespace is significant). Flags: `--check`,
+  `--diff`, `--stdout`. The full canonical-form normaliser
+  (declaration ordering, arg alignment) is deferred.
+
+- **`capy lib add <source> [--as name]`** — install a library
+  from a git URL or local path. Common shorthand:
+  `github.com/X/Y` → `https://github.com/X/Y`. Library name is
+  inferred from the trailing path segment (strips `-capy` /
+  `_capy` suffixes); override with `--as`. Land in the first
+  writable directory on `CAPY_LIBS`.
+
+- **`capy lib remove <name>`** (alias `rm`) — delete an
+  installed library.
+
+- **`capy build <library> [-o output] [--keep-temp]`** —
+  produce a standalone executable with the library baked in.
+  Implementation: writes a tiny Go wrapper `main.go` that embeds
+  the library source + dispatches via
+  `orchestrator.RunCommand`, then shells out to `go build`.
+  Compiled binary is self-contained — no Capy install required
+  on the target host. Cross-compile by setting `GOOS` /
+  `GOARCH` before the build.
+
+### Verified end-to-end
+
+- `fmt`: rewrites a deliberately messy library; backtick
+  internals untouched.
+- `lib add` (local-path form): installs a directory; the library
+  resolves by name immediately afterwards.
+- `lib remove`: cleans up the installed entry.
+- `build`: produces a 5.4 MB binary that dispatches commands
+  exactly like `capy <lib> <cmd>` does.
+- `watch`: streams stdout on first run, detects a write, and
+  re-runs cleanly.
+
+### Engine notes
+
+- `cmd_build.go` uses `findCapyModuleRoot` to locate a local
+  capy checkout (via `go.mod`) so dev-mode `capy build` doesn't
+  need the published module. Falls back to `go get latest` if
+  not in a checkout.
+- The wrapper's `main.go` template uses string concatenation
+  (not Go raw strings) so library sources containing backticks
+  serialize cleanly.
+
 ## [0.19.1] — 2026-05-24
 
 Round-out of the library-commands feature: declarative

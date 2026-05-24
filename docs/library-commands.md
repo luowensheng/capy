@@ -367,6 +367,108 @@ Only put libraries on `CAPY_LIBS` that you'd trust to run as
 yourself. Library files cloned from random URLs should land
 elsewhere first; review them, then move into the search path.
 
+## v0.20: tooling around libraries
+
+A handful of dev-loop tools shipped in v0.20 to make the
+"libraries as CLIs" story complete:
+
+### `capy watch`
+
+Polling-based file watcher; re-runs a command whenever any
+watched file changes. Watches the entire library directory + any
+file-path arguments you passed.
+
+```sh
+$ capy watch recipe run cake.recipe
+👀 watching 2 file(s); re-runs on save (Ctrl-C to exit)
+    cake.recipe
+    ~/.capy/libs/recipe/recipe.capy
+Hi world!
+
+# Edit cake.recipe in another window…
+--- change detected — re-running ---
+Hi updated!
+```
+
+Falls back to legacy form for libraries with no declared
+commands: `capy watch lib.capy script.capy`.
+
+### `capy fmt`
+
+Conservative formatter for `.capy` library files:
+- Strips trailing whitespace.
+- Converts leading tabs to 4-space indentation.
+- Collapses multi-blank-line runs to one blank.
+- Ensures exactly one trailing newline.
+
+```sh
+capy fmt lib.capy            # rewrite in place
+capy fmt --check lib.capy    # exit 1 if not formatted
+capy fmt --diff lib.capy     # print diff vs. formatted
+capy fmt --stdout lib.capy   # print formatted output
+```
+
+Does NOT touch the inside of backtick literals (whitespace there
+is significant for the emitted output). Future versions may add
+declaration-order normalisation and arg alignment.
+
+### `capy lib add` (git + local)
+
+Install a library by git URL or local path:
+
+```sh
+capy lib add github.com/user/repo                  # git clone
+capy lib add github.com/user/repo --as new-name    # rename on install
+capy lib add /local/path/to/lib                    # copy a local directory
+```
+
+Common shorthand: `github.com/X/Y` expands to `https://github.com/X/Y`.
+A `-capy` / `_capy` suffix on the repo name is stripped when
+inferring the library name. The clone lands in the first writable
+directory on `CAPY_LIBS`.
+
+### `capy lib remove`
+
+```sh
+capy lib remove recipe
+# ✓ removed ~/.capy/libs/recipe
+```
+
+### `capy build` — single-binary compiler
+
+Bake a library into a standalone executable. The resulting binary
+needs no `capy` install on the target host:
+
+```sh
+$ capy build recipe -o recipe-tool
+building recipe (this needs the Go toolchain)…
+✓ wrote ./recipe-tool (5.4 MB)
+  try:  ./recipe-tool --help
+
+$ ./recipe-tool run cake.recipe
+Hi world!
+
+$ ./recipe-tool build cake.recipe -o cake.txt
+wrote cake.txt
+```
+
+How it works: `capy build` writes a tiny Go wrapper `main.go`
+that embeds the library source as a string constant + dispatches
+via `orchestrator.RunCommand`, then shells out to `go build`. The
+user needs a Go toolchain installed to run `capy build`; the
+OUTPUT binary has no such requirement.
+
+Caveats:
+- The build is single-target by default (your current `GOOS` /
+  `GOARCH`). Cross-compile by setting them: `GOOS=linux GOARCH=arm64
+  capy build recipe -o recipe-linux-arm64`.
+- The compiled binary embeds the library at build time;
+  upgrade-on-the-fly isn't a thing — rebuild.
+- Section 2(b) of the [LICENSE](https://github.com/luowensheng/capy/blob/main/LICENSE)
+  applies — redistribution of compiled binaries is permitted for
+  the library author (you embedded YOUR library) but the engine
+  itself isn't open-redistribution.
+
 ## What's still on the roadmap
 
 Per the [comprehensive design](https://github.com/luowensheng/capy/blob/main/docs/design/future-features.md):

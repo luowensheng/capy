@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -21,8 +22,12 @@ func cmdLib(args []string) error {
 		return cmdLibNew(args[1:])
 	case "path":
 		return cmdLibPath(args[1:])
+	case "add":
+		return cmdLibAdd(args[1:])
+	case "remove", "rm":
+		return cmdLibRemove(args[1:])
 	default:
-		return fmt.Errorf("unknown lib subcommand %q (try: list / which / new / path)", args[0])
+		return fmt.Errorf("unknown lib subcommand %q (try: list / which / new / add / remove / path)", args[0])
 	}
 }
 
@@ -158,6 +163,171 @@ Edit `+"`%s.capy`"+`. Add functions, commands, types. Re-run
 
 	fmt.Printf("✓ created library %q at %s\n", name, libDir)
 	fmt.Printf("  capy %s run %s/examples/hello.%s\n", name, libDir, name)
+	return nil
+}
+
+// cmdLibAdd clones a library from a git URL into the first
+// writable directory on CAPY_LIBS.
+//
+//	capy lib add github.com/user/repo
+//	capy lib add github.com/user/repo --as my-name
+//	capy lib add https://github.com/user/repo
+//	capy lib add ./local/path             (also works — copies)
+func cmdLibAdd(args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: capy lib add <git-url-or-path> [--as <name>]")
+	}
+	source := args[0]
+	asName := ""
+	for i := 1; i < len(args); i++ {
+		if args[i] == "--as" && i+1 < len(args) {
+			asName = args[i+1]
+			i++
+		}
+	}
+
+	// Choose target dir.
+	var targetParent string
+	for _, p := range libSearchPath() {
+		if err := os.MkdirAll(p, 0755); err == nil {
+			targetParent = p
+			break
+		}
+	}
+	if targetParent == "" {
+		return fmt.Errorf("no writable directory on CAPY_LIBS")
+	}
+
+	// Determine target name.
+	libName := asName
+	if libName == "" {
+		libName = inferLibName(source)
+	}
+	if libName == "" {
+		return fmt.Errorf("could not infer library name from %q; use --as <name>", source)
+	}
+	target := filepath.Join(targetParent, libName)
+	if _, err := os.Stat(target); err == nil {
+		return fmt.Errorf("library %q already exists at %s (remove first or pass --as <other-name>)", libName, target)
+	}
+
+	// Local path? Just copy / symlink.
+	if _, err := os.Stat(source); err == nil {
+		if err := copyTree(source, target); err != nil {
+			return fmt.Errorf("copy %s: %v", source, err)
+		}
+		fmt.Printf("✓ added local library %q at %s\n", libName, target)
+		return nil
+	}
+
+	// Otherwise: git clone. Normalise common shorthand.
+	url := source
+	if !strings.Contains(url, "://") && !strings.HasPrefix(url, "git@") {
+		url = "https://" + url
+	}
+	fmt.Printf("Cloning %s → %s\n", url, target)
+	cmd := exec.Command("git", "clone", "--depth=1", "--quiet", url, target)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("git clone failed: %v", err)
+	}
+	// Sanity check: ensure there's a parseable library file inside.
+	if _, ok := tryResolve(targetParent, libName); !ok {
+		// Try lib.capy at the cloned root.
+		if _, err := os.Stat(filepath.Join(target, "lib.capy")); err != nil {
+			fmt.Fprintf(os.Stderr,
+				"warning: cloned %q but found no <name>.capy / lib.capy entry point\n",
+				libName)
+		}
+	}
+	fmt.Printf("✓ added library %q\n", libName)
+	return nil
+}
+
+// cmdLibRemove deletes an installed library from CAPY_LIBS. Used
+// for cleanup or upgrades.
+//
+//	capy lib remove recipe
+func cmdLibRemove(args []string) error {
+	if len(args) != 1 {
+		return fmt.Errorf("usage: capy lib remove <name>")
+	}
+	name := args[0]
+	// Find first dir that contains it.
+	for _, dir := range libSearchPath() {
+		candidate := filepath.Join(dir, name)
+		if st, err := os.Stat(candidate); err == nil && st.IsDir() {
+			if err := os.RemoveAll(candidate); err != nil {
+				return fmt.Errorf("remove %s: %v", candidate, err)
+			}
+			fmt.Printf("✓ removed %s\n", candidate)
+			return nil
+		}
+		// Bare-file form.
+		file := filepath.Join(dir, name+".capy")
+		if _, err := os.Stat(file); err == nil {
+			if err := os.Remove(file); err != nil {
+				return fmt.Errorf("remove %s: %v", file, err)
+			}
+			fmt.Printf("✓ removed %s\n", file)
+			return nil
+		}
+	}
+	return fmt.Errorf("library %q not found on CAPY_LIBS", name)
+}
+
+// inferLibName tries to guess a library name from a URL or path.
+//   github.com/user/repo       → repo
+//   github.com/user/repo-capy  → repo  (strip -capy suffix)
+//   ./libs/my-recipe           → my-recipe
+//   https://gh.com/u/r.git     → r
+func inferLibName(source string) string {
+	base := source
+	// Strip protocol.
+	if i := strings.Index(base, "://"); i >= 0 {
+		base = base[i+3:]
+	}
+	// Strip trailing .git.
+	base = strings.TrimSuffix(base, ".git")
+	// Trailing path component.
+	base = filepath.Base(strings.TrimRight(base, "/\\"))
+	// Strip common Capy-suffix conventions.
+	base = strings.TrimSuffix(base, "-capy")
+	base = strings.TrimSuffix(base, "_capy")
+	return base
+}
+
+// copyTree recursively copies src → dst. Files only; preserves
+// the relative tree shape but not perms / ownership.
+func copyTree(src, dst string) error {
+	st, err := os.Stat(src)
+	if err != nil {
+		return err
+	}
+	if !st.IsDir() {
+		// Single file copy.
+		if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+			return err
+		}
+		data, err := os.ReadFile(src)
+		if err != nil {
+			return err
+		}
+		return os.WriteFile(dst, data, 0644)
+	}
+	if err := os.MkdirAll(dst, 0755); err != nil {
+		return err
+	}
+	entries, err := os.ReadDir(src)
+	if err != nil {
+		return err
+	}
+	for _, e := range entries {
+		if err := copyTree(filepath.Join(src, e.Name()), filepath.Join(dst, e.Name())); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
