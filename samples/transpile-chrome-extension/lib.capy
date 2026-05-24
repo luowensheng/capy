@@ -1,0 +1,63 @@
+# Extension DSL → Chrome MV3 manifest.json + a minimal content script.
+extension json
+
+comments
+    line "#"
+end
+
+context
+    meta {}
+    permissions []
+    hosts []
+    content_scripts []
+end
+
+function name
+    arg literal "name"
+    arg capture v any
+    set context.meta.name v
+end
+
+function version
+    arg literal "version"
+    arg capture v any
+    set context.meta.version v
+end
+
+function description
+    arg literal "description"
+    arg capture v any
+    set context.meta.description v
+end
+
+function permission
+    arg literal "permission"
+    arg capture p any
+    append context.permissions p
+end
+
+function host
+    arg literal "host"
+    arg capture h any
+    append context.hosts h
+end
+
+function content_script
+    arg literal "content_script"
+    arg capture file any
+    arg capture matches any
+    append context.content_scripts {js: [file], matches: [matches]}
+end
+
+file_template
+    write `{
+  "manifest_version": 3,
+  "name": ${toQuoted context.meta.name},
+  "version": ${toQuoted context.meta.version},
+  "description": ${toQuoted context.meta.description},
+  "permissions": ${toJSON context.permissions},
+  "host_permissions": ${toJSON context.hosts},
+  "content_scripts": ${toJSON context.content_scripts}
+}
+`
+end

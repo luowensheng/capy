@@ -1,0 +1,53 @@
+# Resource DSL → Kubernetes manifest.
+extension yaml
+
+comments
+    line "#"
+end
+
+context
+    metadata {}
+    spec {}
+end
+
+function deployment
+    arg literal "deployment"
+    arg capture name ident
+    set context.metadata.name name
+    set context.metadata.kind "Deployment"
+end
+
+function image
+    arg literal "image"
+    arg capture img any
+    set context.spec.image img
+end
+
+function replicas
+    arg literal "replicas"
+    arg capture n int
+    set context.spec.replicas n
+end
+
+function port
+    arg literal "port"
+    arg capture p int
+    set context.spec.containerPort p
+end
+
+file_template
+    write `apiVersion: apps/v1
+kind: ${context.metadata.kind}
+metadata:
+  name: ${context.metadata.name}
+spec:
+  replicas: ${context.spec.replicas}
+  template:
+    spec:
+      containers:
+        - name: ${context.metadata.name}
+          image: ${context.spec.image}
+          ports:
+            - containerPort: ${context.spec.containerPort}
+`
+end

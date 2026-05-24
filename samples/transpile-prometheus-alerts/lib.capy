@@ -1,0 +1,72 @@
+# Alert DSL → Prometheus alert rules YAML.
+extension yml
+
+comments
+    line "#"
+end
+
+context
+    alerts []
+    group_name ""
+    last_expr ""
+    last_for ""
+    last_sev ""
+    last_summary ""
+end
+
+function group
+    arg literal "group"
+    arg capture name ident
+    set context.group_name name
+end
+
+function alert
+    arg literal "alert"
+    arg capture name ident
+    block_closer end
+    append context.alerts {name: name, expr: context.last_expr, for: context.last_for, severity: context.last_sev, summary: context.last_summary}
+end
+
+function expr
+    arg literal "expr"
+    arg capture e any
+    set context.last_expr e
+end
+
+function for
+    arg literal "for"
+    arg capture d any
+    set context.last_for d
+end
+
+function severity
+    arg literal "severity"
+    arg capture s any
+    set context.last_sev s
+end
+
+function summary
+    arg literal "summary"
+    arg capture t any
+    set context.last_summary t
+end
+
+function end
+end
+
+file_template
+    write `groups:
+  - name: ${context.group_name}
+    rules:
+`
+    for a in context.alerts
+        write `      - alert: ${a.name}
+        expr: ${a.expr}
+        for: ${a.for}
+        labels:
+          severity: ${a.severity}
+        annotations:
+          summary: ${a.summary}
+`
+    end
+end

@@ -1,0 +1,39 @@
+# Message DSL → Slack Block Kit JSON.
+extension json
+
+comments
+    line "#"
+end
+
+context
+    blocks []
+end
+
+function header
+    arg literal "header"
+    arg capture t any
+    append context.blocks {type: "header", text: {type: "plain_text", text: t}}
+end
+
+function section
+    arg literal "section"
+    arg capture t any
+    append context.blocks {type: "section", text: {type: "mrkdwn", text: t}}
+end
+
+function divider
+    arg literal "divider"
+    append context.blocks {type: "divider"}
+end
+
+function button
+    arg literal "button"
+    arg capture label any
+    arg capture url any
+    append context.blocks {type: "actions", elements: [{type: "button", text: {type: "plain_text", text: label}, url: url}]}
+end
+
+file_template
+    write `${toJSONIndent context}
+`
+end

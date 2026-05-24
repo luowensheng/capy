@@ -1,0 +1,59 @@
+# Route definitions → markdown API reference.
+extension md
+
+comments
+    line "#"
+end
+
+context
+    routes []
+end
+
+function route
+    arg literal "route"
+    arg capture method ident
+    arg capture path any
+    block_closer end
+    append context.routes {method: method, path: path}
+    write `### \`${upper method} ${unquote path}\`
+
+${body}
+`
+end
+
+function summary
+    arg literal "summary"
+    arg capture s any
+    write `${unquote s}
+
+`
+end
+
+function param
+    arg literal "param"
+    arg capture name ident
+    arg capture t any
+    arg capture desc any
+    write `- \`${name}\` (${unquote t}): ${unquote desc}
+`
+end
+
+function returns
+    arg literal "returns"
+    arg capture code int
+    arg capture desc any
+    write `- \`${code}\`: ${unquote desc}
+`
+end
+
+function end
+end
+
+file_template
+    write `# API Reference
+
+${len context.routes} routes defined.
+
+${body}
+`
+end

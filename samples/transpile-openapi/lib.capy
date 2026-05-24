@@ -1,0 +1,67 @@
+# Endpoint DSL → OpenAPI 3 YAML.
+extension yaml
+
+comments
+    line "#"
+end
+
+context
+    info {}
+    paths []
+    schemas []
+end
+
+function info
+    arg literal "info"
+    arg capture title any
+    arg capture version any
+    set context.info.title title
+    set context.info.version version
+end
+
+function path
+    arg literal "path"
+    arg capture method ident
+    arg capture route any
+    arg capture summary any
+    arg capture response any
+    append context.paths {method: method, route: route, summary: summary, response: response}
+end
+
+function schema
+    arg literal "schema"
+    arg capture name ident
+    append context.schemas {name: name}
+end
+
+file_template
+    write `openapi: 3.0.0
+info:
+  title: ${context.info.title}
+  version: ${context.info.version}
+
+paths:
+`
+    for p in context.paths
+        write `  ${p.route}:
+    ${p.method}:
+      summary: ${p.summary}
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/${p.response}'
+`
+    end
+    write `
+components:
+  schemas:
+`
+    for s in context.schemas
+        write `    ${s.name}:
+      type: object
+`
+    end
+end
