@@ -16,23 +16,19 @@ For future entries, follow this template:
 ```
 ## 0.X.0 → 0.Y.0
 
-### Field renamed: `foo:` → `bar:`
+### Field renamed: `foo` → `bar`
 
 **Before**
 
-```yaml
-functions:
-  greet:
-    foo: ...
-```
+    function greet
+        foo ...
+    end
 
 **After**
 
-```yaml
-functions:
-  greet:
-    bar: ...
-```
+    function greet
+        bar ...
+    end
 
 **Why**
 

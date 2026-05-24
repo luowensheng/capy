@@ -1,12 +1,12 @@
 # Types
 
 Capy types validate captured argument values at evaluation time. The library
-author declares types in the `types:` section; functions reference them by
-name in `args[].type`.
+author declares types with top-level `type NAME ... end` blocks; functions
+reference them by name in `arg capture NAME TYPE`.
 
 ## Built-in kinds
 
-These are always available and don't need a `types:` entry:
+These are always available and don't need a `type` declaration:
 
 | Kind     | Captures                                                                |
 |----------|-------------------------------------------------------------------------|
@@ -24,25 +24,30 @@ holds a value of the expected type at the target's runtime.
 
 ## Library-defined types
 
-Declared in `types:` with three optional fields applied in this order:
+Declared with `type NAME ... end` blocks. Three optional fields are
+applied in this order: `base`, `pattern`, `options`.
 
-```yaml
-types:
-  Email:
-    base:    string                          # 1. type-kind check
-    pattern: "^[^@]+@[^@]+\\.[^@]+$"          # 2. regex on the value's string form
-  Status:
-    options: ["todo", "in-progress", "done"] # 3. enum membership
-  PositiveInt:
-    base:    int
-    pattern: "^[1-9][0-9]*$"
+```
+type Email
+    base string                              # 1. type-kind check
+    pattern "^[^@]+@[^@]+\\.[^@]+$"           # 2. regex on the value's string form
+end
+
+type Status
+    options "todo" "in-progress" "done"      # 3. enum membership
+end
+
+type PositiveInt
+    base int
+    pattern "^[1-9][0-9]*$"
+end
 ```
 
 Each field is optional. The most common patterns:
 
-- `pattern:` only — for free-form strings that must match a regex.
-- `options:` only — for enums.
-- `base:` + `pattern:` — to constrain a primitive kind further.
+- `pattern` only — for free-form strings that must match a regex.
+- `options` only — for enums.
+- `base` + `pattern` — to constrain a primitive kind further.
 
 ## How validation runs
 
@@ -52,10 +57,10 @@ For each captured argument with a declared type:
    text** (e.g. `int` requires the text to parse as an integer literal).
    Bare identifiers always pass.
 2. If the type is library-defined:
-   - If `base:` is set, run the built-in check for that base kind first.
-   - If `pattern:` is set, compile + match against the value's string form
+   - If `base` is set, run the built-in check for that base kind first.
+   - If `pattern` is set, compile + match against the value's string form
      (with surrounding quotes stripped from string literals).
-   - If `options:` is set, check membership against the value's string form.
+   - If `options` is set, check membership against the value's string form.
 
 If any check fails, the engine returns a structured error like:
 
@@ -63,25 +68,25 @@ If any check fails, the engine returns a structured error like:
 function "set_email" arg "e": value "not-an-email" does not match pattern for type "Email"
 ```
 
-## Using types in `args:`
+## Using types in arguments
 
-```yaml
-functions:
-  set_email:
-    args:
-      - { kind: capture, name: e, type: Email }
-    template: "email = {{ .e }}\n"
+```
+function set_email
+    arg capture e Email
+    write `email = ${e}
+`
+end
 ```
 
-The capture's `type:` may be either a built-in kind or any name from your
-`types:` section. The loader validates that every referenced type resolves —
-typos are caught at `capy check` time.
+The capture's type may be either a built-in kind or any name declared
+with a top-level `type` block. The loader validates that every referenced
+type resolves — typos are caught at `capy check` time.
 
 ## Patterns: practical tips
 
 - Use `^...$` anchors. Without anchors, a regex like `[a-z]+` accepts
   anything that contains lowercase letters.
-- Use `\\` to escape inside YAML strings (`"\\d"` in YAML is the regex `\d`).
+- Use `\\` to escape backslashes inside double-quoted strings (`"\\d"` is the regex `\d`).
 - Test patterns with a quick `capy run` against a sample script before
   shipping them.
 

@@ -22,28 +22,32 @@ go install github.com/luowensheng/capy/cmd/capy@latest
 
 A Capy library declares **functions**, **types**, and a **file template**:
 
-```yaml
-extension: py
-context: { imports: [] }
+```
+extension py
 
-functions:
-  import:
-    args:
-      - { kind: literal, value: "import" }
-      - { kind: capture, name: name, type: ident }
-    template: ""
-    run: |
-      append context.imports name
+context
+    imports []
+end
 
-  say:
-    args:
-      - { kind: capture, name: msg, type: any }
-    template: "print({{ .msg }})\n"
+function import
+    arg literal "import"
+    arg capture name ident
+    append context.imports name
+end
 
-file_template: |
-  {{- range .context.imports }}import {{ . }}
-  {{ end }}
-  {{- .body -}}
+function say
+    arg capture msg any
+    write `print(${msg})
+`
+end
+
+file_template
+    for imp in context.imports
+        write `import ${imp}
+`
+    end
+    write `${body}`
+end
 ```
 
 A source file written against this library:
@@ -66,7 +70,7 @@ Capy doesn't know what "import" or "say" means. The library does.
 
 ## Why not just templating?
 
-Go's `text/template` is great for substituting values. But Capy
+String interpolation is great for substituting values. But Capy
 **parses** input. The library declares what shapes are valid, types
 them, and matches statements before rendering. You don't pre-process
 your source by hand; the engine does it.
@@ -83,11 +87,11 @@ For each line of source:
 
 1. Try to match against each library function's pattern (literals +
    typed captures, ordered).
-2. On a match: validate types, render the function's template into the
-   output body, run the function's `run:` snippet to mutate the
-   accumulated `context`.
-3. After all statements: render the top-level `file_template:` with
-   `body` + `context`.
+2. On a match: validate types, execute the function's body — `write`
+   statements append to the output, and `set`/`append`/`merge` mutate
+   the accumulated `context`.
+3. After all statements: render the top-level `file_template` block
+   with `body` + `context`.
 
 That's it. No execution of user source. Capy is a transpiler — it turns
 input text into output text.
@@ -101,9 +105,10 @@ There's a quiet thing happening in the design: Capy has **two grammars**.
   may or may not give meaning. A library with no functions rejects every
   input.
 
-- **The inner grammar** is the small fixed DSL inside each library's
-  `run:` field. It has hardcoded `if`/`loop`/`set`/`append`/`merge` —
-  enough to update the accumulated context, never user code.
+- **The inner grammar** is the small fixed DSL of the function body.
+  It has hardcoded `if`/`for`/`set`/`append`/`merge`/`write` —
+  enough to update the accumulated context and emit output, never
+  to execute user code.
 
 This split is the whole trick. The outer grammar gives library authors
 total surface freedom; the inner grammar gives them just enough
@@ -123,7 +128,7 @@ exercises it.
 
 ## What's missing
 
-Pre-1.0. The library YAML schema may change. Specifically:
+Pre-1.0. The Capy library schema may change. Specifically:
 
 - No `else` arm on inner `if`. Use two `if`s.
 - No argument defaults (yet).
@@ -139,7 +144,7 @@ See [docs/roadmap.md](https://github.com/luowensheng/capy/blob/main/docs/roadmap
 go install github.com/luowensheng/capy/cmd/capy@latest
 git clone https://github.com/luowensheng/capy
 cd capy
-capy run samples/transpile-py/lib.yaml samples/transpile-py/script.capy
+capy run samples/transpile-py/lib.capy samples/transpile-py/script.capy
 ```
 
 Then `capy init my-dsl` to scaffold your own.

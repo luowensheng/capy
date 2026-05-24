@@ -305,8 +305,8 @@ Capy does this better:
 
 1. Library parses the old format (because Capy lets you define a
    grammar — and the old format already has one).
-2. `run:` snippets accumulate the relevant facts.
-3. `file_template:` emits the new format.
+2. Function bodies accumulate the relevant facts via `set` / `append`.
+3. `file_template` emits the new format.
 
 The migration tool is then *just a library*. It's
 self-documenting, type-checked, and testable. When you find an

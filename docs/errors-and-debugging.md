@@ -151,25 +151,26 @@ function "service" arg "name" capture has unknown type "ServiceNme"
 ## When the error has no source
 
 Some errors happen before the parser runs (library load failures,
-file-not-found, malformed YAML). These don't have a line number for
-your *script* — they're problems with the library or filesystem.
+file-not-found, malformed `.capy`). These don't have a line number
+for your *script* — they're problems with the library or filesystem.
 They're still wrapped in the same `error: ... / hint: ...` format
 where helpful.
 
-## Debugging templates
+## Debugging write blocks
 
-When a `template:` or `file_template:` produces unexpected output,
+When a `write` block or `file_template` produces unexpected output,
 the typical mistakes are:
 
 1. **Capturing a string but rendering without `unquote`**. Strings
-   captured with type `string` keep their quotes. Use `{{ .name |
-   unquote }}` to strip them for human-facing output.
-2. **Indent drift in multi-line templates**. The first non-blank
-   line's indent is the strip width; everything else is relative.
-   Mix tabs and spaces and you'll see odd column shifts.
-3. **`{{ if }}` swallowing whitespace**. Use `{{- ... -}}` to trim
-   surrounding newlines deliberately. Default behavior preserves
-   them.
+   captured with type `string` keep their quotes. Use
+   `${name | unquote}` to strip them for human-facing output.
+2. **Indent drift in multi-line backtick literals**. Backtick
+   literals preserve newlines and indentation verbatim — every
+   leading space appears in the output. Use the `indent N` helper
+   on a sub-expression rather than visually indenting in source.
+3. **Forgetting a trailing newline**. `write \`foo\`` emits `foo`
+   with no terminator. End your literal with a literal newline if
+   you want one.
 
 Run with `--out-dir` and look at the generated files for multi-file
 projects, or pipe to `less` for single-output.

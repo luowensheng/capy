@@ -54,21 +54,22 @@ for item in items:
 
 Capy read **two files**:
 
-1. The library (`lib.capy`). It declares **functions** (each function
-   has an `arg` shape, a `template:` for output, and an optional
-   `run:` for state updates).
+1. The library (`lib.capy`). It declares **functions** (each has an
+   `arg` shape and a body of inner-DSL statements — `write` to
+   produce output, `set` / `append` / `for` / `if` to update state
+   and shape what gets emitted).
 2. `script.capy` — the input source.
 
 Capy matched each line of the source against the library's function
-shapes. For each match:
+shapes. For each match, the function body runs in two passes:
 
-- The function's `template:` was rendered into the **output body**
-  with the captured values substituted.
-- The function's `run:` (if any) updated the **accumulated context**
-  (lists, maps, scalars).
+- The **render pass** walks `write` statements, interpolating the
+  captured values into the **output body**.
+- The **state pass** walks `set` / `append` / etc., updating the
+  **accumulated context** (lists, maps, scalars).
 
-At the end, the library's `file_template` produced the final output
-from `.body` (concatenated rendered fragments) and `.context` (final
+At the end, the library's `file_template` produces the final output
+from `body` (concatenated rendered fragments) and `context` (final
 accumulated state).
 
 Concretely, `import json` matches a function that looks like this:

@@ -181,7 +181,7 @@ When you reference a capture by name, you get the **evaluated** value:
   literal name as a string (`"json"`).
 
 This means `append context.imports name` correctly stores `"json"` without
-extra quoting — useful for the file template's `{{ range }}`.
+extra quoting — useful for the file template's `for ... in ... end` loop.
 
 ## Context paths
 
@@ -196,20 +196,18 @@ set name "json"                            # ERROR — captures are read-only
 
 ## Putting it together
 
-```yaml
+```
 # transpile-py-style import handling
-import:
-  args:
-    - { kind: literal, value: "import" }
-    - { kind: capture, name: name, type: ident }
-  template: ""
-  run: |
+function import
+    arg literal "import"
+    arg capture name ident
     if (regex_match name "^[a-z][a-z_]*$")
         append context.imports name
     end
     if not (regex_match name "^[a-z][a-z_]*$")
         error "invalid module name"
     end
+end
 ```
 
 ## What's NOT here (and why)

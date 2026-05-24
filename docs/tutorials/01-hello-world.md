@@ -27,11 +27,11 @@ cd hello-dsl
 capy init .
 ```
 
-You now have `lib.yaml`, `script.capy`, and `README.md`.
+You now have `lib.capy`, `script.capy`, and `README.md`.
 
 ## Step 2 — define the function
 
-Open `lib.yaml`. Replace it with:
+Open `lib.capy`. Replace it with:
 
 ```
 extension txt
@@ -79,9 +79,8 @@ Hello, Bob!
 
 The lexer tokenized each line into `greet` + `"Alice"`. The parser
 matched against the `greet` function shape, captured the name, and the
-evaluator rendered the template with `{{ .name }} = "Alice"` (note: the
-source text includes the quotes because the input is a quoted string
-literal).
+evaluator interpolated `${name}` as `"Alice"` (note: the source text
+includes the quotes because the input is a quoted string literal).
 
 ## Try it
 

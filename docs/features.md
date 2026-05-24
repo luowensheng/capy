@@ -105,13 +105,15 @@ All operations available inside a `run:` snippet:
 Paths root at `context` (or at a `loop` local). Bracket indexing
 supported: `context.scripts[name]` evaluates `name` at runtime.
 
-Expressions inside `run:` support comparisons (`==`, `!=`, `<`, `<=`,
-`>`, `>=`), unary `not`, lists `[...]`, objects `{...}`, dotted paths.
+Expressions inside the function body support comparisons (`==`, `!=`,
+`<`, `<=`, `>`, `>=`), unary `not`, lists `[...]`, objects `{...}`,
+dotted paths.
 
-## Template helpers
+## Interpolation helpers
 
-Available in both per-function `template:` and the top-level
-`file_template:`.
+Available inside any `write \`...\`` literal via `${expr | helper}`
+or `${helper arg expr}`, in both per-function bodies and the top-level
+`file_template`.
 
 | Helper | Effect |
 |--------|--------|
@@ -125,8 +127,8 @@ Available in both per-function `template:` and the top-level
 | `toJSON` | Marshal any value to compact JSON. |
 | `toJSONIndent` | Marshal any value to pretty JSON. |
 
-Plus all of Go [`text/template`](https://pkg.go.dev/text/template)
-builtins: `range`, `if`, `with`, `define`, `block`, `template`, etc.
+Control flow (`if`, `for`) lives in the function body itself —
+not inside `${...}` interpolations.
 
 ## Block functions
 
@@ -164,7 +166,7 @@ Mode-B and vice versa).
 
 | Subcommand | Effect |
 |------------|--------|
-| `capy run <lib.capy> <script.capy>` | Transpile a script. Output to stdout unless `--out` or library `output_file:`. |
+| `capy run <lib.capy> <script.capy>` | Transpile a script. Output to stdout unless `--out` or library `output_file`. |
 | `capy check <lib.capy>` | Validate a library; report functions and types. Exit 0 if valid. |
 | `capy docs <lib.capy>` | Render a Markdown reference doc from the library's `description` annotations. |
 | `capy init [<dir>]` | Scaffold a new library project. |
@@ -175,7 +177,7 @@ Flags for `run`:
 
 | Flag | Effect |
 |------|--------|
-| `--out <path>` | Override `output_file:`. |
+| `--out <path>` | Override `output_file`. |
 | `--no-color` | Disable ANSI escape codes (reserved). |
 | `--debug` | Verbose engine tracing (reserved). |
 | `-lib <path>` | Legacy library path (use the positional form instead). |
@@ -208,14 +210,15 @@ Inside `file_template`:
 
 A capture has two faces:
 
-- **In templates** — captures resolve to **source text** (with quotes
-  for string literals). So `if x > 0` exposes `cond` as the literal
-  text `x > 0` and a Python emitter can write `if {{ .cond }}:`
-  unchanged.
-- **In `run:` snippets** — captures resolve to **evaluated Go values**.
-  Strings become Go strings without quotes, numbers become int64/float64,
-  lists become `[]any`, objects become `map[string]any`. Unresolved
-  bare identifiers fall back to their literal name.
+- **Inside `write \`...\`` interpolation** — captures resolve to
+  **source text** (with quotes for string literals). So `if x > 0`
+  exposes `cond` as the literal text `x > 0` and a Python emitter
+  can write `if ${cond}:` unchanged.
+- **In `set` / `append` / `if` expressions** — captures resolve to
+  **evaluated Go values**. Strings become Go strings without quotes,
+  numbers become int64/float64, lists become `[]any`, objects become
+  `map[string]any`. Unresolved bare identifiers fall back to their
+  literal name.
 
 This dual model means one capture serves both render-by-text (templates)
 and structured accumulation (context) without any explicit conversion.
@@ -239,8 +242,7 @@ sandboxing patterns.
 
 | Editor | Where |
 |--------|-------|
-| VS Code | [`editors/vscode/capy/`](https://github.com/luowensheng/capy/tree/main/editors/vscode/capy) — syntax highlighting for `.capy` source and libraries; plus `yamlValidation` for the optional `lib.yaml` format |
-| JSON Schema | [`schemas/library.schema.json`](https://github.com/luowensheng/capy/blob/main/schemas/library.schema.json) — describes the secondary YAML library format |
+| VS Code | [`editors/vscode/capy/`](https://github.com/luowensheng/capy/tree/main/editors/vscode/capy) — syntax highlighting for `.capy` source and libraries |
 
 ## Distribution
 

@@ -51,7 +51,7 @@ func MakeRunScriptMulti(
 }
 
 func (r *RunScriptImpl) Execute(scriptPath, libraryPath string) (usecases.RunResult, error) {
-	lib := domain.Library{Functions: map[string]*domain.FuncDef{}, Types: map[string]domain.TypeDef{}, Context: map[string]any{}, FileTemplate: "{{ .body }}", Files: map[string]string{}}
+	lib := domain.Library{Functions: map[string]*domain.FuncDef{}, Types: map[string]domain.TypeDef{}, Context: map[string]any{}, FilesAST: map[string]*domain.InnerBlock{}}
 	if libraryPath != "" {
 		l, err := r.loadLib(libraryPath)
 		if err != nil {

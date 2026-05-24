@@ -31,27 +31,31 @@ decides the target via templates. See `samples/transpile-py/`,
 
 No. Capy is a transpiler. `if x ... end` in source emits an `if` in the
 target language; it doesn't decide at transpile time whether to skip
-rendering. If you want compile-time conditional emission, do it in a
-library `run:` snippet against `context`, not against user variables.
+rendering. If you want compile-time conditional emission, do it inside
+the library function's body against `context`, not against user
+variables.
 
-## What's the difference between `template:` and `run:`?
+## What's the difference between `write` and `set` / `append`?
 
-- `template:` produces text that goes into the output body.
-- `run:` updates the accumulated context (no body output).
+- `write` produces text that goes into the output body.
+- `set` / `append` / `prepend` / `merge` / `delete` update the
+  accumulated context (no body output).
 
-A function can have both, either, or neither.
+A function can interleave both. The renderer walks `write` statements
+to produce text; the run pass walks the state mutations to update
+`context`.
 
 ## What's `context` for?
 
 State accumulated across all statements. Lists, maps, scalars. Common use:
 collect imports/dependencies at the top, emit them via `file_template`.
 
-## Why do captures appear different in templates vs `run:`?
+## Why do captures appear different in templates vs state mutations?
 
 Templates see the **source text** (with quotes for string literals) so a
-target like Python receives `"alice"` directly. `run:` sees **evaluated
-values** so `append context.imports name` stores the Go string `"json"`
-without quotes.
+target like Python receives `"alice"` directly. `set` / `append`
+expressions see **evaluated values** so `append context.imports name`
+stores the Go string `"json"` without quotes.
 
 ## How do I define `x = 1`?
 
@@ -106,10 +110,10 @@ to evolve the schema until 1.0.
 ## How do I report a bug?
 
 Open a GitHub issue with the bug-report template. Minimal reproductions
-go a long way — paste the smallest `lib.yaml` + `script.capy` that
+go a long way — paste the smallest `lib.capy` + `script.capy` that
 reproduces the issue.
 
-## How do I add a new built-in primitive in `run:`?
+## How do I add a new built-in primitive in the inner DSL?
 
 Open an issue first to discuss the API. Implementation lives in
 `orchestrator/features/inner_evaluator.go`. Document in `docs/inner-dsl.md`.

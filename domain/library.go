@@ -1,45 +1,40 @@
 package domain
 
-// Library is the result of loading a YAML library file. It is the entire
-// grammar plus accumulation rules for one source-language → target-output
-// transpilation.
+// Library is the result of loading a `.capy` library file. It is
+// the entire grammar plus accumulation rules for one
+// source-language → target-output transpilation.
 //
-// Surface-syntax conventions (block start/end, statement terminator, arg
-// separator) are fixed for now — INDENT/DEDENT for blocks, NEWLINE for
-// statements, whitespace for args. A future version will make them
-// configurable per-library.
+// Surface-syntax conventions (block start/end, statement
+// terminator, arg separator) are fixed for now —
+// INDENT/DEDENT for blocks, NEWLINE for statements, whitespace
+// for args. A future version will make them configurable
+// per-library.
 type Library struct {
-	Extension    string
-	OutputFile   string
+	Extension  string
+	OutputFile string
 	// Description is a free-form summary of what the library is for —
 	// shown at the top of `capy docs <library>` output.
-	Description  string
-	Functions    map[string]*FuncDef
-	Types        map[string]TypeDef
-	Context      map[string]any // initial context values (lists, maps, scalars)
-	FileTemplate string         // legacy template-string form (kept for parser tests / debug printing)
-	// FileTemplateAST is the parsed write-style body. The renderer
-	// walks this directly — no Go-template detour. nil when the
-	// library has no file_template (renderer uses `body` verbatim).
+	Description string
+	Functions   map[string]*FuncDef
+	Types       map[string]TypeDef
+	Context     map[string]any // initial context values (lists, maps, scalars)
+
+	// FileTemplateAST is the parsed write-style body of the library's
+	// `file_template ... end` block. The renderer walks this directly.
+	// nil when the library has no file_template (renderer uses the
+	// top-level body verbatim).
 	FileTemplateAST *InnerBlock
 
-	// Files is a multi-output declaration: each entry is a relative path
-	// (may include slashes for subdirs) → a Go template rendered with
-	// `.context` and `.body` exactly like FileTemplate.
+	// FilesAST is a multi-file output declaration: each entry is a
+	// relative path (may contain write-style `${...}` interpolations
+	// for dynamic naming, resolved at render time) → the parsed
+	// write-style AST of that file's body. The renderer walks the
+	// ASTs directly.
 	//
-	// When non-empty AND the CLI is invoked with an --out-dir, the engine
-	// writes every entry to disk and ignores FileTemplate/OutputFile.
-	// When empty, behavior is unchanged: FileTemplate goes to stdout (or
-	// OutputFile if set).
-	//
-	// Each path key is itself a Go template rendered against the same
-	// .context + .body data, so libraries can name outputs dynamically:
-	//   file "{{ .context.name | pascalCase }}.tsx":
-	//       …
-	Files map[string]string
-	// FilesAST is the per-file write-style AST. Keyed by the SAME
-	// (post-interpolation-translation) path key as Files. Renderer
-	// uses these directly.
+	// When non-empty AND the CLI is invoked with --out-dir, the
+	// engine writes every entry to disk and ignores OutputFile. When
+	// empty, behaviour falls back to the FileTemplateAST → stdout
+	// (or OutputFile) path.
 	FilesAST map[string]*InnerBlock
 
 	// Commands declared in the library's manifest. Each maps a verb
@@ -110,23 +105,29 @@ type Library struct {
 
 // FuncDef is a single library-defined source-language construct.
 //
-//	args:     declarative match shape (literals + typed captures)
-//	template: text fragment contributed to the output body when matched
-//	run:      context-mutation snippet (does NOT execute user code)
-//	block:    when set, this function opens a body block closed by Block.Closer
+//	Args:        declarative match shape (literals + typed captures)
+//	TemplateAST: write-style body — renders to output text on match
+//	RunAST:      state-mutation projection of the body — runs after render
+//	Block:       when set, this function opens a body block closed by Block.Closer
 type FuncDef struct {
 	Name        string
 	Description string // free-form, surfaced by `capy docs`
 	Args        []ArgEntry
 	Elements    []PatternElement // compiled from Args
-	Template    string           // legacy template-string form (kept for parser tests / debug printing)
-	// TemplateAST is the parsed write-style body. The renderer
-	// walks this directly — no Go-template detour.
+
+	// TemplateAST is the parsed write-style body. The renderer walks
+	// this directly — state-mutation statements inside it are treated
+	// as render-side no-ops (they're handled by RunAST).
 	TemplateAST *InnerBlock
-	Block       *BlockSpec
-	Run         string
-	RunAST      *InnerBlock
-	Priority    int
+
+	// RunAST is the state-mutation projection of the same body —
+	// `set` / `append` / `prepend` / `merge` / `delete` / `call` /
+	// `error` statements, with control flow that contains them
+	// preserved. Runs AFTER the render pass for each function call.
+	RunAST *InnerBlock
+
+	Block    *BlockSpec
+	Priority int
 }
 
 // ArgEntry is a single args-list entry with an explicit Kind discriminator.

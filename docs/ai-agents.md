@@ -59,21 +59,21 @@ Define a tiny SQL DSL that **only** supports `SELECT … FROM … WHERE …`
 on a whitelist of tables. The model cannot emit `DROP TABLE` — the
 library doesn't define that shape.
 
-```yaml
-types:
-  TableName:
-    options: ["users", "posts", "comments"]   # ← whitelist
+```
+type TableName
+    options "users" "posts" "comments"          # ← whitelist
+end
 
-functions:
-  query:
-    args:
-      - { kind: literal, value: "select" }
-      - { kind: capture, name: cols,  type: any }
-      - { kind: literal, value: "from" }
-      - { kind: capture, name: tbl,   type: TableName }  # ← validated
-      - { kind: literal, value: "where" }
-      - { kind: capture, name: cond,  type: any }
-    template: "SELECT {{ .cols }} FROM {{ .tbl }} WHERE {{ .cond }};\n"
+function query
+    arg literal "select"
+    arg capture cols any
+    arg literal "from"
+    arg capture tbl TableName                    # ← validated
+    arg literal "where"
+    arg capture cond any
+    write `SELECT ${cols} FROM ${tbl} WHERE ${cond};
+`
+end
 ```
 
 The LLM can write:
@@ -96,18 +96,18 @@ constrained by data, not by an after-the-fact filter.
 
 Define commands the agent is allowed to invoke; nothing else exists.
 
-```yaml
-functions:
-  run:
-    args:
-      - { kind: literal, value: "run" }
-      - { kind: capture, name: cmd, type: Command }
-      - { kind: capture, name: args, type: any }
-    template: "{{ .cmd }} {{ .args }}\n"
+```
+type Command
+    options "ls" "cat" "grep" "head" "tail"        # ← read-only commands
+end
 
-types:
-  Command:
-    options: ["ls", "cat", "grep", "head", "tail"]  # ← read-only commands
+function run
+    arg literal "run"
+    arg capture cmd Command
+    arg capture args any
+    write `${cmd} ${args}
+`
+end
 ```
 
 Even if the agent emits `run rm -rf /`, the type check fails: `rm` is
@@ -116,25 +116,26 @@ form.
 
 ### Example 3: a typed API client
 
-```yaml
-types:
-  Method:
-    options: ["GET", "POST"]
-  Host:
-    pattern: "^https://api\\.mycompany\\.com/"
+```
+type Method
+    options "GET" "POST"
+end
 
-functions:
-  api:
-    args:
-      - { kind: literal, value: "api" }
-      - { kind: capture, name: method, type: Method }
-      - { kind: capture, name: url,    type: Host }
-      - { kind: capture, name: body,   type: any }
-    template: |
-      fetch({{ .url | toQuoted }}, {
-        method: {{ .method | toQuoted }},
-        body: JSON.stringify({{ .body }}),
-      });
+type Host
+    pattern "^https://api\\.mycompany\\.com/"
+end
+
+function api
+    arg literal "api"
+    arg capture method Method
+    arg capture url Host
+    arg capture body any
+    write `fetch(${url | toQuoted}, {
+  method: ${method | toQuoted},
+  body: JSON.stringify(${body}),
+});
+`
+end
 ```
 
 The model can hit your API. It can't hit `evil-corp.example.com`,
@@ -158,7 +159,7 @@ you don't spend prompt budget trying to fence it off.
 
 ### Pattern A: "Design the library once, agent emits source forever"
 
-1. A human (or one initial LLM pass) writes the library YAML.
+1. A human (or one initial LLM pass) writes the `lib.capy`.
 2. From then on, the agent only emits Capy source.
 3. The transpiler does the heavy lifting deterministically.
 
@@ -201,14 +202,13 @@ shareable snippets).
 
 | Tool | Where | What it gives you |
 |------|-------|-------------------|
-| **Claude Code skill** | [`skills/capy-author/`](https://github.com/luowensheng/capy/tree/main/skills/capy-author) | A full skill with `SKILL.md` + instructions + 5 reference docs the model loads on demand. Triggers on "write a Capy library for …" or any `.capy`/`lib.yaml` in context. |
+| **Claude Code skill** | [`skills/capy-author/`](https://github.com/luowensheng/capy/tree/main/skills/capy-author) | A full skill with `SKILL.md` + instructions + 5 reference docs the model loads on demand. Triggers on "write a Capy library for …" or any `.capy` file in context. |
 | **Slash commands** | [`commands/capy/`](https://github.com/luowensheng/capy/tree/main/commands/capy) | `/capy-new <target>`, `/capy-add-function`, `/capy-add-type`, `/capy-explain`, `/capy-debug` |
 | **One-page LLM brief** | [`CAPY_FOR_LLMS.md`](CAPY_FOR_LLMS.md) | Self-contained prompt for any model. Paste into Cursor/Continue/Aider/raw-API system message. |
 | **Cursor rule** | [`editors/cursor/`](https://github.com/luowensheng/capy/tree/main/editors/cursor) | Drop in `.cursor/rules/capy.md` |
 | **Continue config** | [`editors/continue/`](https://github.com/luowensheng/capy/tree/main/editors/continue) | Adds the LLM brief to context |
 | **Aider read** | [`editors/aider/`](https://github.com/luowensheng/capy/tree/main/editors/aider) | `aider --read docs/CAPY_FOR_LLMS.md` |
 | **Generic system prompt** | [`agents/capy-system-prompt.md`](https://github.com/luowensheng/capy/blob/main/agents/capy-system-prompt.md) | Drop-in for any tool not listed above |
-| **JSON Schema** | [`schemas/library.schema.json`](https://github.com/luowensheng/capy/blob/main/schemas/library.schema.json) | Editor validation + agent grounding for `lib.yaml` |
 
 ---
 
@@ -225,7 +225,7 @@ LLM output: ~800 tokens of Python (imports + Flask boilerplate + routes)
 The Capy way:
 
 ```
-Library YAML (once, in context or a file): ~400 tokens
+Library `.capy` (once, in context or a file): ~400 tokens
 User prompt: "build a Flask app with these 3 routes ..."
 LLM output: ~50 tokens of Capy source
 Engine output (deterministic, free): ~800 tokens of Python
@@ -255,7 +255,7 @@ deterministic by construction:
 | Output is well-formed JSON / YAML / SQL | ⚠️ | ✅ |
 | Output uses only allowed APIs/tables/hosts | ⚠️ | ✅ |
 | Token cost grows with target complexity | ✅ | ❌ (constant w.r.t. boilerplate) |
-| Easy to audit what the agent can do | ❌ | ✅ (`capy check lib.yaml`) |
+| Easy to audit what the agent can do | ❌ | ✅ (`capy check lib.capy`) |
 
 The right-hand column is what makes Capy a genuinely useful primitive
 in agent toolchains, not just a templating engine.
@@ -267,7 +267,7 @@ in agent toolchains, not just a templating engine.
 ```python
 # Pseudocode for an agent that emits Capy source.
 
-LIBRARY = open("lib.yaml").read()          # ~400 tokens
+LIBRARY = open("lib.capy").read()          # ~400 tokens
 SYSTEM = (
     "You are an agent that emits Capy source code. "
     "Here is the only language you may use:\n\n" + LIBRARY +
@@ -278,7 +278,7 @@ for task in tasks:
     resp = llm.complete(system=SYSTEM, user=task)   # ~50 tokens out
     source = resp.text
     target = subprocess.run(
-        ["capy", "run", "lib.yaml", "/dev/stdin"],
+        ["capy", "run", "lib.capy", "/dev/stdin"],
         input=source,
         check=True,                                  # ← rejects malformed
         capture_output=True,
@@ -293,7 +293,7 @@ Three properties this gives you out of the box:
 2. **Safety**: malformed or out-of-spec output is rejected at parse
    time. The agent can never deploy something that doesn't match the
    library's contract.
-3. **Auditability**: you can read `lib.yaml` in 5 minutes and know
+3. **Auditability**: you can read `lib.capy` in 5 minutes and know
    exactly what the agent is capable of producing.
 
 ---

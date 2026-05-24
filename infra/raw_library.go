@@ -98,13 +98,12 @@ type RawCommandFlag struct {
 type RawFunction struct {
 	Description string
 	Args        []RawArg
-	Template    string // legacy form, only kept for parser-side debug
 	Block       *RawBlock
-	Run         string // legacy form, only kept for parser-side debug
 	Priority    int
 
-	// Body is the unified function body — inner-DSL statements
-	// including `write` calls. Every modern library uses this.
+	// Body is the function body — inner-DSL statements including
+	// `write` calls. The loader parses it into the FuncDef's
+	// TemplateAST + RunAST.
 	Body string
 }
 

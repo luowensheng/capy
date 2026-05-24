@@ -9,73 +9,54 @@ import (
 )
 
 // translateNewShape walks an inner-DSL block (write calls intermixed
-// with state-mutation statements) and splits it into:
-//   - a render-side projection (writes + control flow that contains
-//     writes) — historically a Go text/template string; today the
-//     parsed AST is stored separately and the engine walks it
-//     directly via InnerEvaluator.RenderAST. The string return value
-//     is kept for parser tests + debug printing only.
-//   - a residual InnerBlock containing only state-mutation
-//     statements that the inner evaluator runs after rendering.
+// with state-mutation statements) and returns the residual run AST
+// — the subset of statements that touch state (`set` / `append` /
+// `prepend` / `merge` / `delete` / `call` / `error`).
 //
-// Control flow (for / if) that contains a mix of writes AND state
-// mutations is duplicated: one copy goes into the render side (for
-// the writes, state stripped), one copy goes into the run block
-// (for the mutations, writes stripped). That guarantees both phases
-// see the same iteration / branching shape.
-func translateNewShape(b domain.InnerBlock) (template string, run domain.InnerBlock, err error) {
-	var tpl strings.Builder
+// The render-bearing statements (`write`, `if`, `for`) live alongside
+// the run-bearing ones in the same source body. At load time the
+// renderer keeps the FULL AST and skips the state mutations at render
+// time (see InnerEvaluator.RenderAST); the run AST returned here
+// drives the SEPARATE per-statement run pass.
+//
+// Control flow (`if` / `for`) that contains a mix of writes AND
+// state mutations is preserved on the run side with the writes
+// stripped, so both phases see the same iteration / branching
+// shape.
+func translateNewShape(b domain.InnerBlock) (domain.InnerBlock, error) {
 	var runStmts []domain.InnerStmt
-	// Track loop-variable names so the body translator emits
-	// `$name` references (not `.name`) for them.
-	scope := map[string]bool{}
 	for _, s := range b.Stmts {
-		if err := translateStmt(s, &tpl, &runStmts, scope); err != nil {
-			return "", domain.InnerBlock{}, err
+		if err := extractRunStmt(s, &runStmts); err != nil {
+			return domain.InnerBlock{}, err
 		}
 	}
-	return tpl.String(), domain.InnerBlock{Stmts: runStmts}, nil
+	return domain.InnerBlock{Stmts: runStmts}, nil
 }
 
-func translateStmt(s domain.InnerStmt, tpl *strings.Builder, run *[]domain.InnerStmt, scope map[string]bool) error {
+// extractRunStmt walks one statement and appends any state-mutating
+// projection of it to `run`. Pure render statements (write) produce
+// no output. Control flow is preserved when it wraps state mutations.
+func extractRunStmt(s domain.InnerStmt, run *[]domain.InnerStmt) error {
 	switch n := s.(type) {
 	case domain.WriteStmt:
-		return translateWriteStmt(n, tpl, scope)
+		return nil
 	case domain.IfStmt:
-		// Emit a template if-block for the writes inside, and a
-		// run-block if-block for the state mutations inside.
-		var bodyTpl strings.Builder
 		var bodyRun []domain.InnerStmt
 		for _, child := range n.Body.Stmts {
-			if err := translateStmt(child, &bodyTpl, &bodyRun, scope); err != nil {
+			if err := extractRunStmt(child, &bodyRun); err != nil {
 				return err
 			}
 		}
-		var elseTpl strings.Builder
 		var elseRun []domain.InnerStmt
 		hasElse := false
 		if n.Else != nil {
 			hasElse = true
 			for _, child := range n.Else.Stmts {
-				if err := translateStmt(child, &elseTpl, &elseRun, scope); err != nil {
+				if err := extractRunStmt(child, &elseRun); err != nil {
 					return err
 				}
 			}
 		}
-		// Template side: only emit if-block if there's template
-		// content in either arm.
-		if bodyTpl.Len() > 0 || elseTpl.Len() > 0 {
-			tpl.WriteString("{{ if ")
-			tpl.WriteString(exprToTemplateCond(n.Cond, scope))
-			tpl.WriteString(" }}")
-			tpl.WriteString(bodyTpl.String())
-			if hasElse && elseTpl.Len() > 0 {
-				tpl.WriteString("{{ else }}")
-				tpl.WriteString(elseTpl.String())
-			}
-			tpl.WriteString("{{ end }}")
-		}
-		// Run side: only emit if-block if there's state content.
 		if len(bodyRun) > 0 || len(elseRun) > 0 {
 			rs := domain.IfStmt{Cond: n.Cond, Body: domain.InnerBlock{Stmts: bodyRun}}
 			if hasElse && len(elseRun) > 0 {
@@ -85,45 +66,11 @@ func translateStmt(s domain.InnerStmt, tpl *strings.Builder, run *[]domain.Inner
 		}
 		return nil
 	case domain.LoopStmt:
-		// Add the loop variable(s) to the scope before translating the
-		// body so `${var}` and `${var.field}` interpolations emit
-		// `$var` / `$var.field` (Go-template variable references)
-		// instead of `.var` / `.var.field` (data-tree access).
-		inner := make(map[string]bool, len(scope)+2)
-		for k, v := range scope {
-			inner[k] = v
-		}
-		inner[n.Var] = true
-		if n.KeyVar != "" {
-			inner[n.KeyVar] = true
-		}
-		var bodyTpl strings.Builder
 		var bodyRun []domain.InnerStmt
 		for _, child := range n.Body.Stmts {
-			if err := translateStmt(child, &bodyTpl, &bodyRun, inner); err != nil {
+			if err := extractRunStmt(child, &bodyRun); err != nil {
 				return err
 			}
-		}
-		if bodyTpl.Len() > 0 {
-			tpl.WriteString("{{ range ")
-			if n.KeyVar != "" {
-				// Two-var form: `{{ range $k, $v := EXPR }}`.
-				// Go template's `range` over a map yields key, value;
-				// over a list yields index, value.
-				tpl.WriteString("$")
-				tpl.WriteString(n.KeyVar)
-				tpl.WriteString(", $")
-				tpl.WriteString(n.Var)
-				tpl.WriteString(" := ")
-			} else {
-				tpl.WriteString("$")
-				tpl.WriteString(n.Var)
-				tpl.WriteString(" := ")
-			}
-			tpl.WriteString(exprToTemplateValue(n.Iter, scope))
-			tpl.WriteString(" }}")
-			tpl.WriteString(bodyTpl.String())
-			tpl.WriteString("{{ end }}")
 		}
 		if len(bodyRun) > 0 {
 			*run = append(*run, domain.LoopStmt{
@@ -136,518 +83,17 @@ func translateStmt(s domain.InnerStmt, tpl *strings.Builder, run *[]domain.Inner
 		return nil
 	default:
 		// All other statements (set/append/prepend/merge/delete/
-		// call/error) are state mutations — pass through to the
-		// run block unchanged.
+		// call/error) are state mutations — pass through unchanged.
 		*run = append(*run, s)
 		return nil
 	}
 }
 
-// translateWriteStmt converts a `write EXPR` call into Go template
-// syntax appended to tpl. EXPR is most commonly a backtick-string
-// literal with `${name}` / `${func a b}` interpolations; it may
-// also be a bare value reference (e.g. `write body`).
-func translateWriteStmt(w domain.WriteStmt, tpl *strings.Builder, scope map[string]bool) error {
-	switch v := w.Value.(type) {
-	case domain.StringLit:
-		return translateInterpolatedString(v.Value, tpl, scope)
-	case domain.VarRef:
-		// `write body` → {{ .body }} (or {{ $body }} if body is a loop var)
-		tpl.WriteString("{{ ")
-		tpl.WriteString(refPath(v.Path, scope))
-		tpl.WriteString(" }}")
-		return nil
-	case domain.CallExpr:
-		// `write indent 4 body` → {{ indent 4 .body }}
-		tpl.WriteString("{{ ")
-		tpl.WriteString(callToTemplate(v, scope))
-		tpl.WriteString(" }}")
-		return nil
-	default:
-		return fmt.Errorf("write: unsupported value type %T", v)
-	}
-}
-
-// translatePathInterpolations rewrites write-style `${...}`
-// interpolations in a file path string into Go-template `{{ ... }}`
-// form, so the evaluator's existing path renderer (which uses the
-// template engine) can resolve them. Paths don't have a surrounding
-// backtick body, so `${` is the only interpolation cue.
-func translatePathInterpolations(path string) (string, error) {
-	if !strings.Contains(path, "${") {
-		return path, nil
-	}
-	var out strings.Builder
-	scope := map[string]bool{}
-	i := 0
-	for i < len(path) {
-		if i+1 < len(path) && path[i] == '$' && path[i+1] == '{' {
-			depth := 1
-			j := i + 2
-			for j < len(path) && depth > 0 {
-				switch path[j] {
-				case '{':
-					depth++
-				case '}':
-					depth--
-					if depth == 0 {
-						break
-					}
-				}
-				if depth > 0 {
-					j++
-				}
-			}
-			if j >= len(path) {
-				return "", fmt.Errorf("unterminated ${...} in file path")
-			}
-			expr := strings.TrimSpace(path[i+2 : j])
-			out.WriteString("{{ ")
-			out.WriteString(interpolationToTemplate(expr, scope))
-			out.WriteString(" }}")
-			i = j + 1
-			continue
-		}
-		out.WriteByte(path[i])
-		i++
-	}
-	return out.String(), nil
-}
-
-// nextEmitStartsWithBrace reports whether the next emission of
-// translateInterpolatedString at position i would start with a `{`
-// character. Used to disambiguate adjacent literal/escaped braces.
-func nextEmitStartsWithBrace(s string, i int) bool {
-	if i >= len(s) {
-		return false
-	}
-	// `${...}` → emits `{{ ... }}`.
-	if i+1 < len(s) && s[i] == '$' && s[i+1] == '{' {
-		return true
-	}
-	// `{{` → emits `{{"{{"}}`.
-	if i+1 < len(s) && s[i] == '{' && s[i+1] == '{' {
-		return true
-	}
-	// `}}` → emits `{{"}}"}}`.
-	if i+1 < len(s) && s[i] == '}' && s[i+1] == '}' {
-		return true
-	}
-	// `{` adjacent to a brace-emitter → recursive case (also emits `{{"{"}}`).
-	if s[i] == '{' && nextEmitStartsWithBrace(s, i+1) {
-		return true
-	}
-	return false
-}
-
-// translateInterpolatedString converts a backtick literal body
-// (with embedded `${EXPR}` interpolations) into Go template syntax.
-// Literal text is preserved; `${X}` becomes `{{ .X }}` (or the
-// equivalent helper-call form when X is a call expression).
-//
-// `\n` two-byte sequences in the input — left there by
-// mergeMultilineBackticks — are converted to real newline bytes
-// here so the template emits the right output.
-func translateInterpolatedString(s string, tpl *strings.Builder, scope map[string]bool) error {
-	s = unescapeBacktickBody(s)
-	i := 0
-	for i < len(s) {
-		// Look for `${`. Note: `\$` escapes a literal dollar.
-		if s[i] == '\\' && i+1 < len(s) && s[i+1] == '$' {
-			tpl.WriteByte('$')
-			i += 2
-			continue
-		}
-		if i+1 < len(s) && s[i] == '$' && s[i+1] == '{' {
-			// Find the matching `}` (allowing nested braces).
-			depth := 1
-			j := i + 2
-			for j < len(s) && depth > 0 {
-				switch s[j] {
-				case '{':
-					depth++
-				case '}':
-					depth--
-					if depth == 0 {
-						break
-					}
-				}
-				if depth > 0 {
-					j++
-				}
-			}
-			if j >= len(s) {
-				return fmt.Errorf("unterminated ${...}")
-			}
-			expr := strings.TrimSpace(s[i+2 : j])
-			tpl.WriteString("{{ ")
-			tpl.WriteString(interpolationToTemplate(expr, scope))
-			tpl.WriteString(" }}")
-			i = j + 1
-			continue
-		}
-		// `{{` and `}}` are Go template syntax — escape them by
-		// emitting `{{"{{"}}` / `{{"}}"}}` so the renderer reproduces
-		// the literal pair in the output.
-		if i+1 < len(s) && s[i] == '{' && s[i+1] == '{' {
-			tpl.WriteString(`{{"{{"}}`)
-			i += 2
-			continue
-		}
-		if i+1 < len(s) && s[i] == '}' && s[i+1] == '}' {
-			tpl.WriteString(`{{"}}"}}`)
-			i += 2
-			continue
-		}
-		// A literal `{` that ends up adjacent to another template-
-		// emitting sequence (`${...}`, an escaped `{{` or `}}`,
-		// another literal `{`) would create `{{...` in the output —
-		// which Go template's lexer reads as an action opener with an
-		// invalid body. Escape this `{` via the safe `{{"{"}}` form
-		// whenever the next emission would start with `{`.
-		if s[i] == '{' && nextEmitStartsWithBrace(s, i+1) {
-			tpl.WriteString(`{{"{"}}`)
-			i++
-			continue
-		}
-		tpl.WriteByte(s[i])
-		i++
-	}
-	return nil
-}
-
-// interpolationToTemplate translates the inside of a `${...}`
-// expression into Go-template form. Recognised shapes:
-//
-//	name                    → .name
-//	context.foo             → .context.foo
-//	body                    → .body
-//	func arg1 arg2          → func arg1template arg2template
-//	func (inner x) y        → func (inner .x) .y     (parens nest calls)
-//	x | upper | toQuoted    → toQuoted (upper .x)    (pipe-chain rewrite)
-//
-// No string concatenation, no arithmetic — those have to be
-// pre-computed in `set` / `let` statements.
-func interpolationToTemplate(expr string, scope map[string]bool) string {
-	expr = strings.TrimSpace(expr)
-	if expr == "" {
-		return ""
-	}
-	// Pipe form `x | f1 | f2` → rewrite to nested prefix calls
-	// `f2 (f1 x)`. Pipe stages are applied left-to-right with each
-	// stage receiving the previous result as its FINAL argument.
-	if segs := splitInterpPipe(expr); len(segs) > 1 {
-		// First segment is the value (or call) being piped.
-		out := interpolationToTemplate(segs[0], scope)
-		for _, stage := range segs[1:] {
-			// Each stage is `fn arg1 arg2`. Append the running value
-			// as the final argument: `fn arg1 arg2 value`.
-			parts := tokeniseInterp(strings.TrimSpace(stage))
-			if len(parts) == 0 {
-				continue
-			}
-			stageRendered := parts[0]
-			for _, a := range parts[1:] {
-				stageRendered += " " + interpAtomToTemplate(a, scope)
-			}
-			out = stageRendered + " (" + out + ")"
-		}
-		return out
-	}
-	parts := tokeniseInterp(expr)
-	if len(parts) == 0 {
-		return ""
-	}
-	if len(parts) == 1 {
-		return interpAtomToTemplate(parts[0], scope)
-	}
-	head := parts[0]
-	out := head
-	for _, a := range parts[1:] {
-		out += " " + interpAtomToTemplate(a, scope)
-	}
-	return out
-}
-
-// splitInterpPipe splits a `${...}` body on top-level `|` characters.
-// Pipes inside parentheses or quoted strings are NOT split — so
-// `f (a | b)` stays a single segment.
-func splitInterpPipe(s string) []string {
-	var out []string
-	var cur strings.Builder
-	depth := 0
-	inStr := false
-	for i := 0; i < len(s); i++ {
-		c := s[i]
-		if inStr {
-			cur.WriteByte(c)
-			if c == '\\' && i+1 < len(s) {
-				cur.WriteByte(s[i+1])
-				i++
-				continue
-			}
-			if c == '"' {
-				inStr = false
-			}
-			continue
-		}
-		switch c {
-		case '"':
-			inStr = true
-			cur.WriteByte(c)
-		case '(':
-			depth++
-			cur.WriteByte(c)
-		case ')':
-			depth--
-			cur.WriteByte(c)
-		case '|':
-			if depth == 0 {
-				out = append(out, cur.String())
-				cur.Reset()
-				continue
-			}
-			cur.WriteByte(c)
-		default:
-			cur.WriteByte(c)
-		}
-	}
-	if cur.Len() > 0 {
-		out = append(out, cur.String())
-	}
-	return out
-}
-
-// interpAtomToTemplate translates a single token from the inside of
-// `${…}` into the equivalent Go-template form. Numbers and quoted
-// strings pass through verbatim; parenthesised expressions are
-// recursively interpolated; identifiers in scope (loop
-// variables) become `$name`; everything else becomes `.name`.
-func interpAtomToTemplate(s string, scope map[string]bool) string {
-	if s == "" {
-		return ""
-	}
-	if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
-		return s
-	}
-	// Parenthesised group: recursively interpret the inner expression
-	// as a nested call/value. `${toQuoted (upper x)}` works because
-	// `(upper x)` is one atom that translates to `(upper .x)`.
-	if len(s) >= 2 && s[0] == '(' && s[len(s)-1] == ')' {
-		return "(" + interpolationToTemplate(s[1:len(s)-1], scope) + ")"
-	}
-	if _, err := strconv.ParseFloat(s, 64); err == nil {
-		return s
-	}
-	if _, err := strconv.ParseInt(s, 10, 64); err == nil {
-		return s
-	}
-	// Dotted path — check if the root is a loop variable.
-	if i := strings.IndexByte(s, '.'); i > 0 {
-		root := s[:i]
-		if scope[root] {
-			return "$" + s
-		}
-		if root == "context" {
-			return "$." + s
-		}
-	} else if scope[s] {
-		return "$" + s
-	} else if s == "context" {
-		return "$." + s
-	}
-	return "." + s
-}
-
-func tokeniseInterp(s string) []string {
-	var out []string
-	var cur strings.Builder
-	inStr := false
-	depth := 0 // parenthesis nesting; parens stay inside the current token
-	for i := 0; i < len(s); i++ {
-		c := s[i]
-		if inStr {
-			cur.WriteByte(c)
-			if c == '\\' && i+1 < len(s) {
-				cur.WriteByte(s[i+1])
-				i++
-				continue
-			}
-			if c == '"' {
-				inStr = false
-				if depth == 0 {
-					out = append(out, cur.String())
-					cur.Reset()
-				}
-			}
-			continue
-		}
-		if c == '"' {
-			inStr = true
-			cur.WriteByte(c)
-			continue
-		}
-		if c == '(' {
-			depth++
-			cur.WriteByte(c)
-			continue
-		}
-		if c == ')' {
-			depth--
-			cur.WriteByte(c)
-			if depth == 0 {
-				out = append(out, cur.String())
-				cur.Reset()
-			}
-			continue
-		}
-		if depth > 0 {
-			// Inside a paren group — keep everything verbatim (including
-			// spaces) so the recursive interpolator sees the whole body.
-			cur.WriteByte(c)
-			continue
-		}
-		if c == ' ' || c == '\t' {
-			if cur.Len() > 0 {
-				out = append(out, cur.String())
-				cur.Reset()
-			}
-			continue
-		}
-		cur.WriteByte(c)
-	}
-	if cur.Len() > 0 {
-		out = append(out, cur.String())
-	}
-	return out
-}
-
-// exprToTemplateCond renders a condition expression (for an `if`)
-// in Go-template form. We support the common shapes used in
-// existing samples; complex conditions fall back to evaluating in
-// the run-block path (which has the full inner-DSL evaluator).
-func exprToTemplateCond(e domain.Expr, scope map[string]bool) string {
-	switch n := e.(type) {
-	case domain.VarRef:
-		return refPath(n.Path, scope)
-	case domain.NotExpr:
-		return "not " + exprToTemplateCond(n.X, scope)
-	case domain.CompareExpr:
-		op := n.Op
-		switch op {
-		case "==":
-			op = "eq"
-		case "!=":
-			op = "ne"
-		case "<":
-			op = "lt"
-		case "<=":
-			op = "le"
-		case ">":
-			op = "gt"
-		case ">=":
-			op = "ge"
-		}
-		return op + " " + exprToTemplateValue(n.Left, scope) + " " + exprToTemplateValue(n.Right, scope)
-	case domain.CallExpr:
-		return callToTemplate(n, scope)
-	}
-	return exprToTemplateValue(e, scope)
-}
-
-func exprToTemplateValue(e domain.Expr, scope map[string]bool) string {
-	switch n := e.(type) {
-	case domain.StringLit:
-		// n.Value comes out of the .capy lexer with backslash escapes
-		// preserved verbatim (`\n` is two chars). Unescape first so
-		// Go-template's quoted-string parser sees the right bytes.
-		return strconv.Quote(unescapeBacktickBody(n.Value))
-	case domain.NumberLit:
-		if n.IsInt {
-			return strconv.FormatInt(n.I, 10)
-		}
-		return strconv.FormatFloat(n.F, 'g', -1, 64)
-	case domain.BoolLit:
-		if n.Value {
-			return "true"
-		}
-		return "false"
-	case domain.NullLit:
-		return "nil"
-	case domain.VarRef:
-		return refPath(n.Path, scope)
-	case domain.CallExpr:
-		return "(" + callToTemplate(n, scope) + ")"
-	}
-	return ""
-}
-
-func callToTemplate(c domain.CallExpr, scope map[string]bool) string {
-	name := strings.Join(c.Name, ".")
-	parts := []string{name}
-	for _, a := range c.Args {
-		parts = append(parts, exprToTemplateValue(a, scope))
-	}
-	return strings.Join(parts, " ")
-}
-
-func refPath(path []string, scope map[string]bool) string {
-	// `body` is the inner-block-body reserved name; emit `.body`.
-	if len(path) == 1 && path[0] == "body" {
-		return ".body"
-	}
-	// Loop variable? Emit Go-template variable reference `$name`.
-	if len(path) > 0 && scope[path[0]] {
-		return "$" + strings.Join(path, ".")
-	}
-	// `context.X` always references the ROOT context (not the
-	// current iteration value), even when used inside a range.
-	// Go template's `.` rebinds inside `range`, so use `$` (root) to
-	// keep `context.X` lookups stable.
-	if len(path) > 0 && path[0] == "context" {
-		return "$." + strings.Join(path, ".")
-	}
-	return "." + strings.Join(path, ".")
-}
-
-// unescapeBacktickBody converts the `\n` two-byte sequences that
-// mergeMultilineBackticks inserted (and any other Go-style escapes
-// the lexer preserved verbatim) into their actual characters.
-func unescapeBacktickBody(s string) string {
-	var out strings.Builder
-	for i := 0; i < len(s); i++ {
-		if s[i] == '\\' && i+1 < len(s) {
-			switch s[i+1] {
-			case 'n':
-				out.WriteByte('\n')
-			case 't':
-				out.WriteByte('\t')
-			case 'r':
-				out.WriteByte('\r')
-			case '`':
-				out.WriteByte('`')
-			case '\\':
-				out.WriteByte('\\')
-			default:
-				out.WriteByte(s[i])
-				out.WriteByte(s[i+1])
-			}
-			i++
-			continue
-		}
-		out.WriteByte(s[i])
-	}
-	return out.String()
-}
-
 // renderInnerBlock re-serialises an InnerBlock back into inner-DSL
 // source text. Used after translateNewShape splits the body — the
-// residual run statements still need to flow through the regular
+// residual run statements flow through the regular
 // `Run` → tokenize → ParseInner pipeline so existing tests don't
 // have to special-case "pre-parsed AST" inputs.
-//
-// Round-tripping covers the statement forms our translator emits:
-// set / append / prepend / merge / delete / call / if / loop.
 func renderInnerBlock(b domain.InnerBlock) string {
 	var out strings.Builder
 	for _, s := range b.Stmts {

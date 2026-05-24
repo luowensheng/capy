@@ -99,10 +99,10 @@ function greet
 end
 ```
 
-The legacy `template:` / `template_str` / `run:` blocks still work
-for backwards compatibility — the engine accepts either shape.
-Prefer the unified body for new libraries: one mental model, one
-place to look.
+The body is the *only* place statements go. Renders (`write`) and
+state mutations (`set` / `append` / …) interleave freely; the engine
+walks the AST twice per function call — once to produce output, once
+to update `context`.
 
 ## `arg` — the match shape
 
@@ -192,13 +192,9 @@ Inside a backtick string you can use:
   `toQuoted`, `toJSON`, `lower`, `upper`, `join`, `split`,
   `unescape`, …) are all available — see [templates.md](templates.md).
 
-The bytes inside the backticks are emitted verbatim; there is no
-`{{- -}}` whitespace-trimming sigil. If you don't want a trailing
-newline, don't put one in.
-
-Backwards compatibility: the legacy `template:` block and
-`template_str "..."` shortcut still work, and the engine accepts
-them alongside or instead of `write` calls.
+The bytes inside the backticks are emitted verbatim. There is no
+whitespace-trimming sigil — if you don't want a trailing newline,
+don't put one in.
 
 ## State mutation — `set`, `append`, `prepend`, `merge`, `delete`
 
@@ -214,7 +210,10 @@ end
 ```
 
 Statements sit directly in the function body alongside `write` calls.
-The legacy `run:` block also still works.
+The renderer ignores state-mutation statements during the render pass;
+the run pass ignores `write`. Both walk the same AST so control flow
+(`if` / `for`) that contains both kinds of statement behaves
+consistently.
 
 Operations available:
 
@@ -311,10 +310,6 @@ file_template
 end
 ```
 
-The block form (`file_template ... end`) is the unified shape.
-Legacy `file_template: ...` (colon, with Go-template body) still
-works for libraries that haven't migrated.
-
 ## `priority`
 
 When two functions could match a prefix, the higher `priority` wins;
@@ -342,36 +337,3 @@ capy docs lib.capy > REFERENCE.md    # regenerate reference docs
 When the library stabilises, write a few sample scripts under
 `examples/` so behaviour stays pinned as you iterate.
 
----
-
-## Also supported: YAML
-
-Every library shown above can be expressed in YAML with the same
-field names. Use YAML when:
-
-- You want existing YAML tooling (yq, JSON Schema, language servers
-  with built-in YAML support) on top of your library.
-- You're embedding Capy in a system whose config layer is already
-  YAML and want one consistent format.
-
-The translation is mechanical — `function NAME … end` becomes a key
-under `functions:`, `arg capture NAME TYPE` becomes
-`{ kind: capture, name: NAME, type: TYPE }`, etc.:
-
-```yaml
-extension: py
-functions:
-  greet:
-    args:
-      - { kind: capture, name: name, type: any }
-    template: "Hello, {{ .name }}!\n"
-    run: |
-      append context.greetings name
-file_template: |
-  {{- .body -}}
-```
-
-Both formats parse into the same in-memory DTO. Output is identical.
-The CLI auto-detects the format from the extension (`.capy` or
-`.yaml`/`.yml`); the embedded Go API exposes both `capy.NewLibrary`
-and `capy.NewLibraryYAML`.

@@ -44,9 +44,9 @@ func RenderLibraryDocs(lib Library) string {
 	}
 	fmt.Fprintf(&b, "| **Functions** | %d |\n", len(lib.Functions))
 	fmt.Fprintf(&b, "| **Types** | %d |\n", len(lib.Types))
-	if len(lib.Files) > 0 {
+	if len(lib.FilesAST) > 0 {
 		fmt.Fprintf(&b, "| **Multi-file outputs** | %d (`%s`) |\n",
-			len(lib.Files), strings.Join(sortedKeysOf(lib.Files), "`, `"))
+			len(lib.FilesAST), strings.Join(sortedKeysOfAST(lib.FilesAST), "`, `"))
 	}
 	b.WriteString("\n")
 
@@ -171,6 +171,6 @@ func sortedKeys[V any](m map[string]V) []string {
 	return out
 }
 
-func sortedKeysOf(m map[string]string) []string {
+func sortedKeysOfAST(m map[string]*InnerBlock) []string {
 	return sortedKeys(m)
 }

@@ -129,7 +129,6 @@ declaration in a `.capy` library file:
 | `block_closer NAME` | This function opens a block, closed by `NAME`. |
 | `block_open "{" close "}"` | Or: explicit delimiter-pair blocks. |
 | `priority N` | Disambiguation when two functions overlap. |
-| `template:` / `template_str "..."` / `run:` | Legacy two-block shape; still works. |
 
 The full reference is in [library authoring](library-authoring.md);
 everything that works in a library function works in a `define`.

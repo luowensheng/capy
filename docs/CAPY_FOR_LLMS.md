@@ -13,20 +13,18 @@ in a **`.capy` library file**. Capy reads source code, matches each
 statement against the library's function shapes, and for each match runs
 the function's body — a sequence of inner-DSL statements that may
 emit output (`write \`...\``) and/or mutate an accumulated `context`
-(`set` / `append` / …). A top-level `file_template:` assembles
+(`set` / `append` / …). A top-level `file_template` block assembles
 `body` + `context` into the final output.
 
 There are NO built-in user-facing keywords. Every shape is
 library-defined.
 
-**Format note:** Always emit `.capy`. YAML is also accepted as a
-secondary format, but `.capy` is the primary surface — terser,
-multi-line templates read natively, no YAML escape gotchas. The YAML
-form is mentioned only at the bottom of this doc for completeness.
+**Format note:** Capy libraries are `.capy` files. The previous YAML
+library format has been removed.
 
 ---
 
-## The library schema — Capy-native form (recommended)
+## The library schema
 
 ```
 extension <str>              # informational; suggests output file extension
@@ -67,15 +65,7 @@ end
 Strings use double quotes (with Go-style escapes `\n` `\t` `\"`
 `\\`) or backticks (multi-line, with `${EXPR}` interpolation).
 Bare words are accepted for `extension`, type names, and capture
-names. Indentation delimits the function body and `file_template:`.
-
-Legacy form: `template:` / `template_str` / `run:` blocks are still
-accepted for backwards compatibility — every example in this doc
-could be written either way. Prefer the unified body shown above
-for new libraries.
-
-(For the YAML form of the same schema, see the end of this doc.
-All other examples below are `.capy`.)
+names. Indentation delimits the function body and `file_template`.
 
 ---
 
@@ -109,7 +99,8 @@ function assign
     arg capture var ident
     arg literal "="
     arg capture value any
-    template_str "{{ .var }} = {{ .value }}\n"
+    write `${var} = ${value}
+`
 end
 ```
 
@@ -147,7 +138,7 @@ Applied in order: `base` → `pattern` → `options`. All three are optional.
 
 ---
 
-## The inner DSL (inside `run:`)
+## The inner DSL (the function body)
 
 A small fixed language. Updates `context` only — does NOT execute user
 code.
@@ -187,7 +178,7 @@ context.scripts[name]          # `name` is a capture/local; evaluated to a key
 - Comparison: `==`, `!=`, `<`, `<=`, `>`, `>=`. Unary `not expr`.
 - `(regex_match value pattern)` returns a boolean — useful in `if` conditions.
 
-### Captures inside `run:`
+### Captures inside the body
 
 When you reference a capture, you get the **evaluated** value:
 
@@ -202,28 +193,31 @@ So `append context.imports name` for source `import json` correctly stores
 
 ---
 
-## Templates
+## Interpolation and helpers
 
-Per-function `template:` data:
+Inside a `write \`...\`` literal you can interpolate with `${expr}`
+and pipe through helpers: `${expr | helper}` or `${helper arg expr}`.
 
-- `.<capture>` — the captured source text (with quotes for strings,
-  bracket syntax for lists).
-- `.body` — the rendered inner block (block functions only).
-- `.context` — read-only snapshot.
+Available bindings inside a function body:
 
-File-template data:
+- captures by name — e.g. `${name}` (string captures keep their source quotes).
+- `${body}` — the rendered inner block (block functions only).
+- `context.<field>` — read-only access to accumulated state.
 
-- `.body` — concatenation of all top-level statements' rendered output.
-- `.context` — final accumulated context.
+Inside `file_template`:
+
+- `${body}` — concatenation of all top-level statements' output.
+- `context.<field>` — final accumulated context.
 
 ### Helpers
 
 - `indent N` — pad every line with N spaces. Use for block bodies.
 - `lower`, `upper` — case.
-- `join SEP <list>` — joiner.
+- `join SEP` — joiner over a list.
 - `toQuoted` — wrap a string in `"…"`.
 - `toPyLit` — Python literal formatting (True/False/None, lists, dicts).
 - `toJSON`, `toJSONIndent` — JSON marshal.
+- `unquote` — strip surrounding quotes from a captured string.
 
 ---
 
@@ -394,24 +388,7 @@ caret-pointed at line:col.
 
 ---
 
-## Also supported: YAML (secondary format)
+## Format note
 
-Every library above can be expressed in YAML — same field names,
-same engine, byte-identical output. Use YAML only when you need
-existing YAML tooling (yq, JSON Schema). The mapping is mechanical:
-
-| `.capy`                                | YAML                                                |
-|----------------------------------------|-----------------------------------------------------|
-| `function NAME … end`                  | key `NAME:` under `functions:`                      |
-| `arg literal "X"`                      | `{ kind: literal, value: "X" }`                     |
-| `arg capture N T`                      | `{ kind: capture, name: N, type: T }`               |
-| `block_closer end`                     | `block: { closer: end }`                            |
-| `block_open "{"` + `block_close "}"`   | `block: { open: "{", close: "}" }`                  |
-| `template:` block                      | `template: \|` block scalar                          |
-| `run:` block                           | `run: \|` block scalar                              |
-| `type NAME … end`                      | key `NAME:` under `types:`                          |
-
-The CLI auto-detects format from the file extension (`.capy` vs
-`.yaml`/`.yml`). The embedded Go API has `capy.NewLibrary` for
-`.capy` and `capy.NewLibraryYAML` for YAML. If you're authoring a
-new library, stick with `.capy`.
+Libraries are always `.capy` files. The embedded Go API uses
+`capy.NewLibrary` to load a `.capy` source.

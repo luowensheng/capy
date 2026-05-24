@@ -25,16 +25,12 @@ Three tools, advertised via the standard `tools/list` MCP method:
 
 | Tool             | Inputs                                  | Use for                                              |
 |------------------|-----------------------------------------|------------------------------------------------------|
-| `capy_check`     | `library` (string), `format?`           | Validate a library and discover its functions/types. |
-| `capy_run`       | `library`, `script`, `format?`          | One-shot generation from inline strings.             |
+| `capy_check`     | `library` (string)                      | Validate a library and discover its functions/types. |
+| `capy_run`       | `library`, `script`                     | One-shot generation from inline strings.             |
 | `capy_run_file`  | `library_path`, `script_path`           | Run files from the user's workspace.                 |
 
-`format` is `"auto"` by default — the server sniffs YAML vs Capy-native
-based on the first non-comment line. Pass `"yaml"` or `"capy"`
-explicitly when you want to be sure.
-
-Tool calls return either the transpiled text (success) or the parser/
-type error message (`isError: true`).
+Libraries are `.capy` files. Tool calls return either the transpiled
+text (success) or the parser/type error message (`isError: true`).
 
 ## Install
 
@@ -113,14 +109,15 @@ After wiring up, ask the agent something like:
 > Use the capy MCP server to validate this library and tell me what
 > functions and types it declares:
 >
-> ```yaml
-> extension: html
-> functions:
->   button:
->     args:
->       - { kind: literal, value: "button" }
->       - { kind: capture, name: label, type: any }
->     template: "<button>{{ .label }}</button>\n"
+> ```
+> extension html
+>
+> function button
+>     arg literal "button"
+>     arg capture label any
+>     write `<button>${label}</button>
+> `
+> end
 > ```
 
 A connected agent will call `capy_check` and report `{ "valid": true,
@@ -154,7 +151,7 @@ why a client isn't seeing your tools.
   loop this saves 5–10× tokens.
 - **Reproducibility.** Same library + same source = byte-identical
   output. No "regenerate the same thing slightly differently" drift.
-- **Reviewable.** A human reads the `lib.yaml`/`lib.capy` once and
+- **Reviewable.** A human reads the `lib.capy` once and
   knows every shape of output the agent can ever produce.
 
 ## Skill files

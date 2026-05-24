@@ -148,79 +148,66 @@ func mergeRaw(dst *infra.RawLibrary, src infra.RawLibrary) {
 
 func mapLibrary(r infra.RawLibrary, tokenize func(string) ([]domain.Token, error)) (domain.Library, error) {
 	// Detect the new-shape sentinel that the .capy parser stashes on
-	// FileTemplate / Files entries and translate the body before the
-	// engine sees it. Format: "\x00NEW_SHAPE\x00<inner-dsl source>".
+	// FileTemplate / Files entries and parse the body into an AST that
+	// the renderer walks directly. Format: "\x00NEW_SHAPE\x00<src>".
 	const sentinel = "\x00NEW_SHAPE\x00"
-	// translateMaybeNew returns the translated Go-template string AND
-	// the parsed write-style AST. The AST is what the renderer actually
-	// walks; the string is kept for legacy debugging / parser tests.
-	translateMaybeNew := func(s, label string) (string, *domain.InnerBlock, error) {
+	parseMaybeNew := func(s, label string) (*domain.InnerBlock, error) {
 		if !strings.HasPrefix(s, sentinel) {
-			return s, nil, nil
+			return nil, nil
 		}
 		body := s[len(sentinel):]
 		toks, err := tokenize(body)
 		if err != nil {
-			return "", nil, fmt.Errorf("%s: parsing body: %v", label, err)
+			return nil, fmt.Errorf("%s: parsing body: %v", label, err)
 		}
 		ast, err := ParseInner(toks)
 		if err != nil {
-			return "", nil, fmt.Errorf("%s: parsing body: %v", label, err)
+			return nil, fmt.Errorf("%s: parsing body: %v", label, err)
 		}
-		tpl, residual, err := translateNewShape(ast)
+		// File-template / file blocks may not contain state-mutation
+		// statements (the context is already finalised when they
+		// render; mutations would silently do nothing). Reject early.
+		residual, err := translateNewShape(ast)
 		if err != nil {
-			return "", nil, fmt.Errorf("%s: %v", label, err)
+			return nil, fmt.Errorf("%s: %v", label, err)
 		}
 		if len(residual.Stmts) > 0 {
-			// file_template / file blocks can't mutate state — there
-			// are no per-statement matches happening at this point; the
-			// context is already finalised. Reject pure state mutations.
-			return "", nil, fmt.Errorf("%s: state-mutation statements (set/append/…) aren't allowed here — file blocks only render", label)
+			return nil, fmt.Errorf("%s: state-mutation statements (set/append/…) aren't allowed here — file blocks only render", label)
 		}
-		return tpl, &ast, nil
+		return &ast, nil
 	}
-	ft, ftAST, err := translateMaybeNew(r.FileTemplate, "file_template")
+	ftAST, err := parseMaybeNew(r.FileTemplate, "file_template")
 	if err != nil {
 		return domain.Library{}, err
 	}
-	files := r.Files
 	filesAST := map[string]*domain.InnerBlock{}
-	if len(files) > 0 {
-		newFiles := make(map[string]string, len(files))
-		for path, body := range files {
-			translated, ast, err := translateMaybeNew(body, "file "+strconv.Quote(path))
+	if len(r.Files) > 0 {
+		for path, body := range r.Files {
+			ast, err := parseMaybeNew(body, "file "+strconv.Quote(path))
 			if err != nil {
 				return domain.Library{}, err
 			}
-			// File PATHS may contain write-style `${...}` interpolations.
-			// Keep them verbatim — the evaluator's path renderer
-			// resolves them via interpolateRender (same code path used
-			// for file bodies).
-			newFiles[path] = translated
 			if ast != nil {
 				filesAST[path] = ast
 			}
 		}
-		files = newFiles
 	}
 	lib := domain.Library{
-		Extension:    r.Extension,
-		OutputFile:   r.OutputFile,
-		Description:  r.Description,
-		Functions:    map[string]*domain.FuncDef{},
-		Types:        map[string]domain.TypeDef{},
-		Context:      r.Context,
-		FileTemplate:    ft,
+		Extension:       r.Extension,
+		OutputFile:      r.OutputFile,
+		Description:     r.Description,
+		Functions:       map[string]*domain.FuncDef{},
+		Types:           map[string]domain.TypeDef{},
+		Context:         r.Context,
 		FileTemplateAST: ftAST,
-		Files:           files,
 		FilesAST:        filesAST,
-		Preprocess:   r.Preprocess,
-		Comments:     r.Comments,
-		Commands:     map[string]*domain.CommandDef{},
-		LibName:      r.LibName,
-		LibVersion:   r.LibVersion,
-		Impls:        map[string]*domain.ImplDef{},
-		DefaultImpl:  r.DefaultImpl,
+		Preprocess:      r.Preprocess,
+		Comments:        r.Comments,
+		Commands:        map[string]*domain.CommandDef{},
+		LibName:         r.LibName,
+		LibVersion:      r.LibVersion,
+		Impls:           map[string]*domain.ImplDef{},
+		DefaultImpl:     r.DefaultImpl,
 	}
 	for name, im := range r.Impls {
 		lib.Impls[name] = &domain.ImplDef{
@@ -231,14 +218,11 @@ func mapLibrary(r infra.RawLibrary, tokenize func(string) ([]domain.Token, error
 			IsDefault:   im.IsDefault,
 		}
 	}
-	if lib.Files == nil {
-		lib.Files = map[string]string{}
+	if lib.FilesAST == nil {
+		lib.FilesAST = map[string]*domain.InnerBlock{}
 	}
 	if lib.Context == nil {
 		lib.Context = map[string]any{}
-	}
-	if lib.FileTemplate == "" {
-		lib.FileTemplate = "{{ .body }}"
 	}
 
 	for name, t := range r.Types {
@@ -353,10 +337,8 @@ func compileFunction(name string, f infra.RawFunction, tokenize func(string) ([]
 	elements := compileElements(args)
 
 	// New-shape `body:` (unified write/state block) → translate into
-	// the equivalent Template + Run before constructing the FuncDef.
-	// Also keep the parsed AST so the renderer walks it directly.
-	template := f.Template
-	run := f.Run
+	// the equivalent TemplateAST + Run AST before constructing the FuncDef.
+	var run string
 	var templateAST *domain.InnerBlock
 	if strings.TrimSpace(f.Body) != "" {
 		toks, err := tokenize(f.Body)
@@ -367,19 +349,18 @@ func compileFunction(name string, f infra.RawFunction, tokenize func(string) ([]
 		if err != nil {
 			return nil, fmt.Errorf("function %q: parsing body: %v", name, err)
 		}
-		tpl, runAST, err := translateNewShape(ast)
+		runAST, err := translateNewShape(ast)
 		if err != nil {
 			return nil, fmt.Errorf("function %q: %v", name, err)
 		}
-		template = tpl
 		// Stash the full AST for direct rendering. The renderer treats
 		// state-mutation statements (set/append/…) as no-ops — those
-		// are handled separately via the runAST path. WriteStmt /
+		// are handled separately via the run AST below. WriteStmt /
 		// IfStmt / LoopStmt are the only render-bearing forms.
 		astCopy := ast
 		templateAST = &astCopy
 		// Re-serialise the run AST as inner-DSL source text — the
-		// later "if RunAST is non-empty, tokenize+parse" path below
+		// later "if Run is non-empty, tokenize+parse" path below
 		// re-parses it. (Slightly wasteful but keeps one code path.)
 		run = renderInnerBlock(runAST)
 	}
@@ -389,9 +370,7 @@ func compileFunction(name string, f infra.RawFunction, tokenize func(string) ([]
 		Description: f.Description,
 		Args:        args,
 		Elements:    elements,
-		Template:    template,
 		TemplateAST: templateAST,
-		Run:         run,
 		Priority:    f.Priority,
 	}
 	if f.Block != nil {

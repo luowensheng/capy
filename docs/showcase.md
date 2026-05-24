@@ -1334,30 +1334,36 @@ with `--out-dir generated` and Capy writes the entire tree
     The library has six `file "..."` blocks at the top level:
 
     ```
-    file "README.md":
-        # {{ .context.name | unquote }}
-        {{ .context.description | unquote }}
+    file "README.md"
+        write `# ${context.name | unquote}
+${context.description | unquote}
+`
+    end
 
-    file "src/main.py":
-        """Generated FastAPI app for {{ .context.name | unquote }}."""
-        from fastapi import FastAPI
-        from . import handlers
+    file "src/main.py"
+        write `"""Generated FastAPI app for ${context.name | unquote}."""
+from fastapi import FastAPI
+from . import handlers
 
-        app = FastAPI(title={{ .context.name | toQuoted }})
+app = FastAPI(title=${context.name | toQuoted})
 
-        {{ range .context.routes -}}
-        @app.{{ .method | lower }}({{ .path | toQuoted }})
-        async def {{ .handler }}_endpoint(*args, **kwargs):
-            return await handlers.{{ .handler }}(*args, **kwargs)
+`
+        for r in context.routes
+            write `@app.${r.method | lower}(${r.path | toQuoted})
+async def ${r.handler}_endpoint(*args, **kwargs):
+    return await handlers.${r.handler}(*args, **kwargs)
 
-        {{ end }}
+`
+        end
+    end
 
-    file "tests/test_smoke.py":
+    file "tests/test_smoke.py"
         ...
+    end
     ```
 
-    Each block has a path (subdirectories OK) and a Go template
-    rendered against `.context` and `.body`.
+    Each block has a path (subdirectories OK) and a write-style
+    body with access to `context` and (for block functions) `body`.
 
 [Full sample → `samples/multi-file-project/`](https://github.com/luowensheng/capy/tree/main/samples/multi-file-project) ·
 [Pattern docs → multi-file & imports](multi-file-and-imports.md)
@@ -2893,58 +2899,31 @@ all five (or six, or ten) outputs regenerate.
 
 [Full sample → `samples/multi-language-demo/`](https://github.com/luowensheng/capy/tree/main/samples/multi-language-demo)
 
-### Bonus: the library itself, in Capy syntax
+### Bonus: the library itself
 
-Every library in this demo ships in **two forms**. Pick whichever you
-prefer — they produce byte-identical output:
+Libraries are `.capy` files. Same grammar as the user scripts above —
+one parser, one mental model.
 
-=== "`lib_c.yaml` (YAML)"
+```
+extension c
 
-    ```yaml
-    extension: c
-
-    functions:
-      fn:
-        args:
-          - { kind: literal, value: "fn" }
-          - { kind: capture, name: name, type: ident }
-          - { kind: literal, value: "(" }
-          - { kind: capture, name: a, type: ident }
-          - { kind: literal, value: "," }
-          - { kind: capture, name: b, type: ident }
-          - { kind: literal, value: ")" }
-        block: { closer: end }
-        template: |
-          int {{ .name }}(int {{ .a }}, int {{ .b }}) {
-          {{ .body | indent 4 }}
-          }
-      # ...
-    ```
-
-=== "`lib_c.capy` (Capy-native)"
-
-    ```
-    extension c
-
-    function fn
-        arg literal "fn"
-        arg capture name ident
-        arg literal "("
-        arg capture a ident
-        arg literal ","
-        arg capture b ident
-        arg literal ")"
-        block_closer end
-        write `int ${name}(int ${a}, int ${b}) {
+function fn
+    arg literal "fn"
+    arg capture name ident
+    arg literal "("
+    arg capture a ident
+    arg literal ","
+    arg capture b ident
+    arg literal ")"
+    block_closer end
+    write `int ${name}(int ${a}, int ${b}) {
 ${indent 4 body}
 }
 `
-    end
-    ```
+end
+```
 
-Capy supports **both formats** for libraries — the loader dispatches
-on file extension. See [`.capy` libraries](capy-libraries.md) for the
-full grammar and trade-offs.
+See [`.capy` libraries](capy-libraries.md) for the full grammar.
 
 ---
 
@@ -3026,9 +3005,8 @@ don't fit on a single doc page:
 go install github.com/luowensheng/capy/cmd/capy@latest
 git clone https://github.com/luowensheng/capy
 cd capy
-capy run samples/transpile-canvas-game/lib.yaml samples/transpile-canvas-game/script.capy > game.html
+capy run samples/transpile-canvas-game/lib.capy samples/transpile-canvas-game/script.capy > game.html
 open game.html
 ```
 
-Or just look at the lib.yaml — it's the entire grammar in 30–60 lines
-of YAML.
+Or just look at the `lib.capy` — it's the entire grammar in 30–60 lines.

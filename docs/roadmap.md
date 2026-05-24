@@ -13,14 +13,14 @@ Open an issue if any of these matter to you so we know to prioritise.
   opinionated formatter (no config knobs).
 - **`capy watch`** — re-run on file change for fast iteration.
 - **Coverage badge** on the README.
-- **`capy lint <lib.yaml>`** — non-load-time checks (unused functions, dead
+- **`capy lint <lib.capy>`** — non-load-time checks (unused functions, dead
   captures, etc.).
 
 ## v0.3 — schema power
 
-- **`validate:` types written in inner Capy**. The most expressive form
+- **`validate` types written in inner Capy**. The most expressive form
   from the original README. Requires a small bootstrap loop.
-- **Library composition / `import:`**. Splitting a big library across
+- **Library composition / `import`**. Splitting a big library across
   files; merging types/functions/context defaults.
 - **Custom inner-DSL primitives** registered from the orchestrator
   (`MakeEvaluator(WithPrimitive(...))`) — for embedders who need a
@@ -39,7 +39,7 @@ Open an issue if any of these matter to you so we know to prioritise.
 - **`outputs:`** — a library produces multiple files (e.g. one per class,
   one per route). Each accumulated context slot can target a different
   file. Requires a path-template selector.
-- **`output_file_template:`** — Go-template the output filename from
+- **`output_file_template`** — interpolate the output filename from
   context.
 
 ## v0.x — ecosystem
@@ -54,7 +54,7 @@ Open an issue if any of these matter to you so we know to prioritise.
 ## Self-hosting milestone
 
 - **Capy's inner DSL written in Capy.** The current parser/evaluator pair
-  for `run:` snippets is in Go; rewriting them as a Capy library would be a
+  for function bodies is in Go; rewriting them as a Capy library would be a
   satisfying self-host moment and force the language to be expressive
   enough.
 

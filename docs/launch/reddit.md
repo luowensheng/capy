@@ -2,25 +2,25 @@
 
 ## /r/golang
 
-**Title**: Capy — a transpiler engine in Go where the grammar is a YAML file
+**Title**: Capy — a transpiler engine in Go where the grammar is a `.capy` file
 
 **Body**:
 
 I shipped v0.1.0 of Capy today.
 
 It's a small Go binary (≈1500 lines) that reads input text, matches it
-against library-defined patterns from a YAML file, and produces target
+against library-defined patterns from a `.capy` file, and produces target
 output. Think: "Jinja templates but with a real parser, scoped to code
 generation."
 
 Library shape:
 
-```yaml
-functions:
-  greet:
-    args:
-      - { kind: capture, name: name, type: any }
-    template: "Hello, {{ .name }}!\n"
+```
+function greet
+    arg capture name any
+    write `Hello, ${name}!
+`
+end
 ```
 
 Source `greet "Alice"` produces `Hello, "Alice"!`.
@@ -40,7 +40,7 @@ Curious what shapes this would or wouldn't fit for /r/golang.
 
 ## /r/ProgrammingLanguages
 
-**Title**: Capy — a transpiler engine where the user's language is defined in YAML
+**Title**: Capy — a transpiler engine where the user's language is defined in a `.capy` file
 
 **Body**:
 
@@ -49,15 +49,15 @@ yesterday. Architecturally:
 
 - The user's source language is **entirely library-defined**. No
   keywords reserved by the engine; an empty library rejects every input.
-- Each library function declares an `args:` pattern (literals + typed
-  captures) and either renders a body template, mutates an accumulated
-  `context`, or both.
+- Each library function declares an `arg` pattern (literals + typed
+  captures) and a body that emits output via `write` and/or mutates an
+  accumulated `context`.
 - Functions can open block bodies in one of two modes: INDENT/DEDENT
   with a named closer, or explicit `{...}` delimiters.
 - There's a small fixed **inner DSL** used inside each library function's
-  `run:` field — this is the only "hardcoded grammar." It does
-  `set`/`append`/`merge`/`if`/`loop` over the context and nothing else.
-  No user-source execution.
+  body — this is the only "hardcoded grammar." It does
+  `set`/`append`/`merge`/`if`/`for`/`write` over the context and the
+  output, and nothing else. No user-source execution.
 
 Two grammars in one engine. The library author has surface freedom
 through the outer grammar (which they configure entirely); the engine
@@ -86,13 +86,13 @@ Pre-1.0 — open to letting the schema evolve based on real use.
 
 ## /r/learnprogramming
 
-**Title**: Capy — turn a YAML file into a transpiler
+**Title**: Capy — turn a `.capy` file into a transpiler
 
 **Body**:
 
 If you've ever wanted to build a tiny DSL or code generator but didn't
 want to learn ANTLR / write a recursive-descent parser by hand, Capy
-might fit. You write a YAML file that describes the grammar, and Capy
+might fit. You write a `.capy` file that describes the grammar, and Capy
 gives you a transpiler.
 
 15-minute tutorial: https://github.com/luowensheng/capy/blob/main/docs/tutorials/03-transpile-python.md

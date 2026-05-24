@@ -14,19 +14,21 @@ Short version (single post):
 Thread version (5 posts):
 
 1/ 🌱 Just shipped Capy v0.1.0. It's a small Go binary (~1500 LOC) that
-turns a YAML file describing a grammar into a working transpiler. No
+turns a `.capy` file describing a grammar into a working transpiler. No
 parser-generator, no code generation, no template engine alone — one
 runtime that does all three.
 
 2/ A library declares functions, types, and a file template. Each
-function has an args shape (literals + typed captures), a body template
-fragment, and an optional `run:` snippet that updates an accumulated
-context.
+function has an args shape (literals + typed captures) and a body of
+`write` / `set` / `append` statements that emit output and update an
+accumulated context.
 
-```yaml
-greet:
-  args: [{ kind: capture, name: name, type: any }]
-  template: "Hello, {{ .name }}!\n"
+```
+function greet
+    arg capture name any
+    write `Hello, ${name}!
+`
+end
 ```
 
 3/ The engine has zero default keywords. `if`, `loop`, `=` only exist
@@ -38,7 +40,7 @@ Python-flavored DSL from scratch — `import`, `say`, `assign`, `if`,
 components, and TypeScript interfaces. Install via `go install` or one
 of the binary releases. MIT.
 
-5/ Pre-1.0 — the YAML schema will likely evolve. Roadmap includes:
-`else` arm, multi-output, configurable surface syntax, `validate:`
+5/ Pre-1.0 — the `.capy` schema will likely evolve. Roadmap includes:
+`else` arm, multi-output, configurable surface syntax, `validate`
 snippets in inner Capy. Feedback wanted.
 github.com/luowensheng/capy
