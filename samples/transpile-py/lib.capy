@@ -1,0 +1,81 @@
+# A Capy library that defines a tiny source language and transpiles
+# it to Python. Each function: `arg` lines define the match shape,
+# `template:` contributes to the output body, `run:` updates the
+# accumulated context.
+extension py
+
+description "Transpile a tiny imperative DSL (import, say, assign, if, loop) into runnable Python. Demonstrates context accumulation (imports float to the top of the output) and block functions."
+
+context
+    imports []
+end
+
+type Identifier
+    description "A Python identifier — letters, digits, underscore; not starting with a digit."
+    base any
+    pattern "^[A-Za-z_][A-Za-z0-9_]*$"
+end
+
+# `import json` in source — contributes nothing to body; appends
+# "json" to context.imports so the file template can render it at
+# the top.
+function import
+    arg literal "import"
+    arg capture name Identifier
+    template_str ""
+    run:
+        append context.imports name
+end
+
+# `say "hello"` → print("hello")
+# Capture is source text — a string literal already has its quotes.
+function say
+    arg literal "say"
+    arg capture msg any
+    template_str "print({{ .msg }})\n"
+end
+
+# `<ident> = <any>` → Python assignment. Source-text capture maps
+# directly:
+#   x = 42         →  x = 42
+#   x = "foo"      →  x = "foo"
+#   x = [1,2,3]    →  x = [1, 2, 3]
+#   x = items      →  x = items
+function assign
+    arg capture name Identifier
+    arg literal "="
+    arg capture value any
+    template_str "{{ .name }} = {{ .value }}\n"
+end
+
+# `if <cond>` ... `end` → Python if-block. `.body` is the rendered
+# child block.
+function if
+    arg literal "if"
+    arg capture cond any
+    block_closer end
+    template:
+        if {{ .cond }}:
+        {{ .body | indent 4 }}
+end
+
+# `loop x in xs` ... `end` → Python for-loop.
+function loop
+    arg literal "loop"
+    arg capture var ident
+    arg literal "in"
+    arg capture iter any
+    block_closer end
+    template:
+        for {{ .var }} in {{ .iter }}:
+        {{ .body | indent 4 }}
+end
+
+function end
+end
+
+# Assembled output: imports at the top, then the program body.
+file_template:
+    {{- range .context.imports }}import {{ . }}
+    {{ end }}
+    {{- .body -}}

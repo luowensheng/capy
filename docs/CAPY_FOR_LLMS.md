@@ -1,29 +1,28 @@
 # Capy for LLMs — single-page brief
 
 Paste this into a model's context window when you want it to author a
-Capy library. Covers the schema (in both Capy-native and YAML forms),
-the inner DSL, and the common pitfalls. About 600 lines of prose;
-designed to be self-contained.
+Capy library. Covers the `.capy` schema, the inner DSL, and common
+pitfalls. About 500 lines of prose; designed to be self-contained.
 
 ---
 
 ## What Capy is
 
 A transpiler engine. You define a source-language grammar + transformation
-in a **library file** (`.capy` — Capy's native syntax — or `.yaml` for
-the same library expressed in YAML). Capy reads source code, matches each
-statement against the library's function shapes, and for each match (a)
-renders the function's `template:` into the output body and (b) updates
-an accumulated `context` via the function's `run:` snippet. A top-level
-`file_template:` assembles `body` + `context` into the final output.
+in a **`.capy` library file**. Capy reads source code, matches each
+statement against the library's function shapes, and for each match
+(a) renders the function's `template:` into the output body and
+(b) updates an accumulated `context` via the function's `run:` snippet.
+A top-level `file_template:` assembles `body` + `context` into the
+final output.
 
-There are NO built-in user-facing keywords. Every shape is library-defined.
+There are NO built-in user-facing keywords. Every shape is
+library-defined.
 
-**Format choice:** prefer `.capy` for new libraries — terser, multi-line
-templates read natively, no YAML escape gotchas. Use YAML only when
-you specifically want downstream tooling (yq, JSON schema). Both formats
-parse into the same in-memory DTO and run through the same engine; output
-is byte-identical.
+**Format note:** Always emit `.capy`. YAML is also accepted as a
+secondary format, but `.capy` is the primary surface — terser,
+multi-line templates read natively, no YAML escape gotchas. The YAML
+form is mentioned only at the bottom of this doc for completeness.
 
 ---
 
@@ -67,76 +66,43 @@ Strings use double quotes with Go-style escapes (`\n`, `\t`, `\"`, `\\`).
 Bare words are accepted for `extension`, type names, and capture names.
 Indentation delimits `template:` / `run:` / `file_template:` blocks.
 
-## The library schema — YAML form (same semantics)
-
-```yaml
-extension: <str>             # informational; suggests output file extension
-output_file: <str>           # optional; write output here instead of stdout
-
-context:                     # initial schema for accumulated state
-  <name>: <list|map|scalar>
-
-types:                       # library-defined argument types
-  <TypeName>:
-    base: <built-in kind>    # optional: any|string|int|float|bool
-    pattern: <regex>         # optional: regex on the value's string form
-    options: [<v>, ...]      # optional: enum membership
-
-functions:                   # the entire surface grammar
-  <key>:
-    args:                    # ordered list of arg entries
-      - { kind: literal, value: "TEXT" }
-      - { kind: capture, name: NAME, type: TYPE }
-      ...
-    template: <string>       # rendered into body for each match
-    run: |                   # inner-DSL snippet, mutates context only
-      <statements>
-    block:                   # only if this opens a body block
-      closer: <function-name> # Mode A: indent body + named closer
-      # OR
-      open: "{"               # Mode B: explicit delimiters
-      close: "}"
-    priority: <int>          # default 0; higher wins on ambiguous matches
-
-file_template: |             # top-level assembler; receives .body and .context
-  <go text/template>
-```
+(For the YAML form of the same schema, see the end of this doc.
+All other examples below are `.capy`.)
 
 ---
 
-## Args: kind discriminator (CRITICAL)
+## Args
 
-Every args entry MUST have `kind:` set to either `literal` or `capture`.
+Each function's `arg` lines take one of two forms:
 
-- `kind: literal` requires `value: "TEXT"`. NO `name`, NO `type`.
-- `kind: capture` requires `name: NAME` and `type: TYPE`. NO `value`.
+- `arg literal "TEXT"` — match this exact token in source.
+- `arg capture NAME TYPE` — bind a captured value to NAME.
 
-The loader rejects entries with the wrong fields for the kind. Common
-mistakes:
-- `{ literal: "if" }` — WRONG (missing `kind:`)
-- `{ name: x, type: any }` — WRONG (missing `kind:`)
-- `{ kind: literal, value: "if", name: x }` — WRONG (literal can't have name)
+Both forms accept an optional trailing description string for
+auto-generated docs.
 
 ## Auto-name-prepend rule
 
-If `args` contains ZERO `kind: literal` entries, the engine auto-prepends
-a literal of the function's key. So:
+If a function declares ZERO `arg literal` lines, the engine
+auto-prepends a literal of the function's name. So:
 
-```yaml
-greet:
-  args: [{ kind: capture, name: name, type: any }]
+```
+function greet
+    arg capture name any
+end
 ```
 
-…matches `greet <any>` in source. As soon as you write any literal, you
-own the entire shape (function key NOT auto-prepended). That's how you
-define operator-style functions like:
+…matches `greet <any>` in source. As soon as you write any literal,
+you own the entire shape (function name NOT auto-prepended). That's
+how you define operator-style functions like:
 
-```yaml
-assign:
-  args:
-    - { kind: capture, name: var, type: ident }
-    - { kind: literal, value: "=" }
-    - { kind: capture, name: value, type: any }
+```
+function assign
+    arg capture var ident
+    arg literal "="
+    arg capture value any
+    template_str "{{ .var }} = {{ .value }}\n"
+end
 ```
 
 …which matches `<ident> = <any>` — no leading `assign` token.
@@ -158,13 +124,15 @@ target-language variables.
 
 ## Library-defined types
 
-```yaml
-types:
-  Email:
-    base: string                          # built-in kind check first
-    pattern: "^[^@]+@[^@]+\\.[^@]+$"      # regex
-  Status:
-    options: ["todo", "done"]             # enum
+```
+type Email
+    base string                           # built-in kind check first
+    pattern "^[^@]+@[^@]+\\.[^@]+$"       # regex
+end
+
+type Status
+    options ["todo", "done"]              # enum
+end
 ```
 
 Applied in order: `base` → `pattern` → `options`. All three are optional.
@@ -255,16 +223,18 @@ File-template data:
 
 ### Mode A: named closer + indentation
 
-```yaml
-if:
-  args:
-    - { kind: literal, value: "if" }
-    - { kind: capture, name: cond, type: any }
-  block: { closer: end }
-  template: |
-    if {{ .cond }}:
-    {{ .body | indent 4 }}
-end: {}
+```
+function if
+    arg literal "if"
+    arg capture cond any
+    block_closer end
+    template:
+        if {{ .cond }}:
+        {{ .body | indent 4 }}
+end
+
+function end
+end
 ```
 
 Body is delimited by INDENT/DEDENT (4 spaces or 1 tab per level). The
@@ -272,18 +242,19 @@ named closer must match after the body.
 
 ### Mode B: explicit delimiters
 
-```yaml
-for:
-  args:
-    - { kind: literal, value: "for" }
-    - { kind: capture, name: v, type: ident }
-    - { kind: literal, value: "in" }
-    - { kind: capture, name: i, type: any }
-  block: { open: "{", close: "}" }
-  template: |
-    for {{ .v }} in {{ .i }} {
-    {{ .body | indent 2 }}
-    }
+```
+function for
+    arg literal "for"
+    arg capture v ident
+    arg literal "in"
+    arg capture i any
+    block_open "{"
+    block_close "}"
+    template:
+        for {{ .v }} in {{ .i }} {
+        {{ .body | indent 2 }}
+        }
+end
 ```
 
 Body delimited by the literal `{` and `}` tokens. No closer function.
@@ -292,64 +263,64 @@ Body delimited by the literal `{` and `}` tokens. No closer function.
 
 ## Worked example (full Python transpiler library)
 
-```yaml
-extension: py
-output_file: ""
+```
+extension py
 
-context:
-  imports: []
+context
+    imports []
+end
 
-types:
-  Identifier:
-    pattern: "^[A-Za-z_][A-Za-z0-9_]*$"
+type Identifier
+    pattern "^[A-Za-z_][A-Za-z0-9_]*$"
+end
 
-functions:
-  import:
-    args:
-      - { kind: literal, value: "import" }
-      - { kind: capture, name: name, type: Identifier }
-    template: ""
-    run: |
-      append context.imports name
+function import
+    arg literal "import"
+    arg capture name Identifier
+    template_str ""
+    run:
+        append context.imports name
+end
 
-  say:
-    args:
-      - { kind: capture, name: msg, type: any }
-    template: "print({{ .msg }})\n"
+function say
+    arg capture msg any
+    template_str "print({{ .msg }})\n"
+end
 
-  assign:
-    args:
-      - { kind: capture, name: name, type: Identifier }
-      - { kind: literal, value: "=" }
-      - { kind: capture, name: value, type: any }
-    template: "{{ .name }} = {{ .value }}\n"
+function assign
+    arg capture name Identifier
+    arg literal "="
+    arg capture value any
+    template_str "{{ .name }} = {{ .value }}\n"
+end
 
-  if:
-    args:
-      - { kind: literal, value: "if" }
-      - { kind: capture, name: cond, type: any }
-    block: { closer: end }
-    template: |
-      if {{ .cond }}:
-      {{ .body | indent 4 }}
+function if
+    arg literal "if"
+    arg capture cond any
+    block_closer end
+    template:
+        if {{ .cond }}:
+        {{ .body | indent 4 }}
+end
 
-  loop:
-    args:
-      - { kind: literal, value: "loop" }
-      - { kind: capture, name: var, type: ident }
-      - { kind: literal, value: "in" }
-      - { kind: capture, name: iter, type: any }
-    block: { closer: end }
-    template: |
-      for {{ .var }} in {{ .iter }}:
-      {{ .body | indent 4 }}
+function loop
+    arg literal "loop"
+    arg capture var ident
+    arg literal "in"
+    arg capture iter any
+    block_closer end
+    template:
+        for {{ .var }} in {{ .iter }}:
+        {{ .body | indent 4 }}
+end
 
-  end: {}
+function end
+end
 
-file_template: |
-  {{- range .context.imports }}import {{ . }}
-  {{ end }}
-  {{- .body -}}
+file_template:
+    {{- range .context.imports }}import {{ . }}
+    {{ end }}
+    {{- .body -}}
 ```
 
 Source:
@@ -377,31 +348,28 @@ if x:
 
 ## Common pitfalls
 
-1. **Forgetting `kind:`** — every args entry needs it. Validators catch
-   this at load time.
-2. **Putting business logic in user-script** — Capy transpiles, it doesn't
-   execute. `if x ... end` emits an `if`; it doesn't conditionally render.
-3. **Quoting confusion** — string captures expose source text *with*
-   quotes in templates. Use the value as-is for Python (which uses the
-   same quoting) or unquote with `unquote` if needed.
-4. **`{}` ambiguity** — `{...}` is an object literal by default. For
-   `{...}` blocks, the opener function must declare `block: { open: "{",
-   close: "}" }` explicitly.
-5. **Indentation must be 4 spaces or 1 tab per level**. 2-space indent
-   breaks the lexer.
-6. **YAML block scalar (`|`) indentation** in `run:` snippets — inside
-   YAML you indent relative to the parent key, but the inner DSL still
-   requires its own 4-space block indentation.
-7. **No `else`** — use two `if` blocks (one with `not`) for now.
-8. **Auto-name-prepend silently disables** the moment you add any literal.
-   So `{kind: literal, value: "in"}` somewhere in your args removes the
-   automatic `funcname` leading literal.
+1. **Putting business logic in user-script** — Capy transpiles, it
+   doesn't execute. `if x ... end` emits an `if`; it doesn't
+   conditionally render.
+2. **Quoting confusion** — string captures expose source text *with*
+   quotes in templates. Use the value as-is for Python (which uses
+   the same quoting) or strip with the `unquote` helper if needed.
+3. **`{}` ambiguity** — `{...}` is an object literal by default. For
+   `{...}` blocks, the opener function must declare `block_open "{"`
+   and `block_close "}"` explicitly.
+4. **Indentation must be 4 spaces or 1 tab per level.** 2-space
+   indent breaks the lexer.
+5. **No `else`** — use two `if` blocks (one with `not`) for now.
+6. **Auto-name-prepend silently disables** the moment you add any
+   `arg literal`. So an `arg literal "in"` line somewhere removes
+   the automatic function-name leading literal.
 
 ## CLI quick reference
 
 ```sh
-capy run <lib.yaml> <script.capy>     # transpile
-capy check <lib.yaml>                 # validate library
+capy run <lib.capy> <script.capy>     # transpile
+capy check <lib.capy>                 # validate library
+capy docs <lib.capy>                  # auto-generate reference docs
 capy init [<dir>]                     # scaffold
 capy version
 capy help [<command>]
@@ -409,6 +377,30 @@ capy help [<command>]
 
 ## When in doubt
 
-Run `capy check lib.yaml` after every edit. If it loads cleanly, run
-`capy run lib.yaml script.capy` against a minimal script. Errors are
+Run `capy check lib.capy` after every edit. If it loads cleanly, run
+`capy run lib.capy script.capy` against a minimal script. Errors are
 caret-pointed at line:col.
+
+---
+
+## Also supported: YAML (secondary format)
+
+Every library above can be expressed in YAML — same field names,
+same engine, byte-identical output. Use YAML only when you need
+existing YAML tooling (yq, JSON Schema). The mapping is mechanical:
+
+| `.capy`                                | YAML                                                |
+|----------------------------------------|-----------------------------------------------------|
+| `function NAME … end`                  | key `NAME:` under `functions:`                      |
+| `arg literal "X"`                      | `{ kind: literal, value: "X" }`                     |
+| `arg capture N T`                      | `{ kind: capture, name: N, type: T }`               |
+| `block_closer end`                     | `block: { closer: end }`                            |
+| `block_open "{"` + `block_close "}"`   | `block: { open: "{", close: "}" }`                  |
+| `template:` block                      | `template: \|` block scalar                          |
+| `run:` block                           | `run: \|` block scalar                              |
+| `type NAME … end`                      | key `NAME:` under `types:`                          |
+
+The CLI auto-detects format from the file extension (`.capy` vs
+`.yaml`/`.yml`). The embedded Go API has `capy.NewLibrary` for
+`.capy` and `capy.NewLibraryYAML` for YAML. If you're authoring a
+new library, stick with `.capy`.

@@ -1,18 +1,23 @@
-# `.capy` libraries — write the library in Capy too
+# `.capy` libraries — the primary format
 
-Capy libraries can be written in two formats. Both produce the exact same
-in-memory library and behave identically:
+Capy libraries are written in `.capy`, Capy's native syntax. It's
+terser than YAML, multi-line `template:` and `run:` blocks read
+natively, and you don't fight string-escape rules.
 
-| Format       | When you want…                                                       |
-|--------------|----------------------------------------------------------------------|
-| **`.yaml`**  | Universal tooling (yq, JSON schema, every editor) and the format LLMs already speak fluently. |
-| **`.capy`**  | One syntax to learn, native multi-line templates, no YAML escape gotchas. |
+YAML is also accepted as a secondary format for teams that need
+existing YAML tooling (yq, JSON Schema). Both formats produce the
+exact same in-memory library and behave identically:
+
+| Format       | When                                                                                          |
+|--------------|-----------------------------------------------------------------------------------------------|
+| **`.capy`**  | **The default.** One syntax to learn, native multi-line templates, no YAML escape gotchas.    |
+| **`.yaml`**  | When you need yq / JSON-schema tooling, or your config layer is already YAML.                 |
 
 The loader dispatches on file extension:
 
 ```sh
-capy run lib.yaml script.capy   # YAML library
-capy run lib.capy script.capy   # Capy-native library
+capy run lib.capy script.capy   # primary
+capy run lib.yaml script.capy   # secondary
 ```
 
 Same engine, same output.
@@ -125,23 +130,25 @@ file_template:
   indent is stripped, so your template reads naturally.
 - **Comments** start with `#` and run to end of line.
 
-## Why this exists
+## Why `.capy` is the default
 
-A YAML library file requires you to fluently switch between two grammars
-on every edit: Capy syntax (the user-facing language) and YAML syntax (how
-you describe the user-facing language). For one-off scripts that's fine.
-For a real library with a dozen functions and multi-line templates, the
-constant context switch — *especially* the YAML block-scalar indent rules
-that silently lose whitespace — burns cycles.
+A YAML library file forces you to switch between two grammars on
+every edit: Capy syntax (the user-facing language) and YAML syntax
+(how you describe the user-facing language). For one-off scripts
+that's fine. For a real library with a dozen functions and multi-line
+templates, the constant context switch — *especially* YAML's
+block-scalar indent rules that silently lose whitespace — burns
+cycles.
 
-`.capy` libraries collapse that to one grammar. The same indentation rules
-that govern your *source* files govern your *library* files. The same
-string-literal rules. The same comment syntax. One mental model.
+`.capy` collapses that to one grammar. The same indentation rules
+that govern your *source* files govern your *library* files. The
+same string-literal rules. The same comment syntax. One mental
+model. `capy check lib.capy` validates it the same way.
 
-The trade-off: you give up YAML's universal tooling. A `.yaml` lib can be
-linted by every YAML language server on earth; a `.capy` lib is validated
-by `capy check`. Pick the format that fits your workflow — Capy supports
-both for the same library.
+YAML stays in the box for the cases that genuinely need it: dropping
+into an existing YAML-driven pipeline, or when you want to point a
+JSON-Schema-aware editor at the library. Both formats produce
+byte-identical output.
 
 ## See it in action
 
@@ -169,13 +176,10 @@ diff \
 
 ## Caveats
 
-- The Capy-native parser is intentionally line-oriented and small. It
-  doesn't yet support YAML's full feature set (anchors, multi-document
+- The `.capy` parser is intentionally line-oriented and small. It
+  doesn't support YAML's full feature set (anchors, multi-document
   files). Those aren't useful in library files anyway.
-- `types:` and `context:` top-level sections are currently YAML-only.
-  Add them to your library in YAML form, or open an issue if you need
-  them in `.capy` form.
-- The two formats are kept feature-parallel for the common case
-  (functions + templates + run blocks + file_template). If you find a
+- The two formats are kept feature-parallel: everything you can
+  write in `.capy` you can write in YAML (and vice versa). If you find a
   case where the YAML form supports something the `.capy` form doesn't,
   file a bug — it's a parity gap we'd fix.

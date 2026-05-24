@@ -39,9 +39,9 @@ hand-rolled Go binaries.
 
 Capy fits the same niche differently:
 
-- ➕ **Lower barrier**: YAML library + a small surface DSL is
-  easier to adopt than a typed config language. Anyone who reads
-  YAML can read a Capy library.
+- ➕ **Lower barrier**: a `.capy` library + a small surface DSL
+  is easier to adopt than a typed config language. Anyone who reads
+  plain config files can read a Capy library.
 - ➕ **Multi-target**: same source generates k8s + Terraform + CI
   + monitors with one library per target.
 - ➕ **No new query language**: it's just `args + template + run`.
@@ -61,7 +61,7 @@ replicas
     dev     1
 ```
 
-CI runs `capy run kubernetes.lib.yaml service.capy > deploy.yaml`
+CI runs `capy run kubernetes-lib.capy service.capy > deploy.yaml`
 for each environment. Same source produces a Terraform module via
 a different library, a Datadog monitor via a third.
 
@@ -105,7 +105,7 @@ five lines of Capy.
 **Scenario.** A platform team owns the company's "golden path": how a
 new microservice should be structured (Dockerfile, k8s manifest, CI
 workflow, README). Today they maintain a Go binary that generates
-those files. With Capy: the conventions move to a `lib.yaml`, the
+those files. With Capy: the conventions move to a `lib.capy`, the
 binary is replaced by `capy run`, and the team can ship convention
 changes in one PR that touches one file.
 
@@ -128,7 +128,7 @@ for game designers, or a check-list-rule language for compliance
 officers, or a "service spec" DSL for your platform team. Writing
 the parser is hard if you've never built one.
 
-**Instead, let an AI write the library YAML for you.** Then your
+**Instead, let an AI write the library for you.** Then your
 team uses the library to author content. The AI is involved in the
 one-time, hard part (parser design) but is **not in the loop** when
 content gets written.
@@ -138,7 +138,7 @@ The shape:
 ```
 You + AI                You + your team
         ↓                        ↓
-   lib.yaml ────► Capy ◄──── script.capy
+   lib.capy ────► Capy ◄──── script.capy
                   │
                   ▼
               target output
@@ -151,7 +151,7 @@ The engineers want designers to author levels without learning JSON
 1. Engineer prompts Claude: "Build me a Capy library where designers
    declare rooms, exits, items, and NPCs. Output should be the JSON
    our engine expects."
-2. Claude emits `lib.yaml` (~80 lines). Engineer reviews, tweaks
+2. Claude emits `lib.capy` (~80 lines). Engineer reviews, tweaks
    one or two patterns.
 3. Designers now write `room kitchen contains key, knife exits door:hall`
    in `.capy` files. Capy generates the engine JSON.
@@ -235,7 +235,7 @@ that compiles to runnable code.
 | Logistics | `route warsaw -> berlin via train depart:08:00` | Booking API call + emissions report row |
 
 The library author (the engineer) talks to the expert, encodes the
-domain into a YAML schema, and from then on the expert is the
+domain into a library schema, and from then on the expert is the
 language's user. The library is the contract.
 
 **Why it wins**:
@@ -245,7 +245,7 @@ language's user. The library is the contract.
   implementation language.
 - The generated code is consistent (no copy-paste drift).
 - The grammar is the audit boundary: "show me what's possible to
-  express" = `capy check lib.yaml`.
+  express" = `capy check lib.capy`.
 
 ---
 
@@ -337,11 +337,11 @@ library function (compliant) or fails CI (rejected).
 Compiler courses traditionally use yacc/bison/ANTLR. Capy is a
 much gentler on-ramp:
 
-- "Build a calculator language in 30 lines of YAML."
+- "Build a calculator language in 30 lines of `.capy`."
 - "Implement a simple SQL parser as a learning exercise."
 - "Add an `if/else` to your toy language."
 
-For a student new to language design, the YAML library makes the
+For a student new to language design, the library makes the
 relationship between **grammar**, **semantics**, and **output**
 explicit and inspectable. There's no generated code to read; the
 library *is* the parser.

@@ -4,10 +4,10 @@ A five-minute tour of Capy. By the end you'll have run the canonical
 Python-transpiling sample and understand the four things every Capy library
 controls: `functions`, `types`, `context`, and `file_template`.
 
-A Capy library is **a file written in Capy's own syntax** (`.capy`). The
-engine also accepts YAML for the same library — useful for downstream
-tooling — but you don't have to know YAML to use Capy. Examples below
-default to `.capy`.
+A Capy library is **a file written in Capy's own syntax** (`.capy`).
+YAML is also accepted as a secondary format for teams that need
+yq / JSON-schema tooling — see [§ Also supported: YAML](library-authoring.md#also-supported-yaml).
+Examples in this doc are all `.capy`.
 
 ## 1. Install
 
@@ -32,7 +32,7 @@ Clone the repo (samples live there) and run the Python transpiler:
 ```sh
 git clone https://github.com/luowensheng/capy
 cd capy
-capy run samples/transpile-py/lib.yaml samples/transpile-py/script.capy
+capy run samples/transpile-py/lib.capy samples/transpile-py/script.capy
 ```
 
 Expected output:
@@ -54,8 +54,8 @@ for item in items:
 
 Capy read **two files**:
 
-1. The library (`.capy` or `.yaml`). It declares **functions** (each
-   function has an `arg` shape, a `template:` for output, and an optional
+1. The library (`lib.capy`). It declares **functions** (each function
+   has an `arg` shape, a `template:` for output, and an optional
    `run:` for state updates).
 2. `script.capy` — the input source.
 
@@ -71,8 +71,7 @@ At the end, the library's `file_template:` produced the final output
 from `.body` (concatenated rendered fragments) and `.context` (final
 accumulated state).
 
-Concretely, `import json` matches a function that looks like this in
-Capy's native syntax:
+Concretely, `import json` matches a function that looks like this:
 
 ```
 function import
@@ -84,20 +83,8 @@ function import
 end
 ```
 
-The same function in YAML, if you prefer:
-
-```yaml
-import:
-  args:
-    - { kind: literal, value: "import" }
-    - { kind: capture, name: name, type: ident }
-  template: ""
-  run: |
-    append context.imports name
-```
-
-Either way, `import json` adds `"json"` to `context.imports`. The
-file template at the top of the output emits `import json` from there.
+`import json` adds `"json"` to `context.imports`. The file template
+at the top of the output emits `import json` from there.
 
 ## 4. Make your own
 
@@ -108,9 +95,8 @@ capy init .
 capy run lib.capy script.capy
 ```
 
-`capy init` scaffolds a starter library + script. Edit `lib.capy` to
-add your own functions, types, and file template — or rename to
-`lib.yaml` if you'd rather author in YAML; Capy accepts both.
+`capy init` scaffolds a starter library + script. Edit `lib.capy`
+to add your own functions, types, and file template.
 
 ## 5. Where to go next
 

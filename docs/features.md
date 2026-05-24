@@ -14,7 +14,7 @@ links; this page is a quick reference for "is X supported?".
 | Programmatic Go API | ✅ | `orchestrator.Run(libPath, scriptPath)` and `orchestrator.RunStrings(libYAML, libPath, scriptSrc)` |
 | Caret-pointed error messages with line:col | ✅ | [`domain.CapyError`](https://github.com/luowensheng/capy/blob/main/domain/errors.go), `FormatWithSource` |
 
-## Library YAML schema
+## Library schema
 
 | Section | Required? | Purpose |
 |---------|-----------|---------|
@@ -134,8 +134,15 @@ Two modes; declare exactly one per opener:
 
 ### Mode A — indent + named closer
 
-```yaml
-block: { closer: end }
+```
+function if
+    arg literal "if"
+    arg capture cond any
+    block_closer end
+    template:
+        if {{ .cond }}:
+        {{ .body | indent 4 }}
+end
 ```
 
 Body delimited by INDENT/DEDENT. Closer is itself a library function
@@ -143,8 +150,9 @@ Body delimited by INDENT/DEDENT. Closer is itself a library function
 
 ### Mode B — explicit delimiters
 
-```yaml
-block: { open: "{", close: "}" }
+```
+block_open "{"
+block_close "}"
 ```
 
 Body delimited by the named tokens. No closer function needed.
@@ -156,8 +164,9 @@ Mode-B and vice versa).
 
 | Subcommand | Effect |
 |------------|--------|
-| `capy run <lib.yaml> <script.capy>` | Transpile a script. Output to stdout unless `--out` or library `output_file:`. |
-| `capy check <lib.yaml>` | Validate a library; report functions and types. Exit 0 if valid. |
+| `capy run <lib.capy> <script.capy>` | Transpile a script. Output to stdout unless `--out` or library `output_file:`. |
+| `capy check <lib.capy>` | Validate a library; report functions and types. Exit 0 if valid. |
+| `capy docs <lib.capy>` | Render a Markdown reference doc from the library's `description` annotations. |
 | `capy init [<dir>]` | Scaffold a new library project. |
 | `capy version` | Print build version. |
 | `capy help [<command>]` | Inline help. |
@@ -229,8 +238,8 @@ sandboxing patterns.
 
 | Editor | Where |
 |--------|-------|
-| VS Code | [`editors/vscode/capy/`](https://github.com/luowensheng/capy/tree/main/editors/vscode/capy) — syntax highlighting + `yamlValidation` for `lib.yaml` |
-| JSON Schema | [`schemas/library.schema.json`](https://github.com/luowensheng/capy/blob/main/schemas/library.schema.json) — works in any editor that supports YAML schemas |
+| VS Code | [`editors/vscode/capy/`](https://github.com/luowensheng/capy/tree/main/editors/vscode/capy) — syntax highlighting for `.capy` source and libraries; plus `yamlValidation` for the optional `lib.yaml` format |
+| JSON Schema | [`schemas/library.schema.json`](https://github.com/luowensheng/capy/blob/main/schemas/library.schema.json) — describes the secondary YAML library format |
 
 ## Distribution
 
@@ -244,7 +253,7 @@ sandboxing patterns.
 
 ## Pre-1.0 status
 
-The library YAML schema may evolve between minor versions before 1.0.
+The library schema may evolve between minor versions before 1.0.
 Each breaking change appears in [CHANGELOG](https://github.com/luowensheng/capy/blob/main/CHANGELOG.md)
 with a migration note. The engine itself is stable enough to use in
 production for code generation; just pin a specific version.

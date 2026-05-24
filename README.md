@@ -1,8 +1,7 @@
 # Capy
 
 > A transpiler engine with zero default grammar. You define a tiny source
-> language in a Capy library (`.capy` — Capy's native syntax — or YAML),
-> and Capy generates the target output.
+> language in a `.capy` library file, and Capy generates the target output.
 
 [![CI](https://github.com/luowensheng/capy/actions/workflows/ci.yml/badge.svg)](https://github.com/luowensheng/capy/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/luowensheng/capy?include_prereleases)](https://github.com/luowensheng/capy/releases)
@@ -21,7 +20,7 @@ all defined by the library, or not at all if your DSL doesn't need them.
 
 ## 30-second teaser
 
-**`lib.capy`** (Capy's native library syntax — no YAML required)
+**`lib.capy`**
 
 ```
 extension py
@@ -69,9 +68,9 @@ The library is the entire grammar. Swap it and the same engine produces
 HTML, SQL, JSON, Makefiles — anything you can describe with patterns,
 templates, and run blocks.
 
-Prefer YAML for downstream tooling (yq, JSON schema)? Same library
-works as `lib.yaml` — see [`docs/capy-libraries.md`](docs/capy-libraries.md)
-for the trade-offs.
+YAML is supported as a secondary format for teams that need
+yq / JSON-schema tooling — same library, same engine. See
+[`docs/library-authoring.md`](docs/library-authoring.md#also-supported-yaml).
 
 ---
 
@@ -166,7 +165,7 @@ patterns (loading from disk, multiple grammars per process, hot-swap).
 git clone https://github.com/luowensheng/capy
 cd capy
 go build -o capy ./cmd/capy
-./capy run samples/transpile-py/lib.yaml samples/transpile-py/script.capy
+./capy run samples/recipe-card/lib.capy samples/recipe-card/script.capy
 ```
 
 ---
@@ -179,8 +178,8 @@ go build -o capy ./cmd/capy
 | [docs/embedding.md](docs/embedding.md) | Embedding Capy as a Go library in your own program |
 | [docs/mcp.md](docs/mcp.md) | MCP server setup for Claude Desktop / Claude Code / Cursor / Zed |
 | [docs/cookbook-ai.md](docs/cookbook-ai.md) | AI integration cookbook (10 recipes) |
-| [docs/library-authoring.md](docs/library-authoring.md) | Writing your own `lib.yaml` |
-| [docs/capy-libraries.md](docs/capy-libraries.md) | Writing libraries in Capy's own syntax (`.capy` format) |
+| [docs/library-authoring.md](docs/library-authoring.md) | Writing your own `lib.capy` |
+| [docs/capy-libraries.md](docs/capy-libraries.md) | `.capy` syntax reference (vs. YAML) |
 | [docs/language-reference.md](docs/language-reference.md) | Surface grammar + lexer behavior |
 | [docs/inner-dsl.md](docs/inner-dsl.md) | The `run:` operations |
 | [docs/types.md](docs/types.md) | `base` / `pattern` / `options` |
@@ -206,7 +205,7 @@ Compared to alternatives:
 |-------------------------|------------------------------------|----------------|
 | Jinja, Go templates     | Substitute values into text        | A real parser + accumulated context + types |
 | ANTLR, lark, tree-sitter| Parse a language you defined       | Targeted at code generation; ships with a runtime; no Java/Python required |
-| Custom Go transpilers   | Full control                       | A YAML schema replaces hundreds of lines of code per project |
+| Custom Go transpilers   | Full control                       | A `.capy` library replaces hundreds of lines of code per project |
 | gomplate, ytt           | Powerful templating with data      | A source language with custom syntax, not just template inputs |
 
 Use Capy when you'd otherwise hand-roll a tiny parser to drive
@@ -217,7 +216,7 @@ domain experts, source-to-source rewrites.
 
 ## Status
 
-**Pre-1.0.** The library YAML schema may change between minor versions. See
+**Pre-1.0.** The library schema may change between minor versions. See
 [CHANGELOG.md](CHANGELOG.md) for what's stable; [docs/roadmap.md](docs/roadmap.md)
 for what's planned.
 

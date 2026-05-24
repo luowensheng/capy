@@ -3,14 +3,14 @@
 `capy` is the command-line front-end. All subcommands also accept
 `-h`/`--help` for inline help.
 
-## `capy run <library.yaml> <script.capy>`
+## `capy run <library.capy> <script.capy>`
 
 Transpile a script against a library. Output goes to stdout unless the
 library sets `output_file:` or you pass `--out`.
 
 ```sh
-capy run samples/transpile-py/lib.yaml samples/transpile-py/script.capy
-capy run lib.yaml app.capy --out=app.py
+capy run samples/transpile-py/lib.capy samples/transpile-py/script.capy
+capy run lib.capy app.capy --out=app.py
 ```
 
 Flags:
@@ -30,14 +30,14 @@ error: no library function matches token "x"
     │ ^
 ```
 
-## `capy check <library.yaml>`
+## `capy check <library.capy>`
 
 Parse and validate a library without running any source. Reports loaded
 functions and types if valid, or a structured error otherwise. Exit code
 0 = valid, 1 = invalid.
 
 ```sh
-capy check lib.yaml
+capy check lib.capy
 # ok — 5 function(s), 2 type(s)
 #   function greet
 #   function assign
@@ -50,12 +50,12 @@ Use this in CI alongside `go test ./...` to catch broken libraries early.
 
 ## `capy init [<dir>]`
 
-Scaffold a starter project (`lib.yaml`, `script.capy`, `README.md`) in the
+Scaffold a starter project (`lib.capy`, `script.capy`, `README.md`) in the
 target directory (default `.`). Refuses to overwrite existing files.
 
 ```sh
 capy init my-dsl
-# created my-dsl/lib.yaml
+# created my-dsl/lib.capy
 # created my-dsl/script.capy
 # created my-dsl/README.md
 ```
@@ -80,16 +80,18 @@ when called with one.
 
 ## Embedding Capy
 
-If you want to call Capy from Go code, import
-`capylang/orchestrator`:
+If you want to call Capy from Go code, the top-level package
+exposes a small embedding API:
 
 ```go
-import "capylang/orchestrator"
+import "github.com/luowensheng/capy"
 
-out, err := orchestrator.Run("lib.yaml", "script.capy")
-// or, when contents are already in memory:
-out, err := orchestrator.RunStrings(libYAML, "lib.yaml", scriptSource)
+lib, err := capy.NewLibraryFromFile("lib.capy")
+out, err := lib.Run(scriptSource)
 ```
+
+See [embedding.md](embedding.md) for the full surface (in-memory
+`NewLibrary`, host capabilities, multi-file output).
 
 Errors are `*domain.CapyError` values; use `domain.FormatWithSource(err, src)`
 to render them with a caret.
