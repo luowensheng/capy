@@ -36,6 +36,17 @@ SHIP / DEFER / SKIP verdict.
 These three features are infrastructure — nothing else in the doc
 works without them. Ship together, in this order.
 
+> **A note on the config format.** Capy's selling point is "describe
+> your domain in your own grammar." It would be a tell if Capy
+> itself reached for TOML/YAML/JSON every time it needed structured
+> config. So **every human-authored config file in this doc uses
+> Capy syntax** — library manifests, project manifests, lockfiles,
+> the library-directory index. The engine ships with a small
+> built-in **manifest grammar library** that knows how to parse
+> these; users don't learn a second format. JSON output is still
+> available on demand (`capy lib index --json`) for external tools
+> that need it.
+
 ## 1.1 `CAPY_LIBS` search path
 
 ### What it is
@@ -147,52 +158,75 @@ cross-platform default paths.
 
 ---
 
-## 1.2 Library manifest (`capy.toml`)
+## 1.2 Library manifest (`capy.capy`)
 
 ### What it is
 
-A small TOML file alongside every library file (or inside its
-directory). Declares metadata the engine doesn't infer from the
-library source:
+A small file alongside every library directory that declares
+metadata the engine doesn't infer from the library source. **The
+manifest is itself written in Capy syntax** — we eat our own
+dog food. There is no separate TOML / YAML / JSON config format
+to learn; everything human-authored uses one grammar.
 
-```toml
-# ~/.capy/libs/recipe/capy.toml
-[library]
-name        = "recipe"
-version     = "1.4.0"
-description = "Recipe DSL → printable HTML card."
-license     = "Source-Available"
-authors     = ["Alice <alice@example.com>"]
-homepage    = "https://github.com/alice/recipe-capy"
+```
+# ~/.capy/libs/recipe/capy.capy
+name        "recipe"
+version     "1.4.0"
+description "Recipe DSL → printable HTML card."
+license     "Source-Available"
+author      "Alice <alice@example.com>"
+homepage    "https://github.com/alice/recipe-capy"
 
 # Output classification (helps the library directory filter).
-[output]
-extension = "html"
-kind      = "html"           # html | json | yaml | toml | code:py | shell | asm | … 
+extension   "html"
+kind        "html"            # html | json | yaml | code:py | shell | …
 
 # Implementations of this library's interface (see § 2).
-[[impl]]
-name        = "html"          # default
-file        = "recipe.capy"   # path relative to capy.toml
-description = "Printable HTML recipe card."
+impl "html" "recipe.capy"
+    description "Printable HTML recipe card."
+    default
+end
 
-[[impl]]
-name        = "json"
-file        = "recipe.json.capy"
-description = "Same interface, JSON output for APIs."
+impl "json" "recipe.json.capy"
+    description "Same interface, JSON output for APIs."
+end
 
-[[impl]]
-name        = "markdown"
-file        = "recipe.md.capy"
-description = "Markdown for blogs / READMEs."
-
-# Default impl when none is specified.
-default-impl = "html"
+impl "markdown" "recipe.md.capy"
+    description "Markdown for blogs / READMEs."
+end
 
 # Dependencies on other libraries (see § 3).
-[deps]
-common-types = { version = "^2.0.0", source = "github:capy/common-types" }
+dep "common-types" "^2.0.0" from "github:capy/common-types"
 ```
+
+### Why Capy syntax, not TOML / YAML
+
+Three reasons:
+
+1. **One grammar.** Library authors already know Capy's syntax —
+   that's what their libraries are written in. Adding TOML
+   doubles the cognitive load for what is conceptually a config
+   file.
+2. **Self-hosting.** Capy is a transpiler engine; its primary
+   selling point is "describe your config in your own grammar."
+   Using YAML/TOML for our OWN config undermines the pitch.
+3. **Extensibility.** Teams that want richer metadata (e.g.
+   internal labels, deploy targets, custom validation) just add
+   functions to a private fork of the manifest grammar. No
+   second-tier "but you can't extend TOML" caveat.
+
+### How the engine parses it
+
+The engine ships with a built-in **manifest grammar library**
+(stored in `embedded/manifest.capy` and loaded via `embed.FS` at
+startup). When `capy lib list` reads `~/.capy/libs/recipe/capy.capy`,
+the engine runs the manifest library on it. The library's
+`run:` accumulates the metadata into a structured context that
+the loader then reads.
+
+There's no chicken-and-egg: the manifest grammar is hardcoded
+into the binary; manifest files written by users are parsed
+through it.
 
 ### User pain it addresses
 
@@ -222,7 +256,7 @@ description, it needs a manifest.
 
 Lookup order when resolving a library by name `X`:
 
-1. `$CAPY_LIBS[i]/X/capy.toml` — directory-style library
+1. `$CAPY_LIBS[i]/X/capy.capy` — directory-style library
    with a manifest. Read the manifest, find the default impl's
    file, load it.
 2. `$CAPY_LIBS[i]/X.capy` — bare-file library. No metadata.
@@ -230,12 +264,12 @@ Lookup order when resolving a library by name `X`:
 ### Walkthrough
 
 ```sh
-capy lib new recipe        # scaffolds a directory with capy.toml
+capy lib new recipe        # scaffolds a directory with capy.capy
 cd ~/.capy/libs/recipe
 ls
-# capy.toml  recipe.capy  README.md
+# capy.capy  recipe.capy  README.md
 
-cat capy.toml
+cat capy.capy
 # [library]
 # name    = "recipe"
 # version = "0.1.0"
@@ -271,9 +305,15 @@ distribution.
 every curated library: name, version, description, output target,
 domain, link to source, install command.
 
-Backed by a machine-readable manifest at
-`docs/assets/library-index.json` so other tools (LSP, registry,
-external indexes) can consume it.
+Backed by a machine-readable index at
+`docs/assets/library-index.capy` (generated by concatenating every
+curated library's `capy.capy` manifest) so other tools (LSP,
+registry, external indexes) can consume it via the same manifest
+grammar they already parse.
+
+If a tool genuinely needs JSON (web crawlers, third-party indexes
+not written in Capy / Go), the engine emits one on demand:
+`capy lib index --json > library-index.json`.
 
 ### User pain it addresses
 
@@ -285,8 +325,9 @@ discovery.
 ### Who benefits
 
 - **New users:** "I need to generate X — what library do I want?"
-- **AI agents:** the JSON manifest is the perfect bootstrap
-  prompt — "here are the libraries available; pick one."
+- **AI agents:** the index is the perfect bootstrap prompt —
+  "here are the libraries available; pick one." Available as
+  either `.capy` or JSON.
 - **Library authors:** visibility for libraries that are otherwise
   buried in samples/.
 
@@ -399,7 +440,7 @@ A library directory contains:
 
 ```
 ~/.capy/libs/chart/
-├── capy.toml               # declares the interface and lists impls
+├── capy.capy               # declares the interface and lists impls
 ├── interface.capy          # function shapes only (no `write` calls)
 ├── impl/
 │   ├── mermaid.capy        # impl: emits Mermaid
@@ -497,7 +538,7 @@ export CAPY_IMPL_CHART=ascii
 capy run chart revenue.chart
 
 # Or pin per project.
-echo '[impl]\nchart = "d3"' >> capy.toml
+echo 'use_impl "chart" "d3"' >> capy.capy
 ```
 
 ### Trade-offs
@@ -529,11 +570,11 @@ Capy's "spec-as-source" pitch real for multi-target work.
 Selection precedence (highest wins):
 
 1. **CLI flag**: `--impl <name>`
-2. **Per-project lockfile**: `[impl] chart = "d3"` in `capy.toml`
+2. **Per-project manifest**: `use_impl "chart" "d3"` in `capy.capy`
    (the project's, not the library's)
 3. **Env var**: `CAPY_IMPL_CHART=d3`
 4. **Generic env var**: `CAPY_IMPL=d3`
-5. **Library's `default-impl`** in its `capy.toml`
+5. **Library's `default-impl`** in its `capy.capy`
 
 If none of the above match, error with the available impl names.
 
@@ -549,7 +590,7 @@ capy run --impl mermaid chart script.chart
 # See what would be picked.
 capy lib resolve chart
 # chart 1.4.0
-# selected impl: d3 (from project capy.toml)
+# selected impl: d3 (from project capy.capy)
 # search path:   ~/.capy/libs/chart/
 ```
 
@@ -558,15 +599,16 @@ capy lib resolve chart
 A project at `~/work/dashboards/` can pin every library AND impl
 it uses:
 
-```toml
-# ~/work/dashboards/capy.toml
-[deps]
-chart = { version = "^1.0", source = "github:example/chart" }
-table = { version = "^2.1", source = "github:example/table" }
+```
+# ~/work/dashboards/capy.capy  (project manifest)
+project "dashboards"
 
-[impl]
-chart = "d3"
-table = "html"
+dep "chart" "^1.0" from "github:example/chart"
+dep "table" "^2.1" from "github:example/table"
+
+# Pin which impl this project uses, per library.
+use_impl "chart" "d3"
+use_impl "table" "html"
 ```
 
 `capy run script.chart` from anywhere inside `~/work/dashboards/`
@@ -606,21 +648,19 @@ decisions.
 
 Both libraries and individual impls have semantic versions:
 
-```toml
-# ~/.capy/libs/chart/capy.toml
-[library]
-name    = "chart"
-version = "1.4.0"           # library version (interface stability)
+```
+# ~/.capy/libs/chart/capy.capy
+name    "chart"
+version "1.4.0"             # library version (interface stability)
 
-[[impl]]
-name    = "mermaid"
-version = "1.2.3"           # impl version (output stability)
-file    = "impl/mermaid.capy"
+impl "mermaid" "impl/mermaid.capy"
+    version "1.2.3"         # impl version (output stability)
+    default
+end
 
-[[impl]]
-name    = "d3"
-version = "2.0.0-beta.4"
-file    = "impl/d3.capy"
+impl "d3" "impl/d3.capy"
+    version "2.0.0-beta.4"
+end
 ```
 
 **Library version** changes when the *interface* changes —
@@ -691,40 +731,40 @@ external libraries to depend on.
 
 ### Design
 
-A `capy.lock` next to a project's `capy.toml` records the *exact*
+A `capy.lock` next to a project's `capy.capy` records the *exact*
 versions resolved at install time. Commit it; CI re-resolves to
 the same versions.
 
-```toml
-# capy.lock
-generated-by = "capy 0.20.0"
-generated-at = "2026-05-25T12:00:00Z"
-
-[[lib]]
-name    = "chart"
-version = "1.4.0"
-source  = "github:example/chart"
-sha256  = "9c2b5e…a8f7"
-
-[[lib]]
-name    = "chart"
-impl    = "d3"
-version = "2.0.0-beta.4"
-sha256  = "f1b9…0142"
-
-[[lib]]
-name    = "recipe"
-version = "2.1.5"
-source  = "github:example/recipe"
-sha256  = "5e7a…d31c"
 ```
+# capy.lock — generated, do not hand-edit
+generated_by "capy 0.20.0"
+generated_at "2026-05-25T12:00:00Z"
+
+locked_lib "chart" "1.4.0"
+    source "github:example/chart"
+    sha256 "9c2b5e…a8f7"
+end
+
+locked_impl "chart" "d3" "2.0.0-beta.4"
+    sha256 "f1b9…0142"
+end
+
+locked_lib "recipe" "2.1.5"
+    source "github:example/recipe"
+    sha256 "5e7a…d31c"
+end
+```
+
+Same Capy syntax as everywhere else — the lock is just a
+generated form of the manifest grammar, the engine parses it
+through the same manifest library that reads `capy.capy`.
 
 ### Walkthrough
 
 ```sh
 # First add.
 capy lib add github.com/example/chart@^1.4
-# Writes capy.toml AND capy.lock.
+# Writes capy.capy AND capy.lock.
 
 # On a fresh checkout.
 capy lib install
@@ -740,7 +780,7 @@ capy lib upgrade chart
 - **Pro:** reproducible builds.
 - **Pro:** SHAs catch silent upstream tampering.
 - **Con:** more files in the repo. Mitigation: just commit them
-  alongside `capy.toml`; people are used to it.
+  alongside `capy.capy`; people are used to it.
 
 ### Effort
 
@@ -767,7 +807,7 @@ and (eventually) publish it. Each step should feel obvious.
 ```sh
 capy lib new my-recipe
 # Creates ~/.capy/libs/my-recipe/ with:
-#   capy.toml          (filled in with name, version 0.1.0, your git author)
+#   capy.capy          (filled in with name, version 0.1.0, your git author)
 #   my-recipe.capy     (a minimal "hello world" library)
 #   examples/
 #     hello.my-recipe  (a sample script)
@@ -789,7 +829,7 @@ capy lib new my-recipe --output-file "recipe.html"
 ```sh
 $ capy lib new lemon-recipes
 ✓ created ~/.capy/libs/lemon-recipes/
-✓ capy.toml
+✓ capy.capy
 ✓ lemon-recipes.capy (minimal library)
 ✓ examples/hello.lemon-recipes
 ✓ README.md
@@ -806,7 +846,7 @@ Hello from lemon-recipes!
 
 - **Pro:** zero-friction onboarding. The output of `capy lib new`
   is already a working library.
-- **Pro:** the scaffolded `capy.toml` sets the right defaults
+- **Pro:** the scaffolded `capy.capy` sets the right defaults
   (license, author from git config).
 
 ### Effort
@@ -826,11 +866,17 @@ Useful while developing one — no need to install before testing.
 
 ### Design
 
-`capy.toml` accepts path-based deps:
+`capy.capy` accepts path-based deps:
 
-```toml
-[deps]
-my-recipe = { path = "./libs/my-recipe" }
+```
+dep "my-recipe" from "./libs/my-recipe"   # local path, no version
+```
+
+…or, with a version constraint for sanity-checking the version
+declared in the linked manifest:
+
+```
+dep "my-recipe" "^0.1" from "./libs/my-recipe"
 ```
 
 Or invoke directly:
@@ -858,10 +904,9 @@ EOF
 # Use it via path.
 capy run ./libs/notes/notes.capy script.notes
 
-# Or register in project capy.toml.
-cat >> my-app/capy.toml <<'EOF'
-[deps]
-notes = { path = "./libs/notes" }
+# Or register in project capy.capy.
+cat >> my-app/capy.capy <<'EOF'
+dep "notes" from "./libs/notes"
 EOF
 
 capy run notes script.notes     # path-based dep resolved
@@ -876,7 +921,7 @@ capy run notes script.notes     # path-based dep resolved
 ### Effort
 
 **Tiny.** Already works via direct paths; just add `path = …`
-support to `capy.toml`.
+support to `capy.capy`.
 
 ### Recommendation
 
@@ -1342,8 +1387,8 @@ order:
 
 1. File extension (`.recipe` → library `recipe`).
 2. Inline magic comment: `# capy: lib=recipe`.
-3. Workspace setting in `.capy/lsp.toml`.
-4. Project `capy.toml` declares a default library.
+3. Workspace setting in `.capy/lsp.capy`.
+4. Project `capy.capy` declares a default library.
 
 ### Trade-offs
 
