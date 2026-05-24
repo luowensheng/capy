@@ -2,124 +2,262 @@
 title: Capy
 hide:
   - navigation
+  - toc
 ---
 
-# Capy
+<div class="capy-hero" markdown>
 
-> **Write something simple. Get something polished.**
->
-> Capy turns plain, English-like descriptions into real artifacts —
-> printable recipe cards, party invitations, weekly schedules,
-> reading logs, full websites, code, configs. Anyone can use it;
-> developers can extend it.
+<span class="capy-eyebrow">A TRANSPILER ENGINE WITH ZERO DEFAULT GRAMMAR</span>
 
-<iframe src="assets/hero/hero.html" width="100%" height="540" style="border: 0; border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.18); display: block; margin: 8px 0 28px;" title="Capy in action"></iframe>
+# Describe what you want. Capy produces what you need.
+
+Capy takes a tiny declaration — say, *"a recipe with these
+ingredients"*, *"an API with these endpoints"*, *"an Android app
+with these screens"* — and turns it into the **real artifact**:
+HTML, Swift, Kotlin, Go + tests, Terraform, libtorch C++, anything
+textual.
+
+<iframe src="assets/hero/hero.html" width="100%" height="500" style="border: 0; border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.18); display: block; margin: 18px 0 24px;" title="Capy in action"></iframe>
 
 [Open the playground :material-play-box-outline:](playground.md){ .md-button .md-button--primary }
+[See the samples :material-folder-open:](showcase.md){ .md-button }
 [Get started in 5 min :material-rocket-launch:](getting-started.md){ .md-button }
-[For everyone :material-account-multiple:](for-everyone.md){ .md-button }
-[Live demos :material-play-circle:](showcase.md){ .md-button }
-[Browse all samples :material-folder-open:](https://github.com/luowensheng/capy/tree/main/samples){ .md-button }
-
----
-
-## Find what you need
-
-Pick the entry point that matches what you want to do:
-
-<div class="grid cards" markdown>
-
-- :material-play-box-outline: **I want to try Capy right now**
-
-    ➜ [**Open the playground**](playground.md) — runs in your browser, six curated samples, edit + preview + download. No install.
-
-- :material-account-multiple: **I'm not a programmer — what is this?**
-
-    ➜ [**Capy for everyone**](for-everyone.md) — the recipe-card sample as the worked example. Five-minute setup, no code background needed.
-
-- :material-rocket-launch: **I'm a developer evaluating Capy**
-
-    ➜ [**Showcase**](showcase.md) (15+ live demos) → [**Use cases**](use-cases.md) → [**Idea language**](idea-language.md) for the framing.
-
-- :material-school: **I want to learn how it works**
-
-    ➜ [**Getting started**](getting-started.md) (5 min) → [**Tutorial 1**](tutorials/01-hello-world.md) → [**Library authoring**](library-authoring.md) reference.
-
-- :material-puzzle: **I want to write my own library / DSL**
-
-    ➜ [**Library authoring**](library-authoring.md) → [`.capy` library syntax](capy-libraries.md) → [Templates](templates.md) → [Types](types.md) → [Inner DSL](inner-dsl.md).
-
-- :material-file-tree: **I want to scaffold a multi-file project**
-
-    ➜ [**One source → many files**](one-source-many-files.md) — web app, Android, iOS, libtorch C++ scaffolding from a single source.
-
-- :material-palette-swatch: **I want a design system across React/Vue/Svelte**
-
-    ➜ [**Design systems**](design-systems.md) — one component declaration, three frameworks, identical visual semantics.
-
-- :material-test-tube: **I want backend code with auto-wired tests**
-
-    ➜ [**Backend codegen**](backend-codegen.md) — every `handler` declaration emits the Go stub AND a matching smoke test.
-
-- :material-rocket-launch-outline: **I want to supercharge an existing format**
-
-    ➜ [**Extend existing syntax**](extending-existing-syntax.md) — Capy as a preprocessor for SQL, Markdown, Dockerfile, K8s manifests.
-
-- :material-language-go: **I want to embed Capy in my Go program**
-
-    ➜ [**Embedding guide**](embedding.md) — `capy.NewLibrary(src)` + `(*Library).Run(src)`. No subprocess, no library files.
-
-- :material-robot: **I want an AI agent to use Capy**
-
-    ➜ [**MCP server setup**](mcp.md) → [**AI integration cookbook**](cookbook-ai.md) (10 recipes) → drop in [the Claude Code skill](https://github.com/luowensheng/capy/tree/main/skills/capy-mcp).
-
-- :material-lightbulb-on-outline: **I want the philosophy**
-
-    ➜ [**Capy as an idea language**](idea-language.md) — describe ideas, libraries implement them, swap implementations without rewrites.
 
 </div>
 
 ---
 
-## Capy in one paragraph
+<div class="capy-section" markdown>
 
-Most people end up writing the same things over and over — recipe
-cards, invitations, meal plans, reading logs, configs, API specs,
-codebases. Capy lets you describe **what you want** in a few plain
-lines, and turns it into **what you'd otherwise have to format by
-hand**. The vocabulary is whatever you (or someone before you)
-designed for the task — `recipe`, `invite`, `endpoint`, `table`,
-`scene`, whatever fits. No syntax to memorize. No code to learn.
+## What you'll build
 
-The demos above show four ready-made vocabularies. There are 50+
-more in the repo — and you can write your own (or ask an AI to)
-in about thirty minutes.
+Below are real artifacts produced by short Capy sources, **rendered
+live**. Each card embeds the actual generated output.
+
+</div>
+
+<div class="show-grid" markdown>
+
+<div class="show-card" markdown>
+<div class="show-card-head" markdown>
+<div class="show-card-eyebrow">MOBILE</div>
+<h3>Habit Tracker — phone-ready app</h3>
+<p>15 lines declare screens and features. The Android and iOS
+libraries scaffold native code; this preview is the parallel web
+build for live interaction.</p>
+</div>
+<div class="canvas" markdown>
+<div class="phone-frame">
+  <iframe src="assets/demos/habit-tracker.html" sandbox="allow-scripts allow-same-origin" title="Habit Tracker"></iframe>
+</div>
+</div>
+<div class="footer">
+<a href="one-source-many-files.md#mobile-same-source-two-platforms">Read the mobile pattern →</a>
+<code>samples/android-app + ios-app</code>
+</div>
+</div>
+
+<div class="show-card" markdown>
+<div class="show-card-head" markdown>
+<div class="show-card-eyebrow">GAMES</div>
+<h3>Breakout — interactive HTML5 game</h3>
+<p>18 lines of declarative DSL declare entities, key bindings, and
+event handlers. 226 lines of working JS generated.</p>
+</div>
+<div class="canvas" markdown>
+<iframe src="assets/demos/breakout.html" sandbox="allow-scripts allow-same-origin" style="width: 100%; max-width: 480px; height: 320px; border: 1px solid #333; border-radius: 6px; background: #0a0a14;" title="Breakout"></iframe>
+</div>
+<div class="footer">
+<a href="showcase.md">More playable demos →</a>
+<code>samples/interactive-breakout</code>
+</div>
+</div>
+
+<div class="show-card" markdown>
+<div class="show-card-head" markdown>
+<div class="show-card-eyebrow">EVERYDAY</div>
+<h3>Recipe card — printable HTML</h3>
+<p>A home cook writes 6 keywords (`recipe`, `serves`, `ingredient`,
+`step`, `tip`); the library produces a polished printable card.</p>
+</div>
+<div class="canvas" markdown>
+<iframe src="assets/demos/recipe-card.html" sandbox="allow-scripts allow-same-origin" style="width: 100%; max-width: 480px; height: 480px; border: 1px solid #e8d9b0; border-radius: 6px; background: #fdf6e3;" title="Recipe card"></iframe>
+</div>
+<div class="footer">
+<a href="for-everyone.md">Capy for non-programmers →</a>
+<code>samples/recipe-card</code>
+</div>
+</div>
+
+<div class="show-card" markdown>
+<div class="show-card-head" markdown>
+<div class="show-card-eyebrow">BACKEND</div>
+<h3>Auto-wired handler + test code</h3>
+<p>Every <code>handler</code> declaration emits the Go stub <em>and</em> a
+matching smoke test. The team's directory layout is enforced by the
+library. <strong><code>go test</code> on the generated code passes.</strong></p>
+</div>
+<div class="canvas" markdown>
+<div class="terminal-frame" style="width: 100%;">
+  <div class="chrome">
+    <span class="lights" style="display:inline-flex;gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:#ff5f57;display:inline-block;"></span><span style="width:10px;height:10px;border-radius:50%;background:#ffbd2e;display:inline-block;"></span><span style="width:10px;height:10px;border-radius:50%;background:#28c940;display:inline-block;"></span></span>
+    <span class="title">go test</span>
+  </div>
+<pre style="font-size:11.5px;"><span class="muted">$ go test ./...</span>
+<span class="ok">--- PASS: Test_ListUsers_RouteRegistered (0.00s)</span>
+<span class="ok">--- PASS: Test_GetUser_RouteRegistered (0.00s)</span>
+<span class="ok">--- PASS: Test_CreateUser_RouteRegistered (0.00s)</span>
+<span class="ok">--- PASS: Test_DeleteUser_RouteRegistered (0.00s)</span>
+PASS
+ok    example/handlers   <span class="ok">0.448s</span>
+<span class="cursor"></span></pre>
+</div>
+</div>
+<div class="footer">
+<a href="backend-codegen.md">Backend codegen →</a>
+<code>samples/backend-with-tests</code>
+</div>
+</div>
+
+</div>
 
 ---
-## What makes Capy different
 
-- **No default grammar.** The library is the entire user-facing
-  vocabulary. Two libraries → two different DSLs from the same
-  engine.
-- **Deterministic output.** Same source + same library = byte-
-  identical result, every time. CI-friendly. Reviewable.
-- **Multi-target by design.** Swap libraries to retarget; the
-  source never changes. The [multi-language demo](showcase.md)
-  compiles one source to Python, JavaScript, Go, Rust, AND C.
-- **Multi-file output.** A single source can scaffold a whole
-  project tree (web app, Android, iOS, libtorch C++ trainer).
-  Bundle to a zip with `--zip`.
-- **Embeddable as a Go library.** No binary required at runtime;
-  your program defines its own DSL inline.
-- **AI-friendly.** Ships an [MCP server](mcp.md) and a
-  [Claude Code skill](https://github.com/luowensheng/capy/tree/main/skills/capy-mcp)
-  so agents can use Capy as a tool.
-- **Runs in the browser.** [The playground](playground.md) is the
-  compiler itself, compiled to WebAssembly.
+<div class="capy-section" markdown>
+
+## For your team
+
+Capy isn't one feature; it's a **substrate** that absorbs your team's
+conventions and replays them across every project. Pick the role
+that matches you:
+
+</div>
+
+<div class="audience-grid" markdown>
+
+<div class="audience-card" markdown>
+<div class="role">:material-react: FRONTEND</div>
+<h4>Design system across React + Vue + Svelte</h4>
+<p>One component declaration compiles to all three frameworks with
+**identical Tailwind classes**, identical layout, identical sizing.
+Add new components in the library once — every framework regenerates.</p>
+<a href="design-systems.md">Pattern docs →</a>
+</div>
+
+<div class="audience-card" markdown>
+<div class="role">:material-server: BACKEND</div>
+<h4>Conventions enforced, tests auto-wired</h4>
+<p>Every `handler` line emits the stub **and** the test. Directory
+layout, "every handler has a test", router placement — encoded in
+the library. New contributors can't violate them. Generated `go test`
+passes.</p>
+<a href="backend-codegen.md">Pattern docs →</a>
+</div>
+
+<div class="audience-card" markdown>
+<div class="role">:material-cellphone: MOBILE</div>
+<h4>Android + iOS from a single declaration</h4>
+<p>One `script.capy` declares the app's screens and features. Two
+libraries (`lib_android.capy`, `lib_ios.capy`) emit Kotlin + manifest
++ gradle, or SwiftUI + Info.plist + Package.swift. Drop into Android
+Studio / Xcode.</p>
+<a href="one-source-many-files.md#mobile-same-source-two-platforms">Mobile demo →</a>
+</div>
+
+<div class="audience-card" markdown>
+<div class="role">:material-robot-outline: AI / AGENTS</div>
+<h4>MCP server + Claude Code skill</h4>
+<p>`capy-mcp` exposes `capy_check` / `capy_run` / `capy_run_file` to
+any MCP client (Claude Desktop, Claude Code, Cursor, Zed). The
+library is the agent's contract — sandboxed by design, 5–10× fewer
+tokens than emitting target code directly.</p>
+<a href="mcp.md">MCP setup →</a>
+</div>
+
+<div class="audience-card" markdown>
+<div class="role">:material-cog-outline: DEVOPS</div>
+<h4>Configs as a library</h4>
+<p>Dockerfile, Kubernetes, Terraform, GitHub Actions, Prometheus,
+nginx — all become libraries that absorb your house style. The
+output is plain target syntax; your runtime doesn't know Capy ran.</p>
+<a href="extending-existing-syntax.md">Pattern docs →</a>
+</div>
+
+<div class="audience-card" markdown>
+<div class="role">:material-palette-outline: DESIGN</div>
+<h4>One UI source, no drift</h4>
+<p>Encode your tokens (button variants, card padding, sizing scale)
+in the library; every consumer produces identical visuals. The
+designer reads the library once and knows every shape the system
+can ever produce.</p>
+<a href="design-systems.md">Design systems →</a>
+</div>
+
+<div class="audience-card" markdown>
+<div class="role">:material-account-multiple: MANAGER</div>
+<h4>Stop the rewrite cycle</h4>
+<p>Capy is for ideas; libraries are implementations. When Go isn't
+fast enough and you want Rust — swap the library, not rewrite the
+system. The contract stays stable while the implementation evolves.</p>
+<a href="idea-language.md">Idea-language thesis →</a>
+</div>
+
+<div class="audience-card" markdown>
+<div class="role">:material-account-multiple-outline: NON-PROGRAMMER</div>
+<h4>You don't need code background</h4>
+<p>The 8 "Everyday" samples (recipe / invitation / meal plan /
+reading log / trip itinerary / resume / invoice / to-do) use
+plain-English keywords. Edit a few lines, get a polished printable
+artifact.</p>
+<a href="for-everyone.md">Start here →</a>
+</div>
+
+</div>
 
 ---
+
+<div class="capy-section" markdown>
+
+## What enterprises ask for, and what Capy gives them
+
+</div>
+
+| Enterprise concern | How Capy addresses it |
+|---|---|
+| **"Our design system drifts across stacks"** | One library encodes the tokens. Frontend, Vue, mobile all consume the same declarations. Drift becomes physically impossible. |
+| **"Every new dev rediscovers our conventions"** | Conventions live in the library, not in tribal knowledge. Scaffolding a new module always lays files in the right places. |
+| **"Rewrites kill velocity"** | Capy is for ideas; libraries are implementations. Swap Go to Rust by adding a Rust library; the source never changes. |
+| **"We have an API spec, but it drifts from the code"** | The Capy source IS the spec. OpenAPI, TypeScript clients, Markdown docs all generated from one source. CI diffs detect drift instantly. |
+| **"Our AI tools hallucinate target-language code"** | Capy gives the agent a finite, library-defined vocabulary. The agent emits short DSL; Capy produces guaranteed-shape output. |
+| **"Spec-first is impossible; backend always lags"** | The DSL parses today → frontend mocks against it today. Backend ships a library against the same source later. The contract is stable from day one. |
+| **"Multi-platform is exponentially expensive"** | One source → Android + iOS + web from three libraries. New platform = new library, not new project. |
+| **"Conventions in PR-review comments don't scale"** | A library is enforced by the tool, not by the reviewer. Whole categories of "you forgot the test / wrong package / missing audit field" disappear. |
+
+---
+
+<div class="capy-section" markdown>
+
+## In one paragraph
+
+Most teams end up writing the same things over and over — config
+files, API stubs, schema migrations, design-system primitives,
+docs, manifests, tests. **Capy lets you describe *what* you want in
+a few plain lines**; a library encodes *how* each target produces
+it. Same source → many artifacts, byte-identical every time, all
+typed and validated at the boundary. Use it from the CLI, embed it
+as a Go library, ship it through an MCP server to AI agents, or
+[try it right now in your browser](playground.md) — the compiler
+runs as WebAssembly.
+
+</div>
+
+---
+
+<div class="capy-section" markdown>
 
 ## Install
+
+</div>
 
 ```sh
 # CLI
@@ -135,7 +273,7 @@ go install github.com/luowensheng/capy/cmd/capy-mcp@latest
 curl -fsSL https://raw.githubusercontent.com/luowensheng/capy/main/scripts/install.sh | sh
 ```
 
-Then run a sample:
+Run a sample:
 
 ```sh
 git clone https://github.com/luowensheng/capy
@@ -144,26 +282,14 @@ capy run samples/recipe-card/lib.capy samples/recipe-card/script.capy > my-recip
 open my-recipe.html
 ```
 
-…or just open the [playground](playground.md) in your browser — no
-install at all.
+…or just open the [playground](playground.md) — no install at all.
 
 ---
 
-## Status
+<small>**Capy v0.10** — engine + library schema stable. CLI ships
+binaries for linux / darwin / windows × amd64 / arm64. MCP server
+ships in every release. Browser playground runs the same engine.
+[Full changelog](https://github.com/luowensheng/capy/blob/main/CHANGELOG.md).</small>
 
-Capy is **v0.10**. The engine is stable; the library schema is
-stable; expect occasional additions, not breaking changes. Every
-release ships:
-
-- CLI binaries for linux / darwin / windows × amd64 / arm64
-- The `capy-mcp` MCP server for AI agents
-- A Go library import (`github.com/luowensheng/capy`)
-- Updated browser playground
-
-See the [CHANGELOG](https://github.com/luowensheng/capy/blob/main/CHANGELOG.md)
-for the full version history.
-
----
-
-*Open source under MIT. Contributions welcome at
+*Open source under MIT. Contributions at
 [github.com/luowensheng/capy](https://github.com/luowensheng/capy).*
