@@ -170,6 +170,32 @@ func translateWriteStmt(w domain.WriteStmt, tpl *strings.Builder, scope map[stri
 	}
 }
 
+// nextEmitStartsWithBrace reports whether the next emission of
+// translateInterpolatedString at position i would start with a `{`
+// character. Used to disambiguate adjacent literal/escaped braces.
+func nextEmitStartsWithBrace(s string, i int) bool {
+	if i >= len(s) {
+		return false
+	}
+	// `${...}` → emits `{{ ... }}`.
+	if i+1 < len(s) && s[i] == '$' && s[i+1] == '{' {
+		return true
+	}
+	// `{{` → emits `{{"{{"}}`.
+	if i+1 < len(s) && s[i] == '{' && s[i+1] == '{' {
+		return true
+	}
+	// `}}` → emits `{{"}}"}}`.
+	if i+1 < len(s) && s[i] == '}' && s[i+1] == '}' {
+		return true
+	}
+	// `{` adjacent to a brace-emitter → recursive case (also emits `{{"{"}}`).
+	if s[i] == '{' && nextEmitStartsWithBrace(s, i+1) {
+		return true
+	}
+	return false
+}
+
 // translateInterpolatedString converts a backtick literal body
 // (with embedded `${EXPR}` interpolations) into Go template syntax.
 // Literal text is preserved; `${X}` becomes `{{ .X }}` (or the
@@ -229,6 +255,17 @@ func translateInterpolatedString(s string, tpl *strings.Builder, scope map[strin
 			i += 2
 			continue
 		}
+		// A literal `{` that ends up adjacent to another template-
+		// emitting sequence (`${...}`, an escaped `{{` or `}}`,
+		// another literal `{`) would create `{{...` in the output —
+		// which Go template's lexer reads as an action opener with an
+		// invalid body. Escape this `{` via the safe `{{"{"}}` form
+		// whenever the next emission would start with `{`.
+		if s[i] == '{' && nextEmitStartsWithBrace(s, i+1) {
+			tpl.WriteString(`{{"{"}}`)
+			i++
+			continue
+		}
 		tpl.WriteByte(s[i])
 		i++
 	}
@@ -238,15 +275,40 @@ func translateInterpolatedString(s string, tpl *strings.Builder, scope map[strin
 // interpolationToTemplate translates the inside of a `${...}`
 // expression into Go-template form. Recognised shapes:
 //
-//	name            → .name
-//	context.foo     → .context.foo
-//	body            → .body
-//	func arg1 arg2  → func arg1template arg2template
-//	(no operators, no nested ${} — keeps the grammar small)
+//	name                    → .name
+//	context.foo             → .context.foo
+//	body                    → .body
+//	func arg1 arg2          → func arg1template arg2template
+//	func (inner x) y        → func (inner .x) .y     (parens nest calls)
+//	x | upper | toQuoted    → toQuoted (upper .x)    (pipe-chain rewrite)
+//
+// No string concatenation, no arithmetic — those have to be
+// pre-computed in `set` / `let` statements.
 func interpolationToTemplate(expr string, scope map[string]bool) string {
 	expr = strings.TrimSpace(expr)
 	if expr == "" {
 		return ""
+	}
+	// Pipe form `x | f1 | f2` → rewrite to nested prefix calls
+	// `f2 (f1 x)`. Pipe stages are applied left-to-right with each
+	// stage receiving the previous result as its FINAL argument.
+	if segs := splitInterpPipe(expr); len(segs) > 1 {
+		// First segment is the value (or call) being piped.
+		out := interpolationToTemplate(segs[0], scope)
+		for _, stage := range segs[1:] {
+			// Each stage is `fn arg1 arg2`. Append the running value
+			// as the final argument: `fn arg1 arg2 value`.
+			parts := tokeniseInterp(strings.TrimSpace(stage))
+			if len(parts) == 0 {
+				continue
+			}
+			stageRendered := parts[0]
+			for _, a := range parts[1:] {
+				stageRendered += " " + interpAtomToTemplate(a, scope)
+			}
+			out = stageRendered + " (" + out + ")"
+		}
+		return out
 	}
 	parts := tokeniseInterp(expr)
 	if len(parts) == 0 {
@@ -263,9 +325,59 @@ func interpolationToTemplate(expr string, scope map[string]bool) string {
 	return out
 }
 
+// splitInterpPipe splits a `${...}` body on top-level `|` characters.
+// Pipes inside parentheses or quoted strings are NOT split — so
+// `f (a | b)` stays a single segment.
+func splitInterpPipe(s string) []string {
+	var out []string
+	var cur strings.Builder
+	depth := 0
+	inStr := false
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if inStr {
+			cur.WriteByte(c)
+			if c == '\\' && i+1 < len(s) {
+				cur.WriteByte(s[i+1])
+				i++
+				continue
+			}
+			if c == '"' {
+				inStr = false
+			}
+			continue
+		}
+		switch c {
+		case '"':
+			inStr = true
+			cur.WriteByte(c)
+		case '(':
+			depth++
+			cur.WriteByte(c)
+		case ')':
+			depth--
+			cur.WriteByte(c)
+		case '|':
+			if depth == 0 {
+				out = append(out, cur.String())
+				cur.Reset()
+				continue
+			}
+			cur.WriteByte(c)
+		default:
+			cur.WriteByte(c)
+		}
+	}
+	if cur.Len() > 0 {
+		out = append(out, cur.String())
+	}
+	return out
+}
+
 // interpAtomToTemplate translates a single token from the inside of
 // `${…}` into the equivalent Go-template form. Numbers and quoted
-// strings pass through verbatim; identifiers in scope (loop
+// strings pass through verbatim; parenthesised expressions are
+// recursively interpolated; identifiers in scope (loop
 // variables) become `$name`; everything else becomes `.name`.
 func interpAtomToTemplate(s string, scope map[string]bool) string {
 	if s == "" {
@@ -273,6 +385,12 @@ func interpAtomToTemplate(s string, scope map[string]bool) string {
 	}
 	if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
 		return s
+	}
+	// Parenthesised group: recursively interpret the inner expression
+	// as a nested call/value. `${toQuoted (upper x)}` works because
+	// `(upper x)` is one atom that translates to `(upper .x)`.
+	if len(s) >= 2 && s[0] == '(' && s[len(s)-1] == ')' {
+		return "(" + interpolationToTemplate(s[1:len(s)-1], scope) + ")"
 	}
 	if _, err := strconv.ParseFloat(s, 64); err == nil {
 		return s
@@ -286,8 +404,13 @@ func interpAtomToTemplate(s string, scope map[string]bool) string {
 		if scope[root] {
 			return "$" + s
 		}
+		if root == "context" {
+			return "$." + s
+		}
 	} else if scope[s] {
 		return "$" + s
+	} else if s == "context" {
+		return "$." + s
 	}
 	return "." + s
 }
@@ -296,6 +419,7 @@ func tokeniseInterp(s string) []string {
 	var out []string
 	var cur strings.Builder
 	inStr := false
+	depth := 0 // parenthesis nesting; parens stay inside the current token
 	for i := 0; i < len(s); i++ {
 		c := s[i]
 		if inStr {
@@ -307,13 +431,35 @@ func tokeniseInterp(s string) []string {
 			}
 			if c == '"' {
 				inStr = false
-				out = append(out, cur.String())
-				cur.Reset()
+				if depth == 0 {
+					out = append(out, cur.String())
+					cur.Reset()
+				}
 			}
 			continue
 		}
 		if c == '"' {
 			inStr = true
+			cur.WriteByte(c)
+			continue
+		}
+		if c == '(' {
+			depth++
+			cur.WriteByte(c)
+			continue
+		}
+		if c == ')' {
+			depth--
+			cur.WriteByte(c)
+			if depth == 0 {
+				out = append(out, cur.String())
+				cur.Reset()
+			}
+			continue
+		}
+		if depth > 0 {
+			// Inside a paren group — keep everything verbatim (including
+			// spaces) so the recursive interpolator sees the whole body.
 			cur.WriteByte(c)
 			continue
 		}
@@ -409,6 +555,13 @@ func refPath(path []string, scope map[string]bool) string {
 	// Loop variable? Emit Go-template variable reference `$name`.
 	if len(path) > 0 && scope[path[0]] {
 		return "$" + strings.Join(path, ".")
+	}
+	// `context.X` always references the ROOT context (not the
+	// current iteration value), even when used inside a range.
+	// Go template's `.` rebinds inside `range`, so use `$` (root) to
+	// keep `context.X` lookups stable.
+	if len(path) > 0 && path[0] == "context" {
+		return "$." + strings.Join(path, ".")
 	}
 	return "." + strings.Join(path, ".")
 }

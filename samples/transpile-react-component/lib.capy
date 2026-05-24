@@ -23,36 +23,65 @@ function component
     arg literal "component"
     arg capture name ident
     block_closer end
-    template:
-        import React, { useState } from "react";
+    write `import React, { useState } from "react";
 
-        type {{ .name }}Props = {
-        {{- range .context.props }}
-          {{ .name }}: {{ if eq .type "string" }}string{{ else if eq .type "int" }}number{{ else if eq .type "bool" }}boolean{{ else }}any{{ end }};
-        {{- end }}
-        };
+type ${name}Props = {
+`
+    for p in context.props
+        write `  ${p.name}: `
+        if p.type == "string"
+            write `string`
+        else if p.type == "int"
+            write `number`
+        else if p.type == "bool"
+            write `boolean`
+        else
+            write `any`
+        end
+        write `;
+`
+    end
+    write `};
 
-        export function {{ .name }}(props: {{ .name }}Props) {
-        {{- range .context.state }}
-          const [{{ .name }}, set{{ .name | pascalCase }}] = useState<{{ if eq .type "string" }}string{{ else if eq .type "int" }}number{{ else if eq .type "bool" }}boolean{{ else }}any{{ end }}>({{ .init }});
-        {{- end }}
-
-          return (
-            <div>
-        {{- range .context.widgets }}
-              {{- if eq .verb "heading_for" }}
-              <h1>{props.{{ .arg1 }}}: {{ "{" }}{{ .arg2 }}{{ "}" }}</h1>
-              {{- else if eq .verb "button_inc" }}
-              <button onClick={() => set{{ .arg2 | pascalCase }}({{ .arg2 }} + 1)}>{{ .arg1 | unquote }}</button>
-              {{- else if eq .verb "button_toggle" }}
-              <button onClick={() => set{{ .arg2 | pascalCase }}(!{{ .arg2 }})}>{{ .arg1 | unquote }}</button>
-              {{- else if eq .verb "paragraph_when_not" }}
-              {!{{ .arg1 }} && <p>{{ .arg2 | unquote }}</p>}
-              {{- end }}
-        {{- end }}
-            </div>
-          );
-        }
+export function ${name}(props: ${name}Props) {
+`
+    for s in context.state
+        write `  const [${s.name}, set${s.name | pascalCase}] = useState<`
+        if s.type == "string"
+            write `string`
+        else if s.type == "int"
+            write `number`
+        else if s.type == "bool"
+            write `boolean`
+        else
+            write `any`
+        end
+        write `>(${s.init});
+`
+    end
+    write `
+  return (
+    <div>
+`
+    for w in context.widgets
+        if w.verb == "heading_for"
+            write `      <h1>{props.${w.arg1}}: {${w.arg2}}</h1>
+`
+        else if w.verb == "button_inc"
+            write `      <button onClick={() => set${w.arg2 | pascalCase}(${w.arg2} + 1)}>${unquote w.arg1}</button>
+`
+        else if w.verb == "button_toggle"
+            write `      <button onClick={() => set${w.arg2 | pascalCase}(!${w.arg2})}>${unquote w.arg1}</button>
+`
+        else if w.verb == "paragraph_when_not"
+            write `      {!${w.arg1} && <p>${unquote w.arg2}</p>}
+`
+        end
+    end
+    write `    </div>
+  );
+}
+`
 end
 
 function prop
@@ -110,6 +139,5 @@ end
 
 file_template
     write `${body}
-
 `
 end

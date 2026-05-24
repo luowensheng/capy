@@ -53,25 +53,64 @@ function refine_n
     append context.refines {schema: schema, field: field, verb: verb, value: value}
 end
 
-file_template:
-    import { z } from "zod";
-    {{ range .context.schemas }}
-    {{- $s := . }}
-    export const {{ $s }} = z.object({
-    {{- range $f := $.context.fields }}
-    {{- if eq $f.schema $s }}
-      {{ $f.name }}: {{ if eq $f.type "string" }}z.string(){{ else if eq $f.type "int" }}z.number().int(){{ else if eq $f.type "float" }}z.number(){{ else if eq $f.type "bool" }}z.boolean(){{ else if eq $f.type "string_list" }}z.array(z.string()){{ else }}z.any(){{ end }}
-      {{- range $r := $.context.refines }}
-      {{- if and (eq $r.schema $s) (eq $r.field $f.name) }}
-      {{- if eq $r.verb "format_email" }}.email(){{ else if eq $r.verb "optional" }}.optional(){{ else if eq $r.verb "default_empty" }}.default([]){{ else if eq $r.verb "min_length" }}.min({{ $r.value }}){{ else if eq $r.verb "max_length" }}.max({{ $r.value }}){{ else if eq $r.verb "min_value" }}.gte({{ $r.value }}){{ else if eq $r.verb "max_value" }}.lte({{ $r.value }}){{ end }}
-      {{- end }}
-      {{- end }},
-    {{- end }}
-    {{- end }}
-    });
-    {{ end }}
-    export type Schemas = {
-    {{- range .context.schemas }}
-      {{ . }}: z.infer<typeof {{ . }}>;
-    {{- end }}
-    };
+file_template
+    write `import { z } from "zod";
+
+`
+    for s in context.schemas
+        write `export const ${s} = z.object({
+`
+        for f in context.fields
+            if f.schema == s
+                write `  ${f.name}: `
+                if f.type == "string"
+                    write `z.string()`
+                else if f.type == "int"
+                    write `z.number().int()`
+                else if f.type == "float"
+                    write `z.number()`
+                else if f.type == "bool"
+                    write `z.boolean()`
+                else if f.type == "string_list"
+                    write `z.array(z.string())`
+                else
+                    write `z.any()`
+                end
+                for r in context.refines
+                    if r.schema == s
+                        if r.field == f.name
+                            if r.verb == "format_email"
+                                write `.email()`
+                            else if r.verb == "optional"
+                                write `.optional()`
+                            else if r.verb == "default_empty"
+                                write `.default([])`
+                            else if r.verb == "min_length"
+                                write `.min(${r.value})`
+                            else if r.verb == "max_length"
+                                write `.max(${r.value})`
+                            else if r.verb == "min_value"
+                                write `.gte(${r.value})`
+                            else if r.verb == "max_value"
+                                write `.lte(${r.value})`
+                            end
+                        end
+                    end
+                end
+                write `,
+`
+            end
+        end
+        write `});
+
+`
+    end
+    write `export type Schemas = {
+`
+    for s in context.schemas
+        write `  ${s}: z.infer<typeof ${s}>;
+`
+    end
+    write `};
+`
+end
