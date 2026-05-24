@@ -8,6 +8,64 @@ may break between minor versions**.
 
 ## [Unreleased]
 
+## [0.19.0] — 2026-05-24
+
+Libraries become CLIs. A library declares custom commands; the
+CLI dispatches `capy <lib> <command>`. Library lookup by name via
+a `CAPY_LIBS` search path. `capy new` scaffolds a project from a
+library.
+
+### Added — engine
+
+- **Manifest fields in `.capy` libraries:** `name "X"` and
+  `version "X"` at the top level.
+- **`command "NAME" ... end` blocks** at the top level of a
+  library. Body is the inner DSL extended with shell primitives.
+- **`let NAME = EXPR`** inner-DSL statement for local bindings
+  inside command bodies.
+- **Shell-flavoured inner-DSL primitives** (statement form):
+  `write_file`, `mkdir`, `exec`, `cd`, `print`.
+- **Value-position primitives**: `mktemp ".ext"`, `mktemp_dir`,
+  `exec_capture cmd args…`.
+- **`compile script_path`** primitive (registered via the
+  command-runner's hook) — renders the library on a script and
+  returns the output as a string.
+- **`OnUnknownCall` hook on `InnerEvaluator`** so embedders can
+  inject extra primitives without growing the global set.
+- **`domain.Host` gains** `WriteFile`, `Mkdir`, `MkTemp`,
+  `MkTempDir`, `Exec`, `ExecCapture`. `NoOpHost` returns
+  "filesystem / exec not available in this runtime"; `OSHost`
+  implements all of them.
+- **`domain.CommandDef`** + `domain.Library.Commands` map.
+- **`orchestrator.RunCommand(libPath, cmdName, args)`** — the
+  entry point the CLI uses to run a library command.
+
+### Added — CLI
+
+- **`capy lib list`** — print every library on `CAPY_LIBS`.
+- **`capy lib which <name>`** — show resolved path.
+- **`capy lib new <name>`** — scaffold a starter library with
+  manifest + a tiny `greet` function + `run`/`compile` commands +
+  example script.
+- **`capy lib path`** — print the search path.
+- **`capy new <dir> --using <library>`** — scaffold a new project
+  from a library. If the library declares a `new` command, it
+  gets dispatched with the project directory; otherwise a minimal
+  default scaffold lands.
+- **`capy <library> <command> [args]`** — library-name short
+  form. Only fires if the first arg looks like a library name AND
+  resolves on `CAPY_LIBS`.
+- **`capy <script>.<libname>`** — auto-detect the library from
+  the script's extension (e.g. `capy cake.recipe` resolves the
+  `recipe` library and runs its `run` command).
+
+### Added — docs
+
+- New page `docs/library-commands.md` covering the search path,
+  manifest fields, command body DSL, `capy lib` / `capy new`
+  subcommands, and a Python-library walkthrough.
+- Linked in mkdocs nav under Reference.
+
 ## [0.18.0] — 2026-05-24
 
 Unified `write:` block. The split between `template:` (Go text/template

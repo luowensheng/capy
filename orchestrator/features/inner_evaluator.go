@@ -2,12 +2,19 @@ package orchfeatures
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/luowensheng/capy/domain"
 )
+
+// osChdir is a thin wrapper kept here so command bodies can call
+// `cd PATH`. The Host interface doesn't expose Chdir because in
+// the engine's normal mode (rendering) it'd be a footgun; commands
+// run with explicit permission so the cost is acceptable.
+func osChdir(path string) error { return os.Chdir(path) }
 
 // InnerEvaluator runs a `run:` snippet against:
 //   - captures: the bindings the outer match produced (read-only).
@@ -19,6 +26,14 @@ import (
 type InnerEvaluator struct {
 	Context map[string]any
 	Host    domain.Host
+
+	// OnUnknownCall is invoked when runPrimitive doesn't recognise
+	// a CallStmt's name. Returning (val, true, err) means "handled
+	// (or errored)"; (nil, false, nil) means "still unknown, raise
+	// the normal error." Used by orchestrator/commands.go to add
+	// command-only primitives (like `compile script`) without
+	// growing the global primitive set.
+	OnUnknownCall func(name string, args []any) (any, bool, error)
 }
 
 // host returns a non-nil Host. The zero value of InnerEvaluator gets a
@@ -119,25 +134,83 @@ func (e *InnerEvaluator) execStmt(s domain.InnerStmt, caps map[string]domain.Cap
 
 func (e *InnerEvaluator) runPrimitive(c domain.CallExpr, caps map[string]domain.CaptureValue, locals map[string]any) error {
 	name := strings.Join(c.Name, ".")
-	switch name {
-	case "error":
-		if len(c.Args) == 0 {
-			return fmt.Errorf("error")
-		}
-		v, err := e.eval(c.Args[0], caps, locals)
+	// Evaluate all args once up-front.
+	argVals := make([]any, len(c.Args))
+	for i, a := range c.Args {
+		v, err := e.eval(a, caps, locals)
 		if err != nil {
 			return err
 		}
-		return fmt.Errorf("%s", toString(v))
+		argVals[i] = v
+	}
+	switch name {
+	case "error":
+		if len(argVals) == 0 {
+			return fmt.Errorf("error")
+		}
+		return fmt.Errorf("%s", toString(argVals[0]))
+	case "print":
+		// `print EXPR` — prints to stdout via host.
+		parts := make([]string, len(argVals))
+		for i, v := range argVals {
+			parts[i] = toString(v)
+		}
+		fmt.Println(strings.Join(parts, " "))
+		return nil
+	case "write_file":
+		if len(argVals) != 2 {
+			return fmt.Errorf("write_file: expected 2 args (path, contents)")
+		}
+		return e.host().WriteFile(toString(argVals[0]), toString(argVals[1]))
+	case "mkdir":
+		if len(argVals) != 1 {
+			return fmt.Errorf("mkdir: expected 1 arg (path)")
+		}
+		return e.host().Mkdir(toString(argVals[0]))
+	case "exec":
+		if len(argVals) == 0 {
+			return fmt.Errorf("exec: expected at least 1 arg (cmd)")
+		}
+		cmd := toString(argVals[0])
+		args := make([]string, len(argVals)-1)
+		for i, a := range argVals[1:] {
+			args[i] = toString(a)
+		}
+		return e.host().Exec(cmd, args...)
+	case "cd":
+		if len(argVals) != 1 {
+			return fmt.Errorf("cd: expected 1 arg (path)")
+		}
+		// Implemented via os.Chdir at the inner-DSL level (host
+		// abstraction would force a separate primitive; keeping it
+		// simple while command bodies are POC).
+		return osChdir(toString(argVals[0]))
+	}
+	// Last resort: hand off to the embedder's hook (used by command
+	// runners to add `compile script` etc.).
+	if e.OnUnknownCall != nil {
+		_, handled, err := e.OnUnknownCall(name, argVals)
+		if handled {
+			return err
+		}
 	}
 	return fmt.Errorf("unknown inner call %q", name)
 }
 
 // writePath performs op on context (or locals if root is "locals"). The path's
-// root must be either "context" or a name in `locals`/`caps`.
+// root must be either "context" or "locals".
 func (e *InnerEvaluator) writePath(p domain.Path, value any, caps map[string]domain.CaptureValue, locals map[string]any, op string) error {
+	if p.Root == "locals" {
+		// `let X = …` desugars to `set locals.X …`. Single-step paths
+		// are the normal case; nested writes use the standard walker.
+		if len(p.Steps) == 1 && !p.Steps[0].IsIndex {
+			locals[p.Steps[0].Field] = value
+			return nil
+		}
+		return fmt.Errorf("%s: only single-name `locals.X` writes are supported (got %d steps)", op, len(p.Steps))
+	}
 	if p.Root != "context" {
-		return fmt.Errorf("%s: only `context.*` paths are writable, got root %q", op, p.Root)
+		return fmt.Errorf("%s: only `context.*` and `locals.*` paths are writable, got root %q", op, p.Root)
 	}
 	if len(p.Steps) == 0 {
 		return fmt.Errorf("%s: path must have at least one step under context", op)
@@ -400,6 +473,52 @@ func (e *InnerEvaluator) eval(x domain.Expr, caps map[string]domain.CaptureValue
 				return nil, err
 			}
 			return content, nil
+		case "mktemp":
+			// mktemp ".ext" → string (path to a fresh temp file).
+			suffix := ""
+			if len(n.Args) == 1 {
+				v, err := e.eval(n.Args[0], caps, locals)
+				if err != nil {
+					return nil, err
+				}
+				suffix = toString(v)
+			}
+			return e.host().MkTemp(suffix)
+		case "mktemp_dir":
+			// mktemp_dir → string (path to a fresh temp directory).
+			if len(n.Args) != 0 {
+				return nil, fmt.Errorf("mktemp_dir takes no args")
+			}
+			return e.host().MkTempDir()
+		case "exec_capture":
+			// exec_capture "cmd" "arg1" "arg2" → string (combined stdout).
+			if len(n.Args) == 0 {
+				return nil, fmt.Errorf("exec_capture: expected at least 1 arg (cmd)")
+			}
+			vs := make([]string, len(n.Args))
+			for i, a := range n.Args {
+				v, err := e.eval(a, caps, locals)
+				if err != nil {
+					return nil, err
+				}
+				vs[i] = toString(v)
+			}
+			return e.host().ExecCapture(vs[0], vs[1:]...)
+		}
+		// Hook fallback (e.g. command-runner adds `compile script`).
+		if e.OnUnknownCall != nil {
+			argVals := make([]any, len(n.Args))
+			for i, a := range n.Args {
+				v, err := e.eval(a, caps, locals)
+				if err != nil {
+					return nil, err
+				}
+				argVals[i] = v
+			}
+			v, handled, err := e.OnUnknownCall(name, argVals)
+			if handled {
+				return v, err
+			}
 		}
 		return nil, fmt.Errorf("inner call %q not allowed in expression", name)
 	}

@@ -182,6 +182,7 @@ func (p *capyLibParser) parseTop() (RawLibrary, error) {
 		Types:     map[string]RawType{},
 		Context:   map[string]any{},
 		Files:     map[string]string{},
+		Commands:  map[string]RawCommand{},
 	}
 
 	for {
@@ -201,6 +202,32 @@ func (p *capyLibParser) parseTop() (RawLibrary, error) {
 			continue
 		}
 		switch tokens[0] {
+		case "name":
+			// `name "STR"` — manifest field.
+			p.nextLine()
+			if len(tokens) < 2 {
+				return lib, p.errf("name requires a string value")
+			}
+			lib.LibName = tokens[1]
+		case "version":
+			// `version "STR"` — manifest field (semver string).
+			p.nextLine()
+			if len(tokens) < 2 {
+				return lib, p.errf("version requires a string value")
+			}
+			lib.LibVersion = tokens[1]
+		case "command":
+			// `command "NAME" ... end` block.
+			if len(tokens) < 2 {
+				return lib, p.errf("command requires a name string")
+			}
+			cmdName := tokens[1]
+			p.nextLine()
+			cmd, err := p.parseCommandBlock()
+			if err != nil {
+				return lib, err
+			}
+			lib.Commands[cmdName] = cmd
 		case "extension":
 			p.nextLine()
 			if len(tokens) < 2 {
@@ -529,6 +556,127 @@ func (p *capyLibParser) parseFunction() (RawFunction, error) {
 // lines are emitted verbatim (preserving their relative indent so
 // nested for/if blocks survive). Trailing whitespace is preserved
 // because backtick literals carry significant whitespace.
+// parseCommandBlock reads everything from after the
+// `command "NAME"` header line until a matching `end` at indent 0.
+// Currently recognises one header directive — `description "STR"`
+// — followed by an inner-DSL body that the loader hands to the
+// inner-DSL parser. The body uses the same multi-line-backtick
+// merging as function bodies.
+func (p *capyLibParser) parseCommandBlock() (RawCommand, error) {
+	var cmd RawCommand
+	// First pass: collect optional header directives (description,
+	// future arg / flag declarations) until we hit a non-header
+	// statement, then everything after is the body.
+	headerDone := false
+	var bodyRaws []string
+	inBacktick := false
+	for {
+		if p.lineNo >= len(p.lines) {
+			return cmd, p.errf("unexpected EOF inside command")
+		}
+		ln := p.lines[p.lineNo]
+		// While inside a multi-line backtick, every line belongs to
+		// the body regardless of indent.
+		if inBacktick {
+			bodyRaws = append(bodyRaws, ln)
+			p.lineNo++
+			for i := 0; i < len(ln); i++ {
+				c := ln[i]
+				if c == '\\' && i+1 < len(ln) {
+					i++
+					continue
+				}
+				if c == '`' {
+					inBacktick = !inBacktick
+				}
+			}
+			continue
+		}
+		stripped := strings.TrimSpace(ln)
+		if stripped == "" || strings.HasPrefix(stripped, "#") {
+			if headerDone {
+				bodyRaws = append(bodyRaws, ln)
+			}
+			p.lineNo++
+			continue
+		}
+		leading := 0
+		for leading < len(ln) && (ln[leading] == ' ' || ln[leading] == '\t') {
+			leading++
+		}
+		if leading == 0 {
+			// indent 0 — should be the closing `end`.
+			toks, err := tokenizeLibLine(ln)
+			if err != nil {
+				return cmd, p.errf("%v", err)
+			}
+			if len(toks) == 1 && toks[0] == "end" {
+				p.nextLine()
+				break
+			}
+			return cmd, p.errf("expected `end` to close command, got %q", stripped)
+		}
+		// Indented line. Check if it's a recognised header directive
+		// (allowed until headerDone flips).
+		toks, err := tokenizeLibLine(ln)
+		if err != nil {
+			return cmd, p.errf("%v", err)
+		}
+		if !headerDone && len(toks) >= 1 {
+			switch toks[0] {
+			case "description":
+				if len(toks) < 2 {
+					return cmd, p.errf("description requires a string value")
+				}
+				cmd.Description = toks[1]
+				p.nextLine()
+				continue
+			}
+			// First non-header line marks the body's start.
+			headerDone = true
+		}
+		// Body line. Track backtick toggles so multi-line literals
+		// keep the inner statements grouped properly.
+		bodyRaws = append(bodyRaws, ln)
+		p.lineNo++
+		for i := 0; i < len(ln); i++ {
+			c := ln[i]
+			if c == '\\' && i+1 < len(ln) {
+				i++
+				continue
+			}
+			if c == '`' {
+				inBacktick = !inBacktick
+			}
+		}
+	}
+	// Merge backticks then dedent.
+	bodyRaws = mergeBackticksInLines(bodyRaws)
+	minIndent := -1
+	for _, ln := range bodyRaws {
+		if strings.TrimSpace(ln) == "" {
+			continue
+		}
+		leading := 0
+		for leading < len(ln) && (ln[leading] == ' ' || ln[leading] == '\t') {
+			leading++
+		}
+		if minIndent < 0 || leading < minIndent {
+			minIndent = leading
+		}
+	}
+	if minIndent < 0 {
+		return cmd, nil
+	}
+	for i, ln := range bodyRaws {
+		if len(ln) >= minIndent {
+			bodyRaws[i] = ln[minIndent:]
+		}
+	}
+	cmd.Body = strings.Join(bodyRaws, "\n") + "\n"
+	return cmd, nil
+}
+
 func (p *capyLibParser) parseFunctionBodyStatements(startIndent int) (string, error) {
 	// Collect raw lines (NOT skipping blanks/comments via peekLine —
 	// we need every line to track multi-line backtick state). Stop

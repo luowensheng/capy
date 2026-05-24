@@ -34,6 +34,19 @@ type Library struct {
 	//       …
 	Files map[string]string
 
+	// Commands declared in the library's manifest. Each maps a verb
+	// name (e.g. "build", "serve", "new") to a CommandDef. The CLI
+	// dispatches `capy <lib> <name>` to the matching command. The
+	// inner-DSL body of a command can shell out, write files, etc.
+	// — see CommandDef.
+	Commands map[string]*CommandDef
+
+	// Manifest metadata for tooling (`capy lib list`, library
+	// directory site). All fields are optional; absence means the
+	// library was loaded as a bare .capy file with no manifest.
+	LibName    string // canonical name declared in the manifest
+	LibVersion string // semver string
+
 	// Preprocess is the list of source-level inclusion directives the
 	// library OPTS INTO. The engine ships zero default preprocessing —
 	// if Preprocess is empty, lines like `@import "x.capy"` are NOT

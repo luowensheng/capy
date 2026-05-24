@@ -55,6 +55,32 @@ type Host interface {
 	// HomeDir returns the host user's home directory ($HOME on POSIX,
 	// %USERPROFILE% on Windows).
 	HomeDir() (string, error)
+
+	// --- Side-effecting primitives (library commands only) ---
+
+	// WriteFile creates (or overwrites) the file at PATH with the
+	// given contents. Parent directories are created as needed.
+	WriteFile(path, contents string) error
+
+	// Mkdir creates the directory at PATH (and parents). Idempotent.
+	Mkdir(path string) error
+
+	// MkTemp returns the path to a freshly-created temp file with
+	// the given suffix (e.g. ".py"). The caller is responsible for
+	// removing it.
+	MkTemp(suffix string) (string, error)
+
+	// MkTempDir returns the path to a freshly-created temp directory.
+	MkTempDir() (string, error)
+
+	// Exec runs the named command with args, streaming its stdout
+	// and stderr to the calling process's stdout/stderr. Returns
+	// non-nil on non-zero exit.
+	Exec(name string, args ...string) error
+
+	// ExecCapture runs the named command and returns its combined
+	// output.
+	ExecCapture(name string, args ...string) (string, error)
 }
 
 // NoOpHost satisfies Host with empty/zero results everywhere. It's the
@@ -74,3 +100,15 @@ func (NoOpHost) OS() string                 { return "" }
 func (NoOpHost) Arch() string               { return "" }
 func (NoOpHost) Cwd() (string, error)       { return "", nil }
 func (NoOpHost) HomeDir() (string, error)   { return "", nil }
+
+// Side-effecting primitives all refuse in the no-op host.
+var errNoSandboxedFS = &CapyError{Msg: "filesystem / exec not available in this runtime", Hint: "library commands require infra.OSHost; the WASM / embedded sandbox doesn't provide it"}
+
+func (NoOpHost) WriteFile(path, contents string) error           { return errNoSandboxedFS }
+func (NoOpHost) Mkdir(path string) error                         { return errNoSandboxedFS }
+func (NoOpHost) MkTemp(suffix string) (string, error)            { return "", errNoSandboxedFS }
+func (NoOpHost) MkTempDir() (string, error)                      { return "", errNoSandboxedFS }
+func (NoOpHost) Exec(name string, args ...string) error          { return errNoSandboxedFS }
+func (NoOpHost) ExecCapture(name string, args ...string) (string, error) {
+	return "", errNoSandboxedFS
+}

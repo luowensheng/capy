@@ -90,6 +90,7 @@ nav:
     - Transpiler patterns: transpiler-patterns.md
     - CLI reference: cli.md
     - Auto-generated library docs: library-documentation.md
+    - "Library commands + CAPY_LIBS": library-commands.md
     - Feature list: features.md
 
   # Integrate — connect Capy to other systems.

@@ -37,6 +37,22 @@ type RawLibrary struct {
 	// library opts into (e.g. ["@import", "@include"]). When empty,
 	// no preprocessing runs. Keeps "zero predefined grammar" honest.
 	Preprocess []string `yaml:"preprocess,omitempty"`
+
+	// Manifest fields (set when the library declares them at the
+	// top level of its .capy file — `name "X"`, `version "X"`).
+	LibName    string `yaml:"name,omitempty"`
+	LibVersion string `yaml:"version,omitempty"`
+
+	// Commands declared by the library — `command "X" ... end`
+	// blocks at the top level. The body is collected as raw text;
+	// the loader parses it via the inner-DSL parser.
+	Commands map[string]RawCommand `yaml:"commands,omitempty"`
+}
+
+// RawCommand is one `command "X" ... end` declaration.
+type RawCommand struct {
+	Description string `yaml:"description,omitempty"`
+	Body        string `yaml:"body,omitempty"`
 }
 
 type RawFunction struct {

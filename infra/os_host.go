@@ -1,8 +1,10 @@
 package infra
 
 import (
+	"bytes"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 
@@ -49,6 +51,66 @@ func (h OSHost) Arch() string { return runtime.GOARCH }
 
 func (h OSHost) Cwd() (string, error)     { return os.Getwd() }
 func (h OSHost) HomeDir() (string, error) { return os.UserHomeDir() }
+
+func (h OSHost) WriteFile(path, contents string) error {
+	if dir := filepath.Dir(path); dir != "" {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return &domain.CapyError{Msg: fmt.Sprintf("write_file %q: mkdir parent: %v", path, err)}
+		}
+	}
+	if err := os.WriteFile(path, []byte(contents), 0644); err != nil {
+		return &domain.CapyError{Msg: fmt.Sprintf("write_file %q: %v", path, err)}
+	}
+	return nil
+}
+
+func (h OSHost) Mkdir(path string) error {
+	if err := os.MkdirAll(path, 0755); err != nil {
+		return &domain.CapyError{Msg: fmt.Sprintf("mkdir %q: %v", path, err)}
+	}
+	return nil
+}
+
+func (h OSHost) MkTemp(suffix string) (string, error) {
+	f, err := os.CreateTemp("", "capy-*"+suffix)
+	if err != nil {
+		return "", &domain.CapyError{Msg: fmt.Sprintf("mktemp: %v", err)}
+	}
+	name := f.Name()
+	f.Close()
+	return name, nil
+}
+
+func (h OSHost) MkTempDir() (string, error) {
+	dir, err := os.MkdirTemp("", "capy-*")
+	if err != nil {
+		return "", &domain.CapyError{Msg: fmt.Sprintf("mktemp_dir: %v", err)}
+	}
+	return dir, nil
+}
+
+func (h OSHost) Exec(name string, args ...string) error {
+	cmd := exec.Command(name, args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+	if err := cmd.Run(); err != nil {
+		return &domain.CapyError{Msg: fmt.Sprintf("exec %s: %v", name, err)}
+	}
+	return nil
+}
+
+func (h OSHost) ExecCapture(name string, args ...string) (string, error) {
+	cmd := exec.Command(name, args...)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return stdout.String() + stderr.String(),
+			&domain.CapyError{Msg: fmt.Sprintf("exec %s: %v\n%s", name, err, stderr.String())}
+	}
+	return stdout.String(), nil
+}
 
 func (h OSHost) ReadFile(path string) (string, error) {
 	resolved := path

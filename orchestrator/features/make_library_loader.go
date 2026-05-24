@@ -201,6 +201,9 @@ func mapLibrary(r infra.RawLibrary, tokenize func(string) ([]domain.Token, error
 		FileTemplate: ft,
 		Files:        files,
 		Preprocess:   r.Preprocess,
+		Commands:     map[string]*domain.CommandDef{},
+		LibName:      r.LibName,
+		LibVersion:   r.LibVersion,
 	}
 	if lib.Files == nil {
 		lib.Files = map[string]string{}
@@ -228,6 +231,29 @@ func mapLibrary(r infra.RawLibrary, tokenize func(string) ([]domain.Token, error
 			return lib, err
 		}
 		lib.Functions[name] = fd
+	}
+
+	// Compile library commands (declared via `command "X" ... end`
+	// blocks in the .capy manifest). Body is inner-DSL with shell-
+	// like primitives the evaluator surfaces.
+	for name, c := range r.Commands {
+		cd := &domain.CommandDef{
+			Name:        name,
+			Description: c.Description,
+			BodyRaw:     c.Body,
+		}
+		if strings.TrimSpace(c.Body) != "" {
+			toks, err := tokenize(c.Body)
+			if err != nil {
+				return lib, fmt.Errorf("command %q: parsing body: %v", name, err)
+			}
+			ast, err := ParseInner(toks)
+			if err != nil {
+				return lib, fmt.Errorf("command %q: parsing body: %v", name, err)
+			}
+			cd.Body = ast
+		}
+		lib.Commands[name] = cd
 	}
 
 	// Validate cross-references after all functions are loaded.

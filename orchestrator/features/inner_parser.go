@@ -130,6 +130,30 @@ func (p *innerP) parseStmt() (domain.InnerStmt, error) {
 		}
 		p.consumeNewline()
 		return domain.WriteStmt{Value: val}, nil
+	case "let":
+		// `let NAME = EXPR` — bind a local variable (in command bodies).
+		p.Advance()
+		nameTok := p.Peek()
+		if nameTok.Kind != domain.TokIdent {
+			return nil, fmt.Errorf("line %d: let requires an identifier name", nameTok.Line)
+		}
+		p.Advance()
+		eq := p.Peek()
+		if !(eq.Kind == domain.TokPunct && eq.Text == "=") {
+			return nil, fmt.Errorf("line %d: let requires `= EXPR`", eq.Line)
+		}
+		p.Advance()
+		val, err := parseValue(p, nil)
+		if err != nil {
+			return nil, err
+		}
+		p.consumeNewline()
+		// Reuse SetStmt with a synthetic path rooted at `locals`.
+		// The evaluator treats `locals.X` writes as local-scope binds.
+		return domain.SetStmt{
+			Target: domain.Path{Root: "locals", Steps: []domain.PathStep{{Field: nameTok.Text}}},
+			Value:  val,
+		}, nil
 	}
 	// fallthrough: a generic call (e.g. `regex_match x y`, `error "msg"`,
 	// or a recursive call to another library function — though for now the
