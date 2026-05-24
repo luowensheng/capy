@@ -1,0 +1,58 @@
+# Tiny schema DSL → Go interface + struct.
+extension go
+
+comments
+    line "#"
+end
+
+context
+    imports []
+end
+
+function package
+    arg literal "package"
+    arg capture name ident
+    write `package ${name}
+
+`
+end
+
+function import
+    arg literal "import"
+    arg capture path any
+    append context.imports path
+end
+
+function type
+    arg literal "type"
+    arg capture name ident
+    block_closer end
+    write `type ${name} struct {
+${indent 4 body}
+}
+`
+end
+
+function field
+    arg literal "field"
+    arg capture name ident
+    arg capture t any
+    write `${name} ${t}
+`
+end
+
+function end
+end
+
+file_template
+    write `${body}`
+    if context.imports
+        write `
+// imports needed: `
+        for i in context.imports
+            write `${i} `
+        end
+        write `
+`
+    end
+end

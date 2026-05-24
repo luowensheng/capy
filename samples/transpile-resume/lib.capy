@@ -1,0 +1,76 @@
+# CV/Resume DSL → markdown resume.
+extension md
+
+comments
+    line "#"
+end
+
+context
+    meta {}
+    skills []
+end
+
+function name
+    arg literal "name"
+    arg capture v any
+    set context.meta.name v
+end
+
+function title
+    arg literal "title"
+    arg capture v any
+    set context.meta.title v
+end
+
+function email
+    arg literal "email"
+    arg capture v any
+    set context.meta.email v
+end
+
+function skill
+    arg literal "skill"
+    arg capture s any
+    append context.skills s
+end
+
+function experience
+    arg literal "experience"
+    arg capture company any
+    arg capture role any
+    arg capture range any
+    block_closer end
+    write `
+### ${unquote role} @ ${unquote company} (${unquote range})
+
+${body}
+`
+end
+
+function bullet
+    arg literal "-"
+    arg capture text any
+    write `- ${unquote text}
+`
+end
+
+function end
+end
+
+file_template
+    write `# ${context.meta.name}
+## ${context.meta.title}
+📧 ${context.meta.email}
+
+## Skills
+
+`
+    for s in context.skills
+        write `- ${s}
+`
+    end
+    write `
+## Experience
+${body}
+`
+end

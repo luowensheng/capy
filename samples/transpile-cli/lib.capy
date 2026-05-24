@@ -1,0 +1,53 @@
+# CLI spec DSL → Cobra command definitions in Go.
+extension go
+
+comments
+    line "#"
+end
+
+context
+    commands []
+    flags []
+end
+
+function command
+    arg literal "command"
+    arg capture name ident
+    arg capture desc any
+    append context.commands {name: name, desc: desc}
+end
+
+function flag
+    arg literal "flag"
+    arg capture cmd ident
+    arg capture name ident
+    arg capture t any
+    arg capture desc any
+    append context.flags {cmd: cmd, name: name, type: t, desc: desc}
+end
+
+file_template
+    write `package cli
+
+import "github.com/spf13/cobra"
+
+`
+    for c in context.commands
+        write `
+var ${c.name}Cmd = &cobra.Command{
+    Use:   "${c.name}",
+    Short: ${toQuoted c.desc},
+}
+`
+    end
+    write `
+
+func init() {
+`
+    for f in context.flags
+        write `    ${f.cmd}Cmd.Flags().String("${f.name}", "", ${toQuoted f.desc})
+`
+    end
+    write `}
+`
+end
