@@ -11,12 +11,11 @@ type AppOrchestrator struct{}
 
 func (AppOrchestrator) RunCLI(scriptPath, libraryPath string) int {
 	files := infra.FileReader{}
-	yamlP := infra.YamlParser{}
 
 	lex := orchfeatures.MakeLexer()
 	parser := orchfeatures.MakeParser()
 	eval := orchfeatures.MakeEvaluator()
-	libLoader := orchfeatures.MakeLibraryLoader(yamlP, lex.Tokenize)
+	libLoader := orchfeatures.MakeLibraryLoader(lex.Tokenize)
 
 	rs := orchusecases.MakeRunScriptMulti(
 		files.Read,

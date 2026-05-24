@@ -83,38 +83,31 @@ var tools = []toolDef{
 	{
 		Name: "capy_run",
 		Description: "Transpile a Capy source script through an inline library and return the generated output. " +
-			"Use this when you have both a library definition and source text in memory — no disk needed. " +
-			"Library can be in YAML or Capy-native (.capy) format; format is auto-detected.",
+			"Use this when you have both a library definition and source text in memory — no disk needed.",
 		InputSchema: map[string]any{
 			"type": "object",
 			"properties": map[string]any{
 				"library": map[string]any{
 					"type":        "string",
-					"description": "Full contents of the library file (YAML or .capy syntax).",
+					"description": "Full contents of the library file (.capy syntax).",
 				},
 				"script": map[string]any{
 					"type":        "string",
 					"description": "The source code to transpile (Capy DSL declared by the library).",
-				},
-				"format": map[string]any{
-					"type":        "string",
-					"enum":        []string{"auto", "yaml", "capy"},
-					"description": "Library format. 'auto' (default) sniffs based on content. Pass explicitly when you know.",
 				},
 			},
 			"required": []string{"library", "script"},
 		},
 	},
 	{
-		Name: "capy_run_file",
-		Description: "Transpile a script file through a library file on disk and return the generated output. " +
-			"Library format is chosen by file extension (.capy → native, anything else → YAML).",
+		Name:        "capy_run_file",
+		Description: "Transpile a script file through a .capy library file on disk and return the generated output.",
 		InputSchema: map[string]any{
 			"type": "object",
 			"properties": map[string]any{
 				"library_path": map[string]any{
 					"type":        "string",
-					"description": "Absolute or working-directory-relative path to the library file (.yaml or .capy).",
+					"description": "Absolute or working-directory-relative path to the .capy library file.",
 				},
 				"script_path": map[string]any{
 					"type":        "string",
@@ -134,12 +127,7 @@ var tools = []toolDef{
 			"properties": map[string]any{
 				"library": map[string]any{
 					"type":        "string",
-					"description": "Full contents of the library file.",
-				},
-				"format": map[string]any{
-					"type":        "string",
-					"enum":        []string{"auto", "yaml", "capy"},
-					"description": "Library format. 'auto' (default) sniffs based on content.",
+					"description": "Full contents of the .capy library file.",
 				},
 			},
 			"required": []string{"library"},
@@ -152,14 +140,13 @@ var tools = []toolDef{
 func toolCapyRun(args map[string]any) (string, error) {
 	libSrc, _ := args["library"].(string)
 	scriptSrc, _ := args["script"].(string)
-	format, _ := args["format"].(string)
 	if libSrc == "" {
 		return "", fmt.Errorf("library is required")
 	}
 	if scriptSrc == "" {
 		return "", fmt.Errorf("script is required")
 	}
-	lib, err := loadInlineLibrary(libSrc, format)
+	lib, err := capy.NewLibrary(libSrc)
 	if err != nil {
 		return "", fmt.Errorf("library: %v", err)
 	}
@@ -200,11 +187,10 @@ type checkResult struct {
 
 func toolCapyCheck(args map[string]any) (string, error) {
 	libSrc, _ := args["library"].(string)
-	format, _ := args["format"].(string)
 	if libSrc == "" {
 		return "", fmt.Errorf("library is required")
 	}
-	lib, err := loadInlineLibrary(libSrc, format)
+	lib, err := capy.NewLibrary(libSrc)
 	if err != nil {
 		res, _ := json.MarshalIndent(checkResult{Valid: false, Error: err.Error()}, "", "  ")
 		return string(res), nil
@@ -215,27 +201,6 @@ func toolCapyCheck(args map[string]any) (string, error) {
 		Extension: lib.Extension(),
 	}, "", "  ")
 	return string(res), nil
-}
-
-// loadInlineLibrary compiles a library from in-memory text. When format is
-// "" or "auto", sniff: a line beginning with `function ` (Capy keyword) wins
-// Capy; otherwise YAML.
-func loadInlineLibrary(src, format string) (*capy.Library, error) {
-	if format == "" || format == "auto" {
-		if sniffCapy(src) {
-			format = "capy"
-		} else {
-			format = "yaml"
-		}
-	}
-	switch format {
-	case "capy":
-		return capy.NewLibrary(src)
-	case "yaml":
-		return capy.NewLibraryYAML(src)
-	default:
-		return nil, fmt.Errorf("unknown format %q (want yaml | capy | auto)", format)
-	}
 }
 
 func sniffCapy(src string) bool {

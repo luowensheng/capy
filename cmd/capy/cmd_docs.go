@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/luowensheng/capy/domain"
-	"github.com/luowensheng/capy/infra"
 	orchfeatures "github.com/luowensheng/capy/orchestrator/features"
 )
 
@@ -28,7 +27,7 @@ func cmdDocs(args []string) error {
 		return err
 	}
 
-	loader := orchfeatures.MakeLibraryLoader(infra.YamlParser{}, orchfeatures.MakeLexer().Tokenize)
+	loader := orchfeatures.MakeLibraryLoader(orchfeatures.MakeLexer().Tokenize)
 	lib, err := loader.Load(libPath)
 	if err != nil {
 		return err

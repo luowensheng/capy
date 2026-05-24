@@ -6,15 +6,14 @@ import (
 )
 
 func TestCapyLib_Minimal(t *testing.T) {
-	src := `
-extension py
-
-function greet
-    arg literal "greet"
-    arg capture name ident
-    template_str "print('hi {{ .name }}')\n"
-end
-`
+	src := "\n" +
+		"extension py\n" +
+		"\n" +
+		"function greet\n" +
+		"    arg literal \"greet\"\n" +
+		"    arg capture name ident\n" +
+		"    write `print('hi ${name}')\n`\n" +
+		"end\n"
 	lib, err := parseCapyLib(src)
 	if err != nil {
 		t.Fatalf("parse failed: %v", err)
@@ -32,28 +31,26 @@ end
 	if g.Args[1].Kind != "capture" || g.Args[1].Name != "name" || g.Args[1].Type != "ident" {
 		t.Errorf("capture arg: %+v", g.Args[1])
 	}
-	if !strings.Contains(g.Template, "print('hi") {
-		t.Errorf("template: %q", g.Template)
+	if !strings.Contains(g.Body, "print('hi") {
+		t.Errorf("body: %q", g.Body)
 	}
 }
 
-func TestCapyLib_TemplateBlock(t *testing.T) {
-	src := `
-extension c
-
-function fn
-    arg literal "fn"
-    arg capture name ident
-    block_closer end
-    template:
-        int {{ .name }}() {
-        {{ .body | indent 4 }}
-        }
-end
-
-function end
-end
-`
+func TestCapyLib_FunctionBlock(t *testing.T) {
+	src := "\n" +
+		"extension c\n" +
+		"\n" +
+		"function fn\n" +
+		"    arg literal \"fn\"\n" +
+		"    arg capture name ident\n" +
+		"    block_closer end\n" +
+		"    write `int ${name}() {\n" +
+		"${indent 4 body}\n" +
+		"}\n`\n" +
+		"end\n" +
+		"\n" +
+		"function end\n" +
+		"end\n"
 	lib, err := parseCapyLib(src)
 	if err != nil {
 		t.Fatalf("parse failed: %v", err)
@@ -62,26 +59,24 @@ end
 	if fn.Block == nil || fn.Block.Closer != "end" {
 		t.Errorf("block: %+v", fn.Block)
 	}
-	want := "int {{ .name }}() {\n{{ .body | indent 4 }}\n}\n"
-	if fn.Template != want {
-		t.Errorf("template:\n  got:  %q\n  want: %q", fn.Template, want)
+	if !strings.Contains(fn.Body, "int ${name}()") {
+		t.Errorf("body missing function header: %q", fn.Body)
 	}
 }
 
 func TestCapyLib_FileTemplate(t *testing.T) {
-	src := `
-extension go
-
-function noop
-    arg literal "noop"
-    template_str ""
-end
-
-file_template:
-    package main
-
-    {{ .body }}
-`
+	src := "\n" +
+		"extension go\n" +
+		"\n" +
+		"function noop\n" +
+		"    arg literal \"noop\"\n" +
+		"end\n" +
+		"\n" +
+		"file_template\n" +
+		"    write `package main\n" +
+		"\n" +
+		"${body}`\n" +
+		"end\n"
 	lib, err := parseCapyLib(src)
 	if err != nil {
 		t.Fatalf("parse failed: %v", err)
@@ -108,43 +103,12 @@ end
 }
 
 func TestCapyLib_TokenizerQuotes(t *testing.T) {
-	toks, err := tokenizeLibLine(`    template_str "hello \"world\"\n"`)
+	toks, err := tokenizeLibLine(`    arg capture name "hello \"world\""`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(toks) != 2 || toks[0] != "template_str" || toks[1] != "hello \"world\"\n" {
+	if len(toks) != 4 || toks[2] != "name" || toks[3] != `hello "world"` {
 		t.Errorf("tokens: %#v", toks)
-	}
-}
-
-func TestCapyLib_FileTemplate_KeepsActionAtColumnZero(t *testing.T) {
-	// An author writes `{{ .body | indent 4 }}` at column 0 so the
-	// rendered output has clean nested indentation. The parser must
-	// NOT shift that line right when it strips the file_template's
-	// base indent.
-	src := `
-extension py
-
-function noop
-    arg literal "noop"
-    template_str ""
-end
-
-file_template:
-    void Start()
-    {
-{{ .body | indent 8 }}
-    }
-`
-	lib, err := parseCapyLib(src)
-	if err != nil {
-		t.Fatalf("parse: %v", err)
-	}
-	if !strings.Contains(lib.FileTemplate, "\n{{ .body | indent 8 }}\n") {
-		t.Errorf("action at col 0 was shifted:\n%s", lib.FileTemplate)
-	}
-	if !strings.Contains(lib.FileTemplate, "void Start()\n") {
-		t.Errorf("base indent was not stripped:\n%s", lib.FileTemplate)
 	}
 }
 
@@ -166,7 +130,6 @@ end
 
 function noop
     arg literal "noop"
-    template_str ""
 end
 `
 	lib, err := parseCapyLib(src)
@@ -200,7 +163,6 @@ end
 
 function noop
     arg literal "noop"
-    template_str ""
 end
 `
 	lib, err := parseCapyLib(src)

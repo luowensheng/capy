@@ -47,30 +47,10 @@ func main() {
 // Same engine path as `capy docs <library>` on the CLI.
 func capyDocs(this js.Value, args []js.Value) any {
 	if len(args) < 1 {
-		return errResult("capyDocs expects (libSrc [, format])", "")
+		return errResult("capyDocs expects (libSrc)", "")
 	}
 	libSrc := args[0].String()
-	format := "auto"
-	if len(args) >= 2 {
-		format = args[1].String()
-	}
-	if format == "" || format == "auto" {
-		if sniffCapy(libSrc) {
-			format = "capy"
-		} else {
-			format = "yaml"
-		}
-	}
-	var lib *capy.Library
-	var err error
-	switch format {
-	case "capy":
-		lib, err = capy.NewLibrary(libSrc)
-	case "yaml":
-		lib, err = capy.NewLibraryYAML(libSrc)
-	default:
-		return errResult("unknown format: "+format, `use "auto" / "yaml" / "capy"`)
-	}
+	lib, err := capy.NewLibrary(libSrc)
 	if err != nil {
 		return errResultFromErr(err, libSrc)
 	}
@@ -80,13 +60,12 @@ func capyDocs(this js.Value, args []js.Value) any {
 	})
 }
 
-// capyRun(libSrc, format, scriptSrc) → result object.
+// capyRun(libSrc, _format, scriptSrc) → result object.
 //
 // Arguments (positional):
 //
-//	0: library source (string) — YAML or .capy native syntax.
-//	1: format (string) — "auto" | "yaml" | "capy". "auto" sniffs from
-//	   the first non-comment line.
+//	0: library source (string) — .capy native syntax.
+//	1: format (string) — ignored, kept for JS-side compatibility.
 //	2: script source (string).
 //
 // File-import directives (`@import "..."`) are NOT expanded in the
@@ -96,27 +75,9 @@ func capyRun(this js.Value, args []js.Value) any {
 		return errResult("capyRun expects (libSrc, format, scriptSrc)", "")
 	}
 	libSrc := args[0].String()
-	format := args[1].String()
 	scriptSrc := args[2].String()
 
-	if format == "" || format == "auto" {
-		if sniffCapy(libSrc) {
-			format = "capy"
-		} else {
-			format = "yaml"
-		}
-	}
-
-	var lib *capy.Library
-	var err error
-	switch format {
-	case "capy":
-		lib, err = capy.NewLibrary(libSrc)
-	case "yaml":
-		lib, err = capy.NewLibraryYAML(libSrc)
-	default:
-		return errResult("unknown format: "+format, `use "auto", "yaml", or "capy"`)
-	}
+	lib, err := capy.NewLibrary(libSrc)
 	if err != nil {
 		return errResultFromErr(err, scriptSrc)
 	}

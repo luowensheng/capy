@@ -53,7 +53,6 @@ func RunMultiWithArgs(libraryPath, scriptPath string, userArgs []string) (string
 	host := infra.OSHost{UserArgs: userArgs, BaseDir: filepath.Dir(scriptPath)}
 	_ = domain.Host(host) // compile-time interface check
 
-	yp := infra.YamlParser{}
 	lex := orchfeatures.MakeLexer()
 	parser := orchfeatures.MakeParser()
 	eval := orchfeatures.MakeEvaluatorWithHost(host)
@@ -62,7 +61,7 @@ func RunMultiWithArgs(libraryPath, scriptPath string, userArgs []string) (string
 	// can know which (if any) source-level inclusion directives are
 	// allowed. Capy has no built-in preprocessor; everything is opt-in
 	// per library.
-	libLoader := orchfeatures.MakeLibraryLoader(yp, lex.Tokenize)
+	libLoader := orchfeatures.MakeLibraryLoader(lex.Tokenize)
 	lib, err := libLoader.Load(libraryPath)
 	if err != nil {
 		return "", nil, err
@@ -109,24 +108,24 @@ func RunMultiWithArgs(libraryPath, scriptPath string, userArgs []string) (string
 }
 
 // RunStrings is like Run but takes the library and script contents directly.
-// `libraryPath` is used only to resolve relative paths inside the YAML (e.g.
-// future `import:` directives) — pass an empty string if you don't care.
-func RunStrings(libraryYAML, libraryPath, scriptSrc string) (string, error) {
-	yp := infra.YamlParser{}
+// `libraryPath` is used only to resolve relative paths inside `import`
+// directives — pass an empty string if your library has none.
+func RunStrings(librarySrc, libraryPath, scriptSrc string) (string, error) {
 	lex := orchfeatures.MakeLexer()
 	parser := orchfeatures.MakeParser()
 	eval := orchfeatures.MakeEvaluator()
 
-	// Parse YAML in-memory via a temp file to keep the YAML parser path stable.
-	// Most production callers should pass a real libraryPath via Run() above.
+	// Spill the library source to a temp file so the loader's file-
+	// based API (which resolves `import` paths relative to the file)
+	// has a stable basis. Most production callers should pass a real
+	// libraryPath via Run() above instead.
 	if libraryPath == "" {
-		// write to a temp file so the parser's file-based API still works
-		tmp, err := os.CreateTemp("", "capy-lib-*.yaml")
+		tmp, err := os.CreateTemp("", "capy-lib-*.capy")
 		if err != nil {
 			return "", err
 		}
 		defer os.Remove(tmp.Name())
-		if _, err := tmp.WriteString(libraryYAML); err != nil {
+		if _, err := tmp.WriteString(librarySrc); err != nil {
 			return "", err
 		}
 		tmp.Close()
@@ -134,7 +133,7 @@ func RunStrings(libraryYAML, libraryPath, scriptSrc string) (string, error) {
 	}
 	_ = filepath.Base // reserved for future use
 
-	libLoader := orchfeatures.MakeLibraryLoader(yp, lex.Tokenize)
+	libLoader := orchfeatures.MakeLibraryLoader(lex.Tokenize)
 	lib, err := libLoader.Load(libraryPath)
 	if err != nil {
 		return "", err

@@ -115,29 +115,6 @@ func TestMCP_CapyCheck_Invalid(t *testing.T) {
 	}
 }
 
-func TestMCP_CapyRun_YAMLFormat(t *testing.T) {
-	// The MCP tool accepts `format: "yaml"` but the practical path is
-	// .capy with write-style. Smoke-test the YAML format path with a
-	// trivial library that doesn't need helper-rich templates.
-	yamlLib := `
-extension: txt
-functions:
-  shout:
-    args:
-      - { kind: literal, value: "shout" }
-      - { kind: capture, name: msg, type: any }
-`
-	out, isErr := callTool(t, "capy_run", map[string]any{
-		"library": yamlLib,
-		"script":  `shout "hey"` + "\n",
-		"format":  "yaml",
-	})
-	if isErr {
-		t.Fatalf("error: %s", out)
-	}
-	_ = out // smoke test — just confirming YAML format still loads.
-}
-
 func TestSniffCapy(t *testing.T) {
 	cases := []struct {
 		src  string

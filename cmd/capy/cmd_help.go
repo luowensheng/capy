@@ -7,14 +7,13 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/luowensheng/capy/infra"
 	orchfeatures "github.com/luowensheng/capy/orchestrator/features"
 )
 
 // printLibraryHelp loads a library and prints its declared commands.
 func printLibraryHelp(libPath string) error {
 	lex := orchfeatures.MakeLexer()
-	loader := orchfeatures.MakeLibraryLoader(infra.YamlParser{}, lex.Tokenize)
+	loader := orchfeatures.MakeLibraryLoader(lex.Tokenize)
 	lib, err := loader.Load(libPath)
 	if err != nil {
 		return err

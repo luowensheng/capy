@@ -19,31 +19,24 @@ import (
 //   - args list → []ArgEntry → []PatternElement
 //   - run: snippet → InnerBlock AST (parsed via the outer lexer + inner parser)
 //   - types/context/file_template carried through
-// LoadLibraryFromBytes compiles an in-memory library — YAML or Capy-native,
-// detected by the `format` argument ("yaml" or "capy") — into a usable
-// domain.Library. Public so the top-level `capy` package can embed Capy
-// without filesystem round-trips.
+// LoadLibraryFromBytes compiles an in-memory library written in
+// Capy's native (.capy) syntax. The `format` argument is reserved
+// for future formats; today only "capy" (the default) is supported.
 func LoadLibraryFromBytes(format string, src []byte, tokenize func(string) ([]domain.Token, error)) (domain.Library, error) {
-	var raw infra.RawLibrary
-	var err error
-	switch strings.ToLower(format) {
-	case "capy":
-		raw, err = infra.CapyLibParser{}.ParseBytes(src)
-	case "yaml", "yml", "":
-		raw, err = infra.YamlParser{}.ParseBytes(src)
-	default:
-		return domain.Library{}, fmt.Errorf("unknown library format %q (want \"yaml\" or \"capy\")", format)
+	if format != "" && strings.ToLower(format) != "capy" {
+		return domain.Library{}, fmt.Errorf("unknown library format %q (only \"capy\" is supported)", format)
 	}
+	raw, err := infra.CapyLibParser{}.ParseBytes(src)
 	if err != nil {
 		return domain.Library{}, err
 	}
 	return mapLibrary(raw, tokenize)
 }
 
-func MakeLibraryLoader(yp infra.YamlParser, tokenize func(string) ([]domain.Token, error)) features.LibraryLoader {
+func MakeLibraryLoader(tokenize func(string) ([]domain.Token, error)) features.LibraryLoader {
 	return features.LibraryLoader{
 		Load: func(path string) (domain.Library, error) {
-			raw, err := loadRawWithImports(path, map[string]bool{}, yp, infra.CapyLibParser{})
+			raw, err := loadRawWithImports(path, map[string]bool{}, infra.CapyLibParser{})
 			if err != nil {
 				return domain.Library{}, err
 			}
@@ -57,7 +50,7 @@ func MakeLibraryLoader(yp infra.YamlParser, tokenize func(string) ([]domain.Toke
 // wins on conflict (so local overrides shadow imports). Cycles error.
 //
 // Import paths are resolved relative to the file containing the `import`.
-func loadRawWithImports(path string, visited map[string]bool, yp infra.YamlParser, cp infra.CapyLibParser) (infra.RawLibrary, error) {
+func loadRawWithImports(path string, visited map[string]bool, cp infra.CapyLibParser) (infra.RawLibrary, error) {
 	abs, err := filepath.Abs(path)
 	if err != nil {
 		return infra.RawLibrary{}, err
@@ -67,12 +60,7 @@ func loadRawWithImports(path string, visited map[string]bool, yp infra.YamlParse
 	}
 	visited[abs] = true
 
-	var raw infra.RawLibrary
-	if strings.HasSuffix(strings.ToLower(path), ".capy") {
-		raw, err = cp.ParseFile(path)
-	} else {
-		raw, err = yp.ParseFile(path)
-	}
+	raw, err := cp.ParseFile(path)
 	if err != nil {
 		return raw, err
 	}
@@ -94,7 +82,7 @@ func loadRawWithImports(path string, visited map[string]bool, yp infra.YamlParse
 		if !filepath.IsAbs(impPath) {
 			impPath = filepath.Join(dir, imp)
 		}
-		impRaw, err := loadRawWithImports(impPath, visited, yp, cp)
+		impRaw, err := loadRawWithImports(impPath, visited, cp)
 		if err != nil {
 			return raw, fmt.Errorf("import %q: %v", imp, err)
 		}

@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/luowensheng/capy/domain"
-	"github.com/luowensheng/capy/infra"
 	orchfeatures "github.com/luowensheng/capy/orchestrator/features"
 )
 
@@ -34,7 +33,7 @@ func resolveLibWithImpl(libName, implFlag string) (implPath, manifestPath string
 	}
 	// Load the manifest enough to see its declared impls.
 	lex := orchfeatures.MakeLexer()
-	loader := orchfeatures.MakeLibraryLoader(infra.YamlParser{}, lex.Tokenize)
+	loader := orchfeatures.MakeLibraryLoader(lex.Tokenize)
 	libMeta, err = loader.Load(manifestPath)
 	if err != nil {
 		return "", "", domain.Library{}, err

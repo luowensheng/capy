@@ -284,13 +284,6 @@ func deepCopyAny(v any) any {
 			out[i] = deepCopyAny(it)
 		}
 		return out
-	case map[interface{}]interface{}:
-		// yaml.v3 sometimes emits this; convert to map[string]any.
-		out := map[string]any{}
-		for k, v := range x {
-			out[fmt.Sprintf("%v", k)] = deepCopyAny(v)
-		}
-		return out
 	}
 	return v
 }

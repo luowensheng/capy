@@ -31,8 +31,7 @@ func RunCommand(libraryPath, cmdName string, args []string) error {
 	}
 
 	lex := orchfeatures.MakeLexer()
-	yp := infra.YamlParser{}
-	loader := orchfeatures.MakeLibraryLoader(yp, lex.Tokenize)
+	loader := orchfeatures.MakeLibraryLoader(lex.Tokenize)
 	lib, err := loader.Load(libraryPath)
 	if err != nil {
 		return err

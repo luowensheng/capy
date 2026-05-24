@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/luowensheng/capy/infra"
 	orchfeatures "github.com/luowensheng/capy/orchestrator/features"
 )
 
@@ -18,7 +17,7 @@ func cmdCheck(args []string) error {
 	if _, err := os.Stat(path); err != nil {
 		return err
 	}
-	loader := orchfeatures.MakeLibraryLoader(infra.YamlParser{}, orchfeatures.MakeLexer().Tokenize)
+	loader := orchfeatures.MakeLibraryLoader(orchfeatures.MakeLexer().Tokenize)
 	lib, err := loader.Load(path)
 	if err != nil {
 		return err

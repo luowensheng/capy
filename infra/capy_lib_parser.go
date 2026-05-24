@@ -388,60 +388,25 @@ func (p *capyLibParser) parseTop() (RawLibrary, error) {
 				return lib, p.errf("inside comments: expected `line \"MARKER\"` or `end`, got %q", strings.TrimSpace(ln))
 			}
 		case "file":
-			// Two shapes:
-			//   file "path":          ← legacy raw template body
-			//       (Go-template body, ends at dedent)
-			//   file "path"           ← new shape: inner-DSL body
-			//       <statements>
-			//   end
-			//
-			// Detection: the line has a trailing `:` somewhere → legacy.
-			// Otherwise it's the new shape and we collect a body until `end`.
-			lastTok := tokens[len(tokens)-1]
-			legacy := strings.HasSuffix(lastTok, ":") ||
-				(len(tokens) >= 3 && tokens[2] == ":")
+			// `file "path" ... end` — multi-file output. The body is
+			// an inner-DSL write-style block (same grammar as
+			// `file_template` and `function` bodies).
 			path := tokens[1]
-			if strings.HasSuffix(path, ":") {
-				path = strings.TrimSuffix(path, ":")
-			}
 			p.nextLine()
-			if legacy {
-				body, err := p.parseFileBlockBody()
-				if err != nil {
-					return lib, err
-				}
-				lib.Files[path] = body
-			} else {
-				// New shape: file "X" ... end with an inner-DSL body.
-				// Reuse the function-body collector + translator path.
-				body, err := p.parseFunctionBodyStatements(0)
-				if err != nil {
-					return lib, err
-				}
-				// Consume the closing `end` line.
-				if ln, indent, ok := p.peekLine(); ok && indent == 0 {
-					toks, _ := tokenizeLibLine(ln)
-					if len(toks) == 1 && toks[0] == "end" {
-						p.nextLine()
-					}
-				}
-				// Stash the raw body; the loader translates it just like
-				// it does for new-shape function bodies. We use a sentinel
-				// prefix so the loader knows to translate vs. treat as
-				// a Go template.
-				lib.Files[path] = "\x00NEW_SHAPE\x00" + body
-			}
-		case "file_template:":
-			p.nextLine()
-			// Legacy: file_template is always the last top-level item;
-			// capture everything to EOF as a raw Go template body. New
-			// libraries should prefer the block form `file_template ... end`
-			// (handled in the case below).
-			body, err := p.parseFileTemplateToEOF()
+			body, err := p.parseFunctionBodyStatements(0)
 			if err != nil {
 				return lib, err
 			}
-			lib.FileTemplate = body
+			// Consume the closing `end` line.
+			if ln, indent, ok := p.peekLine(); ok && indent == 0 {
+				toks, _ := tokenizeLibLine(ln)
+				if len(toks) == 1 && toks[0] == "end" {
+					p.nextLine()
+				}
+			}
+			// Stash the raw body with the sentinel prefix; the loader
+			// parses it as inner-DSL and the renderer walks the AST.
+			lib.Files[path] = "\x00NEW_SHAPE\x00" + body
 		case "file_template":
 			// New shape: file_template ... end with an inner-DSL body
 			// (sequence of `write`/`for`/`if`/`set` statements). The
@@ -580,26 +545,6 @@ func (p *capyLibParser) parseFunction() (RawFunction, error) {
 			block.Open = tokens[1]
 			block.Close = tokens[3]
 			blockSet = true
-		case "template_str":
-			p.nextLine()
-			if len(tokens) != 2 {
-				return fn, p.errf("template_str requires one string argument")
-			}
-			fn.Template = tokens[1]
-		case "template:":
-			p.nextLine()
-			body, err := p.parseIndentedBlock(indent)
-			if err != nil {
-				return fn, err
-			}
-			fn.Template = body
-		case "run:":
-			p.nextLine()
-			body, err := p.parseIndentedBlock(indent)
-			if err != nil {
-				return fn, err
-			}
-			fn.Run = body
 		default:
 			// New-shape body: anything that isn't one of the recognised
 			// header directives is taken to be an inner-DSL statement
@@ -934,109 +879,6 @@ func (p *capyLibParser) parseFunctionBodyStatements(startIndent int) (string, er
 	return strings.Join(raws, "\n") + "\n", nil
 }
 
-// parseIndentedBlock captures all subsequent lines whose indent is strictly
-// greater than `parentIndent`. The deepest common indent is stripped so the
-// returned body reads naturally. Trailing newline is preserved.
-func (p *capyLibParser) parseIndentedBlock(parentIndent int) (string, error) {
-	var raws []string
-	var indents []int
-	minIndent := -1
-	startedAt := p.lineNo
-
-	for p.lineNo < len(p.lines) {
-		raw := p.lines[p.lineNo]
-		stripped := strings.TrimSpace(raw)
-		if stripped == "" {
-			// blank line: keep but don't influence minIndent
-			raws = append(raws, "")
-			indents = append(indents, -1)
-			p.lineNo++
-			continue
-		}
-		ind := indentOf(raw)
-		if ind <= parentIndent {
-			break
-		}
-		raws = append(raws, raw)
-		indents = append(indents, ind)
-		if minIndent == -1 || ind < minIndent {
-			minIndent = ind
-		}
-		p.lineNo++
-	}
-
-	if minIndent == -1 {
-		return "", fmt.Errorf("line %d: indented block expected but none found", startedAt)
-	}
-
-	var out strings.Builder
-	for i, raw := range raws {
-		if indents[i] == -1 {
-			out.WriteString("\n")
-			continue
-		}
-		// strip up to minIndent of leading whitespace
-		s := stripIndent(raw, minIndent)
-		out.WriteString(s)
-		out.WriteString("\n")
-	}
-	// trim trailing blank lines to one
-	res := out.String()
-	for strings.HasSuffix(res, "\n\n") {
-		res = res[:len(res)-1]
-	}
-	return res, nil
-}
-
-// parseFileBlockBody captures the indented body of a `file "..."` block —
-// every subsequent line whose indent is greater than zero, with the first
-// non-blank line's indent used as the strip width. Stops at the next
-// top-level (column-zero) line.
-func (p *capyLibParser) parseFileBlockBody() (string, error) {
-	var raws []string
-	var indents []int
-	stripWidth := -1
-
-	for p.lineNo < len(p.lines) {
-		raw := p.lines[p.lineNo]
-		stripped := strings.TrimSpace(raw)
-		if stripped == "" {
-			raws = append(raws, "")
-			indents = append(indents, -1)
-			p.lineNo++
-			continue
-		}
-		ind := indentOf(raw)
-		if ind == 0 {
-			break
-		}
-		p.lineNo++
-		raws = append(raws, raw)
-		indents = append(indents, ind)
-		if stripWidth == -1 {
-			stripWidth = ind
-		}
-	}
-
-	if stripWidth == -1 {
-		return "", nil
-	}
-
-	var out strings.Builder
-	for i, raw := range raws {
-		if indents[i] == -1 {
-			out.WriteString("\n")
-			continue
-		}
-		out.WriteString(stripIndent(raw, stripWidth))
-		out.WriteString("\n")
-	}
-	res := out.String()
-	for strings.HasSuffix(res, "\n\n") {
-		res = res[:len(res)-1]
-	}
-	return res, nil
-}
 
 // parseContext reads the body of a `context ... end` block. Each line is
 //
@@ -1183,53 +1025,6 @@ func (p *capyLibParser) parseType() (RawType, error) {
 	}
 }
 
-// parseFileTemplateToEOF captures every remaining line of the file as the
-// file_template body. The first non-blank line's indent is used as the
-// strip width — lines that are dedented below that (e.g. a `{{ .body }}`
-// action at column 0 for clean nested indentation) keep whatever leading
-// whitespace they have, since stripIndent is bounded by actual whitespace.
-func (p *capyLibParser) parseFileTemplateToEOF() (string, error) {
-	var raws []string
-	var indents []int
-	stripWidth := -1
-
-	for p.lineNo < len(p.lines) {
-		raw := p.lines[p.lineNo]
-		stripped := strings.TrimSpace(raw)
-		p.lineNo++
-		if stripped == "" {
-			raws = append(raws, "")
-			indents = append(indents, -1)
-			continue
-		}
-		ind := indentOf(raw)
-		raws = append(raws, raw)
-		indents = append(indents, ind)
-		if stripWidth == -1 {
-			stripWidth = ind
-		}
-	}
-
-	if stripWidth == -1 {
-		return "", nil
-	}
-	minIndent := stripWidth
-
-	var out strings.Builder
-	for i, raw := range raws {
-		if indents[i] == -1 {
-			out.WriteString("\n")
-			continue
-		}
-		out.WriteString(stripIndent(raw, minIndent))
-		out.WriteString("\n")
-	}
-	res := out.String()
-	for strings.HasSuffix(res, "\n\n") {
-		res = res[:len(res)-1]
-	}
-	return res, nil
-}
 
 func stripIndent(s string, n int) string {
 	i := 0

@@ -16,13 +16,9 @@
 //	out, err := lib.Run(`button "Click me"`)
 //	// → <button>"Click me"</button>
 //
-// The library you pass to NewLibrary can be in either format Capy supports:
-//
-//   - **Capy-native** (`.capy`) — detected automatically. Recommended for
-//     embedded use because it's terser and there's no YAML escaping to fight.
-//   - **YAML** (`.yaml`) — pass via NewLibraryYAML when you need YAML
-//     features (anchors, complex types) or want to share the library with
-//     non-Go tooling.
+// The library you pass to NewLibrary is written in Capy's native (`.capy`)
+// syntax — the same grammar that drives user scripts. There is no separate
+// template / config language; the renderer walks the parsed AST directly.
 //
 // Why embed Capy in your Go program?
 //
@@ -53,27 +49,17 @@ type Library struct {
 	host   domain.Host
 }
 
-// NewLibrary compiles a library written in Capy's native syntax (`.capy`
-// format) from an in-memory string. The returned Library is ready to Run
-// any number of source scripts.
-//
-// Most embedding callers use this — it has no YAML escaping pain and
-// reads natively.
+// NewLibrary compiles a library written in Capy's native (`.capy`) syntax
+// from an in-memory string. The returned Library is ready to Run any
+// number of source scripts.
 func NewLibrary(librarySrc string) (*Library, error) {
 	return newFromBytes("capy", []byte(librarySrc))
 }
 
-// NewLibraryYAML compiles a library written in YAML. Use when you have an
-// existing YAML library or want yq/JSON-schema tooling.
-func NewLibraryYAML(librarySrc string) (*Library, error) {
-	return newFromBytes("yaml", []byte(librarySrc))
-}
-
-// NewLibraryFromFile reads a library file from disk. The format is chosen
-// by the file extension (`.capy` → native; otherwise YAML).
+// NewLibraryFromFile reads a `.capy` library file from disk.
 func NewLibraryFromFile(path string) (*Library, error) {
 	lex := orchfeatures.MakeLexer()
-	loader := orchfeatures.MakeLibraryLoader(infra.YamlParser{}, lex.Tokenize)
+	loader := orchfeatures.MakeLibraryLoader(lex.Tokenize)
 	dl, err := loader.Load(path)
 	if err != nil {
 		return nil, err
