@@ -2,6 +2,10 @@
 # scripting component, or compile as a Rhino plugin command.
 extension cs
 
+comments
+    line "#"
+end
+
 function scene
     arg literal "scene"
     arg capture name string
@@ -82,32 +86,34 @@ doc.Views.ActiveView.ActiveViewport.SetCameraTarget(new Point3d(0, 0, 0), true);
 `
 end
 
-file_template:
-    using System.Drawing;
-    using Rhino;
-    using Rhino.DocObjects;
-    using Rhino.Geometry;
-    using Rhino.Geometry.Light;
+file_template
+    write `using System.Drawing;
+using Rhino;
+using Rhino.DocObjects;
+using Rhino.Geometry;
+using Rhino.Geometry.Light;
 
-    public static class CapyScene
+public static class CapyScene
+{
+    static readonly System.Collections.Generic.Dictionary<string, Color> COLORS =
+        new System.Collections.Generic.Dictionary<string, Color> {
+            { "red", Color.FromArgb(220, 40, 40) },
+            { "blue", Color.FromArgb(40, 80, 220) },
+            { "green", Color.FromArgb(40, 200, 80) },
+            { "gray", Color.FromArgb(150, 150, 150) },
+        };
+
+    static ObjectAttributes Attr(string color)
     {
-        static readonly System.Collections.Generic.Dictionary<string, Color> COLORS =
-            new System.Collections.Generic.Dictionary<string, Color> {
-                { "red", Color.FromArgb(220, 40, 40) },
-                { "blue", Color.FromArgb(40, 80, 220) },
-                { "green", Color.FromArgb(40, 200, 80) },
-                { "gray", Color.FromArgb(150, 150, 150) },
-            };
-
-        static ObjectAttributes Attr(string color)
-        {
-            var a = new ObjectAttributes { ColorSource = ObjectColorSource.ColorFromObject };
-            a.ObjectColor = COLORS.TryGetValue(color, out var c) ? c : Color.White;
-            return a;
-        }
-
-        public static void Build(RhinoDoc doc)
-        {
-{{ .body | indent 8 }}
-        }
+        var a = new ObjectAttributes { ColorSource = ObjectColorSource.ColorFromObject };
+        a.ObjectColor = COLORS.TryGetValue(color, out var c) ? c : Color.White;
+        return a;
     }
+
+    public static void Build(RhinoDoc doc)
+    {
+${indent 8 body}
+    }
+}
+`
+end

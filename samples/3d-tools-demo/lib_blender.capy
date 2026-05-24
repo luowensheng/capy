@@ -1,6 +1,10 @@
 # Capy → Blender Python (bpy). Paste the output into Blender's Scripting tab.
 extension py
 
+comments
+    line "#"
+end
+
 function scene
     arg literal "scene"
     arg capture name string
@@ -65,19 +69,21 @@ function camera
 `
 end
 
-file_template:
-    import bpy
+file_template
+    write `import bpy
 
-    _COLORS = {
-        "red":   (1.0, 0.1, 0.1, 1.0),
-        "blue":  (0.1, 0.3, 1.0, 1.0),
-        "green": (0.1, 0.8, 0.2, 1.0),
-        "gray":  (0.6, 0.6, 0.6, 1.0),
-    }
+_COLORS = {
+    "red":   (1.0, 0.1, 0.1, 1.0),
+    "blue":  (0.1, 0.3, 1.0, 1.0),
+    "green": (0.1, 0.8, 0.2, 1.0),
+    "gray":  (0.6, 0.6, 0.6, 1.0),
+}
 
-    def _paint(obj, color):
-        mat = bpy.data.materials.new(name=color)
-        mat.diffuse_color = _COLORS.get(color, (1, 1, 1, 1))
-        obj.data.materials.append(mat)
+def _paint(obj, color):
+    mat = bpy.data.materials.new(name=color)
+    mat.diffuse_color = _COLORS.get(color, (1, 1, 1, 1))
+    obj.data.materials.append(mat)
 
-    {{ .body }}
+${body}
+`
+end

@@ -2,6 +2,10 @@
 # and attach to an empty GameObject.
 extension cs
 
+comments
+    line "#"
+end
+
 function scene
     arg literal "scene"
     arg capture name string
@@ -76,30 +80,32 @@ function camera
 `
 end
 
-file_template:
-    using UnityEngine;
-    using System.Collections.Generic;
+file_template
+    write `using UnityEngine;
+using System.Collections.Generic;
 
-    public class CapyScene : MonoBehaviour
+public class CapyScene : MonoBehaviour
+{
+    static readonly Dictionary<string, Color> COLORS = new Dictionary<string, Color> {
+        { "red",   new Color(0.86f, 0.16f, 0.16f) },
+        { "blue",  new Color(0.16f, 0.31f, 0.86f) },
+        { "green", new Color(0.16f, 0.78f, 0.31f) },
+        { "gray",  new Color(0.59f, 0.59f, 0.59f) },
+    };
+
+    void Spawn(PrimitiveType kind, Vector3 pos, Vector3 scale, string color)
     {
-        static readonly Dictionary<string, Color> COLORS = new Dictionary<string, Color> {
-            { "red",   new Color(0.86f, 0.16f, 0.16f) },
-            { "blue",  new Color(0.16f, 0.31f, 0.86f) },
-            { "green", new Color(0.16f, 0.78f, 0.31f) },
-            { "gray",  new Color(0.59f, 0.59f, 0.59f) },
-        };
-
-        void Spawn(PrimitiveType kind, Vector3 pos, Vector3 scale, string color)
-        {
-            var go = GameObject.CreatePrimitive(kind);
-            go.transform.position = pos;
-            go.transform.localScale = scale;
-            var c = COLORS.TryGetValue(color, out var v) ? v : Color.white;
-            go.GetComponent<Renderer>().material.color = c;
-        }
-
-        void Start()
-        {
-{{ .body | indent 8 }}
-        }
+        var go = GameObject.CreatePrimitive(kind);
+        go.transform.position = pos;
+        go.transform.localScale = scale;
+        var c = COLORS.TryGetValue(color, out var v) ? v : Color.white;
+        go.GetComponent<Renderer>().material.color = c;
     }
+
+    void Start()
+    {
+${indent 8 body}
+    }
+}
+`
+end
