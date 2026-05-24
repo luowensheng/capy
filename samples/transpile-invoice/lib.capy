@@ -1,0 +1,54 @@
+# Invoice DSL → markdown invoice.
+extension md
+
+comments
+    line "#"
+end
+
+context
+    meta {}
+    items []
+end
+
+function bill_to
+    arg literal "bill_to"
+    arg capture name any
+    set context.meta.client name
+end
+
+function number
+    arg literal "number"
+    arg capture n any
+    set context.meta.number n
+end
+
+function date
+    arg literal "date"
+    arg capture d any
+    set context.meta.date d
+end
+
+function item
+    arg literal "item"
+    arg capture desc any
+    arg capture qty int
+    arg capture price any
+    append context.items {desc: desc, qty: qty, price: price}
+end
+
+file_template
+    write `# Invoice ${unquote context.meta.number}
+
+**To:** ${unquote context.meta.client}
+**Date:** ${unquote context.meta.date}
+
+| Item | Qty | Unit price |
+|---|---:|---:|
+`
+    for it in context.items
+        write `| ${unquote it.desc} | ${it.qty} | ${unquote it.price} |
+`
+    end
+    write `
+`
+end

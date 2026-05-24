@@ -1,0 +1,50 @@
+# Endpoint DSL → FastAPI app with Pydantic models.
+extension py
+
+comments
+    line "#"
+end
+
+function model
+    arg literal "model"
+    arg capture name ident
+    block_closer end
+    write `
+class ${name}(BaseModel):
+${indent 4 body}
+`
+end
+
+function field
+    arg literal "field"
+    arg capture name ident
+    arg literal ":"
+    arg capture t any
+    write `${name}: ${unquote t}
+`
+end
+
+function endpoint
+    arg literal "endpoint"
+    arg capture method ident
+    arg capture path any
+    arg capture handler ident
+    arg capture returns any
+    write `
+@app.${method}(${path}, response_model=${unquote returns})
+def ${handler}():
+    return {}
+`
+end
+
+function end
+end
+
+file_template
+    write `from fastapi import FastAPI
+from pydantic import BaseModel
+
+app = FastAPI()
+${body}
+`
+end

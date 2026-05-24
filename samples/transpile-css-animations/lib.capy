@@ -1,0 +1,77 @@
+# Keyframe + class DSL → full CSS file.
+extension css
+
+comments
+    line "#"
+end
+
+context
+    keyframes []
+    classes []
+end
+
+function keyframe
+    arg literal "keyframe"
+    arg capture name ident
+    block_closer end
+    append context.keyframes name
+    write `@keyframes ${name} {
+${indent 2 body}
+}
+`
+end
+
+function at
+    arg literal "at"
+    arg capture pct int
+    arg capture prop ident
+    arg literal "="
+    arg capture val any
+    write `${pct}% { ${prop}: ${unquote val}; }
+`
+end
+
+function class
+    arg literal "class"
+    arg capture sel any
+    block_closer end
+    append context.classes sel
+    write `${unquote sel} {
+${indent 2 body}
+}
+`
+end
+
+function prop
+    arg capture name ident
+    arg literal "="
+    arg capture val any
+    write `${dasherize name}: ${unquote val};
+`
+end
+
+function animate
+    arg literal "animate"
+    arg capture keyframe ident
+    arg capture dur any
+    arg capture easing any
+    write `animation: ${keyframe} ${unquote dur} ${unquote easing} infinite;
+`
+end
+
+function hover
+    arg literal "hover"
+    arg capture prop ident
+    arg literal "="
+    arg capture val any
+    append context.hover_props {prop: prop, val: val}
+end
+
+function end
+end
+
+file_template
+    write `/* generated CSS — ${len context.keyframes} keyframes, ${len context.classes} classes */
+${body}
+`
+end

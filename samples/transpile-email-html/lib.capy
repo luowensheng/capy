@@ -1,0 +1,79 @@
+# Email DSL → HTML email with inline styles.
+extension html
+
+comments
+    line "#"
+end
+
+context
+    meta {}
+    buttons []
+end
+
+function subject
+    arg literal "subject"
+    arg capture s any
+    set context.meta.subject s
+end
+
+function preview
+    arg literal "preview"
+    arg capture p any
+    set context.meta.preview p
+end
+
+function heading
+    arg literal "heading"
+    arg capture t any
+    write `<h1 style="font-family:Arial,sans-serif;font-size:24px;color:#111;margin:0 0 16px">${unquote t}</h1>
+`
+end
+
+function paragraph
+    arg literal "para"
+    arg capture t any
+    write `<p style="font-family:Arial,sans-serif;font-size:15px;line-height:1.5;color:#333;margin:0 0 16px">${unquote t}</p>
+`
+end
+
+function button
+    arg literal "button"
+    arg capture label any
+    arg capture href any
+    write `<p style="margin:24px 0;text-align:center">
+  <a href="${unquote href}" style="background:#4dd;color:#fff;padding:12px 24px;text-decoration:none;border-radius:4px;font-family:Arial,sans-serif;font-weight:600">${unquote label}</a>
+</p>
+`
+end
+
+function divider
+    arg literal "divider"
+    write `<hr style="border:none;border-top:1px solid #eee;margin:24px 0" />
+`
+end
+
+function footer
+    arg literal "footer"
+    arg capture t any
+    write `<p style="font-family:Arial,sans-serif;font-size:12px;color:#888;text-align:center;margin:24px 0 0">${unquote t}</p>
+`
+end
+
+file_template
+    write `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>${unquote context.meta.subject}</title>
+</head>
+<body style="margin:0;padding:24px;background:#f4f4f4">
+  <div style="display:none;max-height:0;overflow:hidden">${unquote context.meta.preview}</div>
+  <table cellpadding="0" cellspacing="0" style="background:#fff;max-width:600px;margin:0 auto;padding:32px;border-radius:8px">
+    <tr><td>
+${indent 6 body}
+    </td></tr>
+  </table>
+</body>
+</html>
+`
+end
