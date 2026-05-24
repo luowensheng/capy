@@ -19,81 +19,61 @@ function invite
     arg literal "invite"
     arg capture title string
     block_closer end
-    template_str ""
-    run:
-        set context.title title
+    set context.title title
 end
 
 function host
     arg literal "host"
     arg capture v string
-    template_str ""
-    run:
-        set context.host v
+    set context.host v
 end
 
 function when
     arg literal "when"
     arg capture v string
-    template_str ""
-    run:
-        set context.when v
+    set context.when v
 end
 
 function time
     arg literal "time"
     arg capture v string
-    template_str ""
-    run:
-        set context.time v
+    set context.time v
 end
 
 function where
     arg literal "where"
     arg capture v string
-    template_str ""
-    run:
-        set context.where v
+    set context.where v
 end
 
 function address
     arg literal "address"
     arg capture v string
-    template_str ""
-    run:
-        set context.address v
+    set context.address v
 end
 
 function rsvp_by
     arg literal "rsvp_by"
     arg capture v string
-    template_str ""
-    run:
-        set context.rsvp_by v
+    set context.rsvp_by v
 end
 
 function rsvp_to
     arg literal "rsvp_to"
     arg capture v string
-    template_str ""
-    run:
-        set context.rsvp_to v
+    set context.rsvp_to v
 end
 
 function note
     arg literal "note"
     arg capture v string
-    template_str ""
-    run:
-        append context.notes v
+    append context.notes v
 end
 
 function bring
     arg literal "bring"
     arg capture v string
-    template_str ""
-    run:
-        append context.bring v
+    append context.bring v
 end
 
 function end

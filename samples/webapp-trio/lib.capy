@@ -15,42 +15,32 @@ function app
     arg literal "app"
     arg capture name string
     block_closer end
-    template_str ""
-    run:
-        set context.name name
+    set context.name name
 end
 
 function description
     arg literal "description"
     arg capture v string
-    template_str ""
-    run:
-        set context.description v
+    set context.description v
 end
 
 function color_primary
     arg literal "color_primary"
     arg capture v string
-    template_str ""
-    run:
-        set context.color_primary v
+    set context.color_primary v
 end
 
 function color_bg
     arg literal "color_bg"
     arg capture v string
-    template_str ""
-    run:
-        set context.color_bg v
+    set context.color_bg v
 end
 
 function habit
     arg literal "habit"
     arg capture id ident
     arg capture label string
-    template_str ""
-    run:
-        append context.habits {id: id, label: label}
+    append context.habits {id: id, label: label}
 end
 
 function end

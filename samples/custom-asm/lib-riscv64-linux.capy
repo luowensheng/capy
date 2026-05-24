@@ -16,9 +16,7 @@ function data
     arg literal "data"
     arg capture name ident
     arg capture text string
-    template_str ""
-    run:
-        append context.data {name: name, text: text}
+    append context.data {name: name, text: text}
 end
 
 function func
@@ -26,9 +24,9 @@ function func
     arg literal "func"
     arg capture name ident
     block_closer end
-    template:
-        {{ .name }}:
-        {{ .body }}
+    write `${name}:
+${body}
+`
 end
 
 function write
@@ -37,22 +35,22 @@ function write
     arg capture fd any
     arg capture ptr ident
     arg capture len any
-    template:
-        li a7, 64                 # syscall: write
-        li a0, {{ .fd }}          # arg0: fd
-        la a1, {{ .ptr }}         # arg1: buffer
-        li a2, {{ .len }}         # arg2: count
-        ecall
+    write `li a7, 64                 # syscall: write
+li a0, ${fd}          # arg0: fd
+la a1, ${ptr}         # arg1: buffer
+li a2, ${len}         # arg2: count
+ecall
+`
 end
 
 function exit
     description "Emit an exit(2) syscall (number 93). status → a0."
     arg literal "exit"
     arg capture code any
-    template:
-        li a7, 93                 # syscall: exit
-        li a0, {{ .code }}        # arg0: status code
-        ecall
+    write `li a7, 93                 # syscall: exit
+li a0, ${code}        # arg0: status code
+ecall
+`
 end
 
 function end

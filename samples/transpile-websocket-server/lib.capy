@@ -18,18 +18,14 @@ function server
     description "Top-level: name the server's listening port."
     arg literal "server"
     arg capture port string  "Port number as a string, e.g. \"8080\"."
-    template_str ""
-    run:
-        set context.port port
+    set context.port port
 end
 
 function route
     description "WebSocket upgrade endpoint path. Default \"/ws\"."
     arg literal "route"
     arg capture path string  "URL path, e.g. \"/chat\"."
-    template_str ""
-    run:
-        set context.path path
+    set context.path path
 end
 
 function field
@@ -38,9 +34,7 @@ function field
     arg capture msg ident    "Message type the field belongs to (e.g. `chat`)."
     arg capture fname ident  "Field name."
     arg capture ftype ident  "Field type: string | int | float | bool."
-    template_str ""
-    run:
-        append context.fields {msg: msg, fname: fname, ftype: ftype}
+    append context.fields {msg: msg, fname: fname, ftype: ftype}
 end
 
 function on
@@ -48,9 +42,7 @@ function on
     arg literal "on"
     arg capture msg ident   "Message type name (matched against `field` declarations)."
     arg capture verb ident  "Handler verb. Built-in in this library: `broadcast` (echo to all clients), `announce` (log + broadcast). Add a new verb by adding a case to the switch in `wsHandler` below."
-    template_str ""
-    run:
-        append context.handlers {msg: msg, verb: verb}
+    append context.handlers {msg: msg, verb: verb}
 end
 
 function end

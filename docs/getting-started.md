@@ -77,14 +77,28 @@ Concretely, `import json` matches a function that looks like this:
 function import
     arg literal "import"
     arg capture name ident
-    template_str ""              # contributes nothing to body
-    run:
-        append context.imports name
+    append context.imports name
 end
 ```
 
-`import json` adds `"json"` to `context.imports`. The file template
-at the top of the output emits `import json` from there.
+`import json` adds `"json"` to `context.imports`. The function body
+contains a single `append` — no output is written, only state is
+mutated. The file template at the top of the output emits
+`import json` from there.
+
+A function that DOES write to the output uses `write`:
+
+```
+function say
+    arg literal "say"
+    arg capture msg any
+    write `print(${msg})
+`
+end
+```
+
+The backtick literal is what gets emitted. `${msg}` interpolates the
+captured value.
 
 ## 4. Make your own
 

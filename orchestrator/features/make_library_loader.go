@@ -239,21 +239,45 @@ func compileFunction(name string, f infra.RawFunction, tokenize func(string) ([]
 
 	elements := compileElements(args)
 
+	// New-shape `body:` (unified write/state block) → translate into
+	// the equivalent Template + Run before constructing the FuncDef.
+	template := f.Template
+	run := f.Run
+	if strings.TrimSpace(f.Body) != "" {
+		toks, err := tokenize(f.Body)
+		if err != nil {
+			return nil, fmt.Errorf("function %q: parsing body: %v", name, err)
+		}
+		ast, err := ParseInner(toks)
+		if err != nil {
+			return nil, fmt.Errorf("function %q: parsing body: %v", name, err)
+		}
+		tpl, runAST, err := translateNewShape(ast)
+		if err != nil {
+			return nil, fmt.Errorf("function %q: %v", name, err)
+		}
+		template = tpl
+		// Re-serialise the run AST as inner-DSL source text — the
+		// later "if RunAST is non-empty, tokenize+parse" path below
+		// re-parses it. (Slightly wasteful but keeps one code path.)
+		run = renderInnerBlock(runAST)
+	}
+
 	fd := &domain.FuncDef{
 		Name:        name,
 		Description: f.Description,
 		Args:        args,
 		Elements:    elements,
-		Template:    f.Template,
-		Run:         f.Run,
+		Template:    template,
+		Run:         run,
 		Priority:    f.Priority,
 	}
 	if f.Block != nil {
 		fd.Block = &domain.BlockSpec{Closer: f.Block.Closer, Open: f.Block.Open, Close: f.Block.Close}
 	}
 
-	if strings.TrimSpace(f.Run) != "" {
-		toks, err := tokenize(f.Run)
+	if strings.TrimSpace(run) != "" {
+		toks, err := tokenize(run)
 		if err != nil {
 			return nil, fmt.Errorf("function %q: parsing run: %v", name, err)
 		}

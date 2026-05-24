@@ -39,7 +39,7 @@ func (p *innerP) parseProgram(inBlock bool) (domain.InnerBlock, error) {
 		if k == domain.TokDedent {
 			break
 		}
-		if inBlock && p.atKeyword("end") {
+		if inBlock && (p.atKeyword("end") || p.atKeyword("else")) {
 			break
 		}
 		s, err := p.parseStmt()
@@ -120,8 +120,16 @@ func (p *innerP) parseStmt() (domain.InnerStmt, error) {
 		return domain.DeleteStmt{Target: path}, nil
 	case "if":
 		return p.parseIf()
-	case "loop":
+	case "loop", "for":
 		return p.parseLoop()
+	case "write":
+		p.Advance()
+		val, err := parseValue(p, nil)
+		if err != nil {
+			return nil, err
+		}
+		p.consumeNewline()
+		return domain.WriteStmt{Value: val}, nil
 	}
 	// fallthrough: a generic call (e.g. `regex_match x y`, `error "msg"`,
 	// or a recursive call to another library function — though for now the
@@ -185,6 +193,32 @@ func (p *innerP) parseIf() (domain.InnerStmt, error) {
 	body, err := p.parseBlockBody()
 	if err != nil {
 		return nil, err
+	}
+	var elseBlock *domain.InnerBlock
+	if p.atKeyword("else") {
+		p.Advance()
+		// `else if` chains by re-entering parseIf and wrapping it in
+		// a single-statement Else block.
+		if p.atKeyword("if") {
+			nested, err := p.parseIf()
+			if err != nil {
+				return nil, err
+			}
+			elseBlock = &domain.InnerBlock{Stmts: []domain.InnerStmt{nested}}
+		} else {
+			p.consumeNewline()
+			eb, err := p.parseBlockBody()
+			if err != nil {
+				return nil, err
+			}
+			elseBlock = &eb
+			if !p.atKeyword("end") {
+				return nil, fmt.Errorf("line %d: expected `end` to close else", p.Peek().Line)
+			}
+			p.Advance()
+			p.consumeNewline()
+		}
+		return domain.IfStmt{Cond: cond, Body: body, Else: elseBlock}, nil
 	}
 	if !p.atKeyword("end") {
 		return nil, fmt.Errorf("line %d: expected `end` to close if", p.Peek().Line)

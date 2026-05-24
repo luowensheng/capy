@@ -21,27 +21,21 @@ function app
     description "App name. Used as the heading and as the systemd/Windows-service identifier."
     arg literal "app"
     arg capture name string  "App name, e.g. \"capy-agent\"."
-    template_str ""
-    run:
-        set context.app_name name
+    set context.app_name name
 end
 
 function install
     description "Install a system package via the platform's package manager (apt/brew/choco)."
     arg literal "install"
     arg capture pkg string  "Package name, e.g. \"jq\"."
-    template_str ""
-    run:
-        append context.packages pkg
+    append context.packages pkg
 end
 
 function mkdir
     description "Create a directory (with parents). Path is interpreted in the target shell."
     arg literal "mkdir"
     arg capture path string  "Directory path, e.g. \"/var/log/myapp\"."
-    template_str ""
-    run:
-        append context.dirs path
+    append context.dirs path
 end
 
 function setenv
@@ -49,18 +43,14 @@ function setenv
     arg literal "setenv"
     arg capture name string   "Env var name, e.g. \"PORT\"."
     arg capture value string  "Env var value."
-    template_str ""
-    run:
-        append context.env {name: name, value: value}
+    append context.env {name: name, value: value}
 end
 
 function service
     description "Name of the long-running service the installer registers. POSIX uses systemd unit; Windows uses sc.exe."
     arg literal "service"
     arg capture name string  "Service identifier, e.g. \"capy-agent\"."
-    template_str ""
-    run:
-        set context.service name
+    set context.service name
 end
 
 function end

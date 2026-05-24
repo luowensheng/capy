@@ -5,7 +5,8 @@ extension cs
 function scene
     arg literal "scene"
     arg capture name string
-    template_str "// scene: {{ .name }}\n"
+    write `// scene: ${name}
+`
 end
 
 function cube
@@ -15,14 +16,14 @@ function cube
     arg capture y any
     arg capture z any
     arg capture size any
-    template:
-        // cube ({{ .color }})
-        {
-            var c = new Point3d({{ .x }}, {{ .y }}, {{ .z }});
-            double s = {{ .size }} / 2.0;
-            var box = new Box(new Plane(c, Vector3d.ZAxis), new Interval(-s, s), new Interval(-s, s), new Interval(-s, s));
-            doc.Objects.AddBox(box, Attr("{{ .color }}"));
-        }
+    write `// cube (${color})
+{
+    var c = new Point3d(${x}, ${y}, ${z});
+    double s = ${size} / 2.0;
+    var box = new Box(new Plane(c, Vector3d.ZAxis), new Interval(-s, s), new Interval(-s, s), new Interval(-s, s));
+    doc.Objects.AddBox(box, Attr("${color}"));
+}
+`
 end
 
 function sphere
@@ -32,12 +33,12 @@ function sphere
     arg capture y any
     arg capture z any
     arg capture radius any
-    template:
-        // sphere ({{ .color }})
-        {
-            var sph = new Sphere(new Point3d({{ .x }}, {{ .y }}, {{ .z }}), {{ .radius }});
-            doc.Objects.AddSphere(sph, Attr("{{ .color }}"));
-        }
+    write `// sphere (${color})
+{
+    var sph = new Sphere(new Point3d(${x}, ${y}, ${z}), ${radius});
+    doc.Objects.AddSphere(sph, Attr("${color}"));
+}
+`
 end
 
 function plane
@@ -47,14 +48,14 @@ function plane
     arg capture y any
     arg capture z any
     arg capture size any
-    template:
-        // plane ({{ .color }})
-        {
-            var c = new Point3d({{ .x }}, {{ .y }}, {{ .z }});
-            double s = {{ .size }} / 2.0;
-            var rect = new Rectangle3d(new Plane(c, Vector3d.ZAxis), new Interval(-s, s), new Interval(-s, s));
-            doc.Objects.AddRectangle(rect, Attr("{{ .color }}"));
-        }
+    write `// plane (${color})
+{
+    var c = new Point3d(${x}, ${y}, ${z});
+    double s = ${size} / 2.0;
+    var rect = new Rectangle3d(new Plane(c, Vector3d.ZAxis), new Interval(-s, s), new Interval(-s, s));
+    doc.Objects.AddRectangle(rect, Attr("${color}"));
+}
+`
 end
 
 function light
@@ -62,12 +63,12 @@ function light
     arg capture x any
     arg capture y any
     arg capture z any
-    template:
-        // point light
-        {
-            var lt = new Light { LightStyle = LightStyle.WorldPoint, Location = new Point3d({{ .x }}, {{ .y }}, {{ .z }}) };
-            doc.Lights.Add(lt);
-        }
+    write `// point light
+{
+    var lt = new Light { LightStyle = LightStyle.WorldPoint, Location = new Point3d(${x}, ${y}, ${z}) };
+    doc.Lights.Add(lt);
+}
+`
 end
 
 function camera
@@ -75,10 +76,10 @@ function camera
     arg capture x any
     arg capture y any
     arg capture z any
-    template:
-        // camera
-        doc.Views.ActiveView.ActiveViewport.SetCameraLocation(new Point3d({{ .x }}, {{ .y }}, {{ .z }}), true);
-        doc.Views.ActiveView.ActiveViewport.SetCameraTarget(new Point3d(0, 0, 0), true);
+    write `// camera
+doc.Views.ActiveView.ActiveViewport.SetCameraLocation(new Point3d(${x}, ${y}, ${z}), true);
+doc.Views.ActiveView.ActiveViewport.SetCameraTarget(new Point3d(0, 0, 0), true);
+`
 end
 
 file_template:

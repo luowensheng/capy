@@ -19,11 +19,9 @@ function game
     arg capture title any
     arg capture w int
     arg capture h int
-    template_str ""
-    run:
-        set context.title title
-        set context.width w
-        set context.height h
+    set context.title title
+    set context.width w
+    set context.height h
 end
 
 function sprite
@@ -35,9 +33,7 @@ function sprite
     arg capture y int
     arg capture w int
     arg capture h int
-    template_str ""
-    run:
-        append context.sprites {name: name, color: color, x: x, y: y, w: w, h: h}
+    append context.sprites {name: name, color: color, x: x, y: y, w: w, h: h}
 end
 
 function on_key
@@ -47,9 +43,7 @@ function on_key
     arg capture target ident
     arg capture dx int
     arg capture dy int
-    template_str ""
-    run:
-        append context.keys {key: key, target: target, dx: dx, dy: dy}
+    append context.keys {key: key, target: target, dx: dx, dy: dy}
 end
 
 function motion
@@ -57,9 +51,7 @@ function motion
     arg literal "motion"
     arg capture target ident
     arg capture verb ident
-    template_str ""
-    run:
-        append context.motions {target: target, verb: verb}
+    append context.motions {target: target, verb: verb}
 end
 
 file_template:

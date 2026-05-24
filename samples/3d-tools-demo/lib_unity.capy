@@ -5,7 +5,8 @@ extension cs
 function scene
     arg literal "scene"
     arg capture name string
-    template_str "gameObject.name = {{ .name }};\n"
+    write `gameObject.name = ${name};
+`
 end
 
 function cube
@@ -15,9 +16,9 @@ function cube
     arg capture y any
     arg capture z any
     arg capture size any
-    template:
-        // cube ({{ .color }})
-        Spawn(PrimitiveType.Cube, new Vector3({{ .x }}, {{ .y }}, {{ .z }}), Vector3.one * {{ .size }}, "{{ .color }}");
+    write `// cube (${color})
+Spawn(PrimitiveType.Cube, new Vector3(${x}, ${y}, ${z}), Vector3.one * ${size}, "${color}");
+`
 end
 
 function sphere
@@ -27,9 +28,9 @@ function sphere
     arg capture y any
     arg capture z any
     arg capture radius any
-    template:
-        // sphere ({{ .color }})
-        Spawn(PrimitiveType.Sphere, new Vector3({{ .x }}, {{ .y }}, {{ .z }}), Vector3.one * {{ .radius }} * 2f, "{{ .color }}");
+    write `// sphere (${color})
+Spawn(PrimitiveType.Sphere, new Vector3(${x}, ${y}, ${z}), Vector3.one * ${radius} * 2f, "${color}");
+`
 end
 
 function plane
@@ -39,9 +40,9 @@ function plane
     arg capture y any
     arg capture z any
     arg capture size any
-    template:
-        // plane ({{ .color }})
-        Spawn(PrimitiveType.Plane, new Vector3({{ .x }}, {{ .y }}, {{ .z }}), Vector3.one * {{ .size }} * 0.1f, "{{ .color }}");
+    write `// plane (${color})
+Spawn(PrimitiveType.Plane, new Vector3(${x}, ${y}, ${z}), Vector3.one * ${size} * 0.1f, "${color}");
+`
 end
 
 function light
@@ -49,15 +50,15 @@ function light
     arg capture x any
     arg capture y any
     arg capture z any
-    template:
-        // point light
-        {
-            var go = new GameObject("PointLight");
-            go.transform.position = new Vector3({{ .x }}, {{ .y }}, {{ .z }});
-            var lt = go.AddComponent<Light>();
-            lt.type = LightType.Point;
-            lt.intensity = 2f;
-        }
+    write `// point light
+{
+    var go = new GameObject("PointLight");
+    go.transform.position = new Vector3(${x}, ${y}, ${z});
+    var lt = go.AddComponent<Light>();
+    lt.type = LightType.Point;
+    lt.intensity = 2f;
+}
+`
 end
 
 function camera
@@ -65,14 +66,14 @@ function camera
     arg capture x any
     arg capture y any
     arg capture z any
-    template:
-        // camera
-        {
-            var go = new GameObject("Camera");
-            go.transform.position = new Vector3({{ .x }}, {{ .y }}, {{ .z }});
-            go.transform.LookAt(Vector3.zero);
-            go.AddComponent<Camera>();
-        }
+    write `// camera
+{
+    var go = new GameObject("Camera");
+    go.transform.position = new Vector3(${x}, ${y}, ${z});
+    go.transform.LookAt(Vector3.zero);
+    go.AddComponent<Camera>();
+}
+`
 end
 
 file_template:

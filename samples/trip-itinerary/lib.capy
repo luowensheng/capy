@@ -18,56 +18,49 @@ function trip
     arg literal "travelers"
     arg capture n int
     block_closer end
-    template:
-        {{ .body }}
-    run:
-        set context.title title
-        set context.travelers n
+    write `${body}
+`
+    set context.title title
+    set context.travelers n
 end
 
 function dates
     arg literal "dates"
     arg capture v string
-    template_str ""
-    run:
-        set context.dates v
+    set context.dates v
 end
 
 function budget
     arg literal "budget"
     arg capture n int
-    template_str ""
-    run:
-        set context.budget n
+    set context.budget n
 end
 
 function day
     arg literal "day"
     arg capture name string
     block_closer end
-    template:
-        <section class="day">
-          <h2>{{ .name | unquote }}</h2>
-          <ul class="acts">
-        {{ .body | indent 4 }}
-          </ul>
-        </section>
+    write `<section class="day">
+  <h2>${unquote name}</h2>
+  <ul class="acts">
+${indent 4 body}
+  </ul>
+</section>
+`
 end
 
 function activity
     arg literal "activity"
     arg capture hour int
     arg capture text string
-    template:
-        <li><span class="hour">{{ .hour }}:00</span><span class="text">{{ .text | unquote }}</span></li>
+    write `<li><span class="hour">${hour}:00</span><span class="text">${unquote text}</span></li>
+`
 end
 
 function note
     arg literal "note"
     arg capture text string
-    template_str ""
-    run:
-        append context.notes text
+    append context.notes text
 end
 
 function end

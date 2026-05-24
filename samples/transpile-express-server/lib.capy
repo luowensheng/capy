@@ -17,18 +17,14 @@ end
 function port
     arg literal "port"
     arg capture p int
-    template_str ""
-    run:
-        set context.port p
+    set context.port p
 end
 
 function use
     description "Mount a middleware. Built-in keywords: `logging`, `cors`, `json_body`."
     arg literal "use"
     arg capture mw ident
-    template_str ""
-    run:
-        append context.middleware mw
+    append context.middleware mw
 end
 
 function endpoint
@@ -37,9 +33,7 @@ function endpoint
     arg capture method ident "HTTP method: get / post / put / delete."
     arg capture path string  "URL path; may include `:params`."
     arg capture verb ident   "Abstract handler verb. Built-ins: health_check, list_mock_users, create_user, get_user_by_id."
-    template_str ""
-    run:
-        append context.endpoints {method: method, path: path, verb: verb}
+    append context.endpoints {method: method, path: path, verb: verb}
 end
 
 file_template:

@@ -4,7 +4,8 @@ extension py
 function scene
     arg literal "scene"
     arg capture name string
-    template_str "bpy.context.scene.name = {{ .name }}\n"
+    write `bpy.context.scene.name = ${name}
+`
 end
 
 function cube
@@ -14,10 +15,10 @@ function cube
     arg capture y any
     arg capture z any
     arg capture size any
-    template:
-        # cube ({{ .color }})
-        bpy.ops.mesh.primitive_cube_add(location=({{ .x }}, {{ .y }}, {{ .z }}), size={{ .size }})
-        _paint(bpy.context.active_object, "{{ .color }}")
+    write `# cube (${color})
+bpy.ops.mesh.primitive_cube_add(location=(${x}, ${y}, ${z}), size=${size})
+_paint(bpy.context.active_object, "${color}")
+`
 end
 
 function sphere
@@ -27,10 +28,10 @@ function sphere
     arg capture y any
     arg capture z any
     arg capture radius any
-    template:
-        # sphere ({{ .color }})
-        bpy.ops.mesh.primitive_uv_sphere_add(location=({{ .x }}, {{ .y }}, {{ .z }}), radius={{ .radius }})
-        _paint(bpy.context.active_object, "{{ .color }}")
+    write `# sphere (${color})
+bpy.ops.mesh.primitive_uv_sphere_add(location=(${x}, ${y}, ${z}), radius=${radius})
+_paint(bpy.context.active_object, "${color}")
+`
 end
 
 function plane
@@ -40,10 +41,10 @@ function plane
     arg capture y any
     arg capture z any
     arg capture size any
-    template:
-        # plane ({{ .color }})
-        bpy.ops.mesh.primitive_plane_add(location=({{ .x }}, {{ .y }}, {{ .z }}), size={{ .size }})
-        _paint(bpy.context.active_object, "{{ .color }}")
+    write `# plane (${color})
+bpy.ops.mesh.primitive_plane_add(location=(${x}, ${y}, ${z}), size=${size})
+_paint(bpy.context.active_object, "${color}")
+`
 end
 
 function light
@@ -51,7 +52,8 @@ function light
     arg capture x any
     arg capture y any
     arg capture z any
-    template_str "bpy.ops.object.light_add(type='POINT', location=({{ .x }}, {{ .y }}, {{ .z }}))\n"
+    write `bpy.ops.object.light_add(type='POINT', location=(${x}, ${y}, ${z}))
+`
 end
 
 function camera
@@ -59,7 +61,8 @@ function camera
     arg capture x any
     arg capture y any
     arg capture z any
-    template_str "bpy.ops.object.camera_add(location=({{ .x }}, {{ .y }}, {{ .z }}))\n"
+    write `bpy.ops.object.camera_add(location=(${x}, ${y}, ${z}))
+`
 end
 
 file_template:

@@ -19,9 +19,7 @@ function data
     arg literal "data"
     arg capture name ident   "Label name, referenced later by `write`."
     arg capture text string  "String contents (escape sequences honoured by the assembler)."
-    template_str ""
-    run:
-        append context.data {name: name, text: text}
+    append context.data {name: name, text: text}
 end
 
 function func
@@ -29,9 +27,9 @@ function func
     arg literal "func"
     arg capture name ident  "Function label, e.g. `_start`."
     block_closer end
-    template:
-        {{ .name }}:
-        {{ .body }}
+    write `${name}:
+${body}
+`
 end
 
 function write
@@ -40,22 +38,22 @@ function write
     arg capture fd any     "File descriptor (1=stdout, 2=stderr)."
     arg capture ptr ident  "Data label declared with `data`."
     arg capture len any    "Byte length to write."
-    template:
-        mov $1, %rax              # syscall: write
-        mov ${{ .fd }}, %rdi      # arg0: fd
-        lea {{ .ptr }}(%rip), %rsi # arg1: buffer
-        mov ${{ .len }}, %rdx     # arg2: count
-        syscall
+    write `mov $1, %rax              # syscall: write
+mov $${fd}, %rdi      # arg0: fd
+lea ${ptr}(%rip), %rsi # arg1: buffer
+mov $${len}, %rdx     # arg2: count
+syscall
+`
 end
 
 function exit
     description "Emit an exit(2) syscall. status → %rdi, syscall num 60 → %rax."
     arg literal "exit"
     arg capture code any  "Exit status (0 = success)."
-    template:
-        mov $60, %rax             # syscall: exit
-        mov ${{ .code }}, %rdi    # arg0: status code
-        syscall
+    write `mov $60, %rax             # syscall: exit
+mov $${code}, %rdi    # arg0: status code
+syscall
+`
 end
 
 function end

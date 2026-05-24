@@ -23,37 +23,31 @@ function service
     description "Service name (matches the directory in your monorepo)."
     arg literal "service"
     arg capture name string  "Service identifier, e.g. \"checkout-api\"."
-    template_str ""
-    run:
-        set context.service name
-        # Pull surrounding deploy metadata from the host. The CLI's
-        # OSHost makes os.Getenv / os.Args / os.ReadFile available
-        # here; the wasm playground's NoOpHost makes them all "".
-        set context.environment (env "ENV")
-        set context.database_url (env "DATABASE_URL")
-        set context.version (arg 0)
-        set context.region (arg 1)
+    set context.service name
+    # Pull surrounding deploy metadata from the host. The CLI's
+    # OSHost makes os.Getenv / os.Args / os.ReadFile available
+    # here; the wasm playground's NoOpHost makes them all "".
+    set context.environment (env "ENV")
+    set context.database_url (env "DATABASE_URL")
+    set context.version (arg 0)
+    set context.region (arg 1)
 end
 
 function replicas
     description "How many replicas to schedule."
     arg literal "replicas"
     arg capture n any  "Replica count (integer)."
-    template_str ""
-    run:
-        set context.replicas n
+    set context.replicas n
 end
 
 function load_keys_from
     description "Read API keys from a sibling file (one per line). Each becomes an entry in the rendered manifest."
     arg literal "load_keys_from"
     arg capture path string  "Path to a keys file, relative to the script directory."
-    template_str ""
-    run:
-        # read_file resolves relative paths against the script's
-        # directory and inlines the contents. Errors abort the
-        # transpilation with a clear message — no half-rendered output.
-        set context.api_keys (read_file path)
+    # read_file resolves relative paths against the script's
+    # directory and inlines the contents. Errors abort the
+    # transpilation with a clear message — no half-rendered output.
+    set context.api_keys (read_file path)
 end
 
 function end

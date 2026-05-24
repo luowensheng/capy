@@ -25,25 +25,19 @@ function project
     arg literal "project"
     arg capture name string
     block_closer end
-    template_str ""
-    run:
-        set context.name name
+    set context.name name
 end
 
 function description
     arg literal "description"
     arg capture v string
-    template_str ""
-    run:
-        set context.description v
+    set context.description v
 end
 
 function author
     arg literal "author"
     arg capture v string
-    template_str ""
-    run:
-        set context.author v
+    set context.author v
 end
 
 function route
@@ -51,9 +45,7 @@ function route
     arg capture method ident
     arg capture path string
     arg capture handler ident
-    template_str ""
-    run:
-        append context.routes {method: method, path: path, handler: handler}
+    append context.routes {method: method, path: path, handler: handler}
 end
 
 function end

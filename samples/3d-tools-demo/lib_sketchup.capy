@@ -4,7 +4,8 @@ extension rb
 function scene
     arg literal "scene"
     arg capture name string
-    template_str "model.name = {{ .name }}\n"
+    write `model.name = ${name}
+`
 end
 
 function cube
@@ -14,9 +15,9 @@ function cube
     arg capture y any
     arg capture z any
     arg capture size any
-    template:
-        # cube ({{ .color }})
-        _add_box(ent, {{ .x }}, {{ .y }}, {{ .z }}, {{ .size }}, "{{ .color }}")
+    write `# cube (${color})
+_add_box(ent, ${x}, ${y}, ${z}, ${size}, "${color}")
+`
 end
 
 function sphere
@@ -26,9 +27,9 @@ function sphere
     arg capture y any
     arg capture z any
     arg capture radius any
-    template:
-        # sphere ({{ .color }})
-        _add_sphere(ent, {{ .x }}, {{ .y }}, {{ .z }}, {{ .radius }}, "{{ .color }}")
+    write `# sphere (${color})
+_add_sphere(ent, ${x}, ${y}, ${z}, ${radius}, "${color}")
+`
 end
 
 function plane
@@ -38,9 +39,9 @@ function plane
     arg capture y any
     arg capture z any
     arg capture size any
-    template:
-        # plane ({{ .color }})
-        _add_plane(ent, {{ .x }}, {{ .y }}, {{ .z }}, {{ .size }}, "{{ .color }}")
+    write `# plane (${color})
+_add_plane(ent, ${x}, ${y}, ${z}, ${size}, "${color}")
+`
 end
 
 function light
@@ -48,7 +49,8 @@ function light
     arg capture x any
     arg capture y any
     arg capture z any
-    template_str "# (SketchUp has no native point light; placing a marker) _marker(ent, {{ .x }}, {{ .y }}, {{ .z }}, \"light\")\n"
+    write `# (SketchUp has no native point light; placing a marker) _marker(ent, ${x}, ${y}, ${z}, "light")
+`
 end
 
 function camera
@@ -56,7 +58,8 @@ function camera
     arg capture x any
     arg capture y any
     arg capture z any
-    template_str "model.active_view.camera = Sketchup::Camera.new([{{ .x }}, {{ .y }}, {{ .z }}], [0, 0, 0], [0, 0, 1])\n"
+    write `model.active_view.camera = Sketchup::Camera.new([${x}, ${y}, ${z}], [0, 0, 0], [0, 0, 1])
+`
 end
 
 file_template:

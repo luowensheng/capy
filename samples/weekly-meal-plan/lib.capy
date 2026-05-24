@@ -13,75 +13,55 @@ function week
     arg literal "week"
     arg capture w string
     block_closer end
-    template_str ""
-    run:
-        set context.week w
+    set context.week w
 end
 
 function serves
     arg literal "serves"
     arg capture n any
-    template_str ""
-    run:
-        set context.serves n
+    set context.serves n
 end
 
 function monday
     arg literal "monday"
     arg capture meal string
-    template_str ""
-    run:
-        append context.days {day: "Monday", meal: meal}
+    append context.days {day: "Monday", meal: meal}
 end
 function tuesday
     arg literal "tuesday"
     arg capture meal string
-    template_str ""
-    run:
-        append context.days {day: "Tuesday", meal: meal}
+    append context.days {day: "Tuesday", meal: meal}
 end
 function wednesday
     arg literal "wednesday"
     arg capture meal string
-    template_str ""
-    run:
-        append context.days {day: "Wednesday", meal: meal}
+    append context.days {day: "Wednesday", meal: meal}
 end
 function thursday
     arg literal "thursday"
     arg capture meal string
-    template_str ""
-    run:
-        append context.days {day: "Thursday", meal: meal}
+    append context.days {day: "Thursday", meal: meal}
 end
 function friday
     arg literal "friday"
     arg capture meal string
-    template_str ""
-    run:
-        append context.days {day: "Friday", meal: meal}
+    append context.days {day: "Friday", meal: meal}
 end
 function saturday
     arg literal "saturday"
     arg capture meal string
-    template_str ""
-    run:
-        append context.days {day: "Saturday", meal: meal}
+    append context.days {day: "Saturday", meal: meal}
 end
 function sunday
     arg literal "sunday"
     arg capture meal string
-    template_str ""
-    run:
-        append context.days {day: "Sunday", meal: meal}
+    append context.days {day: "Sunday", meal: meal}
 end
 
 function note
     arg literal "note"
     arg capture text string
-    template_str ""
-    run:
-        append context.notes text
+    append context.notes text
 end
 
 function end

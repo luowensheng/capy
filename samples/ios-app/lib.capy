@@ -17,59 +17,45 @@ function app
     arg literal "app"
     arg capture name string
     block_closer end
-    template_str ""
-    run:
-        set context.name name
+    set context.name name
 end
 
 function bundle_id
     arg literal "bundle_id"
     arg capture v string
-    template_str ""
-    run:
-        set context.bundle_id v
+    set context.bundle_id v
 end
 
 function version
     arg literal "version"
     arg capture v string
-    template_str ""
-    run:
-        set context.version v
+    set context.version v
 end
 
 function build
     arg literal "build"
     arg capture v int
-    template_str ""
-    run:
-        set context.build v
+    set context.build v
 end
 
 function deployment_target
     arg literal "deployment_target"
     arg capture v string
-    template_str ""
-    run:
-        set context.deployment_target v
+    set context.deployment_target v
 end
 
 function screen
     arg literal "screen"
     arg capture id ident
     arg capture title string
-    template_str ""
-    run:
-        append context.screens {id: id, title: title}
+    append context.screens {id: id, title: title}
 end
 
 function feature
     arg literal "feature"
     arg capture screen ident
     arg capture text string
-    template_str ""
-    run:
-        append context.features {screen: screen, text: text}
+    append context.features {screen: screen, text: text}
 end
 
 function end

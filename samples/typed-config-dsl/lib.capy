@@ -58,37 +58,43 @@ end
 function env
     arg literal "env"
     arg capture stage Env
-    template_str "env = {{ .stage }}\n"
+    write `env = ${stage}
+`
 end
 
 function port
     arg literal "port"
     arg capture n Port
-    template_str "port = {{ .n }}\n"
+    write `port = ${n}
+`
 end
 
 function owner
     arg literal "owner"
     arg capture who Email
-    template_str "owner = {{ .who }}\n"
+    write `owner = ${who}
+`
 end
 
 function log_level
     arg literal "log_level"
     arg capture lvl LogLevel
-    template_str "log_level = {{ .lvl }}\n"
+    write `log_level = ${lvl}
+`
 end
 
 function brand_color
     arg literal "brand_color"
     arg capture c HexColor
-    template_str "brand_color = {{ .c }}\n"
+    write `brand_color = ${c}
+`
 end
 
 function tls
     arg literal "tls"
     arg capture on bool
-    template_str "tls = {{ .on }}\n"
+    write `tls = ${on}
+`
 end
 
 function end

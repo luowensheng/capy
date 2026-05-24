@@ -112,6 +112,7 @@ type DeleteStmt struct {
 type IfStmt struct {
 	Cond Expr
 	Body InnerBlock
+	Else *InnerBlock // optional; populated by `else` / `else if` arms
 }
 type LoopStmt struct {
 	Var  string
@@ -122,6 +123,14 @@ type CallStmt struct {
 	Call CallExpr
 }
 
+// WriteStmt appends the rendered value of Value to the current
+// function's output buffer. Used by the unified `write` block design;
+// the translator in orchestrator/features/make_library_loader.go
+// processes these out before the engine sees them.
+type WriteStmt struct {
+	Value Expr
+}
+
 func (SetStmt) innerStmtNode()     {}
 func (AppendStmt) innerStmtNode()  {}
 func (PrependStmt) innerStmtNode() {}
@@ -130,3 +139,4 @@ func (DeleteStmt) innerStmtNode()  {}
 func (IfStmt) innerStmtNode()      {}
 func (LoopStmt) innerStmtNode()    {}
 func (CallStmt) innerStmtNode()    {}
+func (WriteStmt) innerStmtNode()   {}

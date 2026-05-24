@@ -32,9 +32,8 @@ end
 function greet                        # one DSL statement shape
     arg literal "greet"
     arg capture name string
-    template_str "..."
-    run:
-        ...
+    write `Hello, ${name}!
+`
 end
 
 file_template:                        # final-output assembler
@@ -48,15 +47,28 @@ Each `function NAME … end` block defines one DSL statement shape.
 rule and to name a block's closer); it's not necessarily what appears
 in source.
 
+The function body is a sequence of inner-DSL statements. Two
+common forms:
+
+- **`write \`...\``** appends to the output body. Backtick literals
+  can span multiple lines and accept `${EXPR}` interpolation.
+- **`set` / `append` / `prepend` / `merge` / `delete`** mutate the
+  accumulated context.
+
 ```
 function greet
     arg capture name Email             # built-in OR library-declared type
-    template_str "Hello, {{ .name }}!\n"
-    run:
-        append context.greetings name
+    write `Hello, ${name}!
+`
+    append context.greetings name
     priority 0                         # higher wins; default 0
 end
 ```
+
+The legacy `template:` / `template_str` / `run:` blocks still work
+for backwards compatibility — the engine accepts either shape.
+Prefer the unified body for new libraries: one mental model, one
+place to look.
 
 ## `arg` — the match shape
 
@@ -83,7 +95,8 @@ prepends a literal of the function's name. So:
 ```
 function greet
     arg capture name any
-    template_str "..."
+    write `Hello, ${name}!
+`
 end
 ```
 
@@ -97,7 +110,8 @@ function assign
     arg capture var ident
     arg literal "="
     arg capture value any
-    template_str "{{ .var }} = {{ .value }}\n"
+    write `${var} = ${value}
+`
 end
 ```
 
@@ -121,32 +135,38 @@ target language's runtime they could refer to a value of any type.
 See [types.md](types.md) for library-defined types with
 `pattern`/`options`.
 
-## `template:` — what goes into the body
+## `write` — what goes into the body
 
-A Go [`text/template`](https://pkg.go.dev/text/template) with the
-captured values + body + context available as data. `.capy` libraries
-use a `template:` block (multi-line, indented) or `template_str "…"`
-(single-line):
+`write EXPR` appends EXPR to the function's output. EXPR is most
+commonly a backtick literal with `${EXPR}` interpolations:
 
 ```
 function greet
     arg capture name any
-    template:
-        Hello, {{ .name }}!
+    write `Hello, ${name}!
+`
 end
 ```
 
-Inside a template you can use:
+Inside a backtick string you can use:
 
-- `{{ .X }}` — a capture by name.
-- `{{ .body }}` — the inner block's rendered output (block functions only).
-- `{{ .context.X }}` — the read-only accumulated context.
-- Helpers: `indent N`, `toQuoted`, `toPyLit`, `toJSON`, `toJSONIndent`,
-  `lower`, `upper`, `join`, `split`, `unescape`, plus more.
+- `${name}` — a capture by name.
+- `${body}` — the inner block's rendered output (block functions only).
+- `${context.X}` — the read-only accumulated context.
+- `${func arg arg}` — call a template helper inline. The same
+  helpers that work in `text/template` (`indent`, `pascalCase`,
+  `toQuoted`, `toJSON`, `lower`, `upper`, `join`, `split`,
+  `unescape`, …) are all available — see [templates.md](templates.md).
 
-See [templates.md](templates.md) for the full helper reference.
+The bytes inside the backticks are emitted verbatim; there is no
+`{{- -}}` whitespace-trimming sigil. If you don't want a trailing
+newline, don't put one in.
 
-## `run:` — what updates the context
+Backwards compatibility: the legacy `template:` block and
+`template_str "..."` shortcut still work, and the engine accepts
+them alongside or instead of `write` calls.
+
+## State mutation — `set`, `append`, `prepend`, `merge`, `delete`
 
 A small inner DSL. **Does not execute user source.** It only mutates
 the `context` map.
@@ -155,11 +175,12 @@ the `context` map.
 function import
     arg literal "import"
     arg capture name ident
-    template_str ""
-    run:
-        append context.imports name
+    append context.imports name
 end
 ```
+
+Statements sit directly in the function body alongside `write` calls.
+The legacy `run:` block also still works.
 
 Operations available:
 

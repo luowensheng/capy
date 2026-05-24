@@ -13,26 +13,20 @@ end
 function server
     arg literal "server"
     arg capture port string
-    template_str ""
-    run:
-        set context.port port
+    set context.port port
 end
 
 function route
     arg literal "route"
     arg capture path string
-    template_str ""
-    run:
-        set context.path path
+    set context.path path
 end
 
 function handler
     arg literal "handler"
     arg capture name ident
     arg capture action ident
-    template_str ""
-    run:
-        append context.handlers {name: name, action: action}
+    append context.handlers {name: name, action: action}
 end
 
 function end

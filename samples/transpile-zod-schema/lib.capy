@@ -18,9 +18,7 @@ function schema
     description "Declare a schema by name. Followed by `field`/`refine` lines that name this schema."
     arg literal "schema"
     arg capture name ident
-    template_str ""
-    run:
-        append context.schemas name
+    append context.schemas name
 end
 
 function field
@@ -29,9 +27,7 @@ function field
     arg capture schema ident
     arg capture name ident
     arg capture type ident
-    template_str ""
-    run:
-        append context.fields {schema: schema, name: name, type: type}
+    append context.fields {schema: schema, name: name, type: type}
 end
 
 function refine
@@ -40,9 +36,7 @@ function refine
     arg capture schema ident
     arg capture field ident
     arg capture verb ident
-    template_str ""
-    run:
-        append context.refines {schema: schema, field: field, verb: verb, value: 0}
+    append context.refines {schema: schema, field: field, verb: verb, value: 0}
 end
 
 function refine_n
@@ -52,9 +46,7 @@ function refine_n
     arg capture field ident
     arg capture verb ident
     arg capture value int
-    template_str ""
-    run:
-        append context.refines {schema: schema, field: field, verb: verb, value: value}
+    append context.refines {schema: schema, field: field, verb: verb, value: value}
 end
 
 file_template:

@@ -10,10 +10,10 @@ function fn
     arg capture b ident
     arg literal ")"
     block_closer end
-    template:
-        func {{ .name }}({{ .a }} int, {{ .b }} int) int {
-        {{ .body | indent 4 }}
-        }
+    write `func ${name}(${a} int, ${b} int) int {
+${indent 4 body}
+}
+`
 end
 
 function return
@@ -21,17 +21,18 @@ function return
     arg capture l any
     arg literal "+"
     arg capture r any
-    template_str "return {{ .l }} + {{ .r }}\n"
+    write `return ${l} + ${r}
+`
 end
 
 function main
     arg literal "main"
     block_closer end
-    template:
-
-        func main() {
-        {{ .body | indent 4 }}
-        }
+    write `
+func main() {
+${indent 4 body}
+}
+`
 end
 
 function let_call
@@ -45,7 +46,8 @@ function let_call
     arg literal ","
     arg capture b any
     arg literal ")"
-    template_str "{{ .name }} := {{ .fn }}({{ .a }}, {{ .b }})\n"
+    write `${name} := ${fn}(${a}, ${b})
+`
 end
 
 function let
@@ -53,13 +55,15 @@ function let
     arg capture name ident
     arg literal "="
     arg capture value any
-    template_str "{{ .name }} := {{ .value }}\n"
+    write `${name} := ${value}
+`
 end
 
 function print
     arg literal "print"
     arg capture value any
-    template_str "fmt.Println({{ .value }})\n"
+    write `fmt.Println(${value})
+`
 end
 
 function end

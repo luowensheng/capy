@@ -55,9 +55,7 @@ function prop
     arg literal "prop"
     arg capture name ident
     arg capture t ident
-    template_str ""
-    run:
-        append context.props {name: name, type: t}
+    append context.props {name: name, type: t}
 end
 
 function state
@@ -65,9 +63,7 @@ function state
     arg capture name ident
     arg capture t ident
     arg capture init any
-    template_str ""
-    run:
-        append context.state {name: name, Name: name, type: t, init: init}
+    append context.state {name: name, Name: name, type: t, init: init}
 end
 
 # Widget primitives. Each one captures its verb and up to two args;
@@ -78,9 +74,7 @@ function heading_for
     arg literal "heading_for"
     arg capture prop_name ident
     arg capture state_name ident
-    template_str ""
-    run:
-        append context.widgets {verb: "heading_for", arg1: prop_name, arg2: state_name}
+    append context.widgets {verb: "heading_for", arg1: prop_name, arg2: state_name}
 end
 
 function button_inc
@@ -88,9 +82,7 @@ function button_inc
     arg literal "button_inc"
     arg capture label string
     arg capture target ident
-    template_str ""
-    run:
-        append context.widgets {verb: "button_inc", arg1: label, arg2: target}
+    append context.widgets {verb: "button_inc", arg1: label, arg2: target}
 end
 
 function button_toggle
@@ -98,9 +90,7 @@ function button_toggle
     arg literal "button_toggle"
     arg capture label string
     arg capture target ident
-    template_str ""
-    run:
-        append context.widgets {verb: "button_toggle", arg1: label, arg2: target}
+    append context.widgets {verb: "button_toggle", arg1: label, arg2: target}
 end
 
 function paragraph_when_not
@@ -108,9 +98,7 @@ function paragraph_when_not
     arg literal "paragraph_when_not"
     arg capture cond ident
     arg capture text string
-    template_str ""
-    run:
-        append context.widgets {verb: "paragraph_when_not", arg1: cond, arg2: text}
+    append context.widgets {verb: "paragraph_when_not", arg1: cond, arg2: text}
 end
 
 function end

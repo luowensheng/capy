@@ -60,6 +60,47 @@ func parseCapyLib(src string) (RawLibrary, error) {
 	return p.parseTop()
 }
 
+// mergeBackticksInLines collapses multi-line backtick literals into
+// single logical lines (with embedded newlines escaped as `\n` so
+// the line-based parser doesn't split on them). Only applied to the
+// slice of lines belonging to a new-shape function body — running
+// it globally would eat backticks inside `template:` blocks (e.g.
+// Markdown code fences), which are raw text, not string delimiters.
+func mergeBackticksInLines(lines []string) []string {
+	var out []string
+	var cur strings.Builder
+	inBacktick := false
+	for _, ln := range lines {
+		if inBacktick {
+			// We're carrying an open backtick from a previous line.
+			// Re-attach this line with a literal `\n` separator and
+			// continue scanning.
+			cur.WriteString(`\n`)
+		} else if cur.Len() > 0 {
+			out = append(out, cur.String())
+			cur.Reset()
+		}
+		// Walk this line; toggle inBacktick on each (unescaped) `.
+		for i := 0; i < len(ln); i++ {
+			c := ln[i]
+			if c == '\\' && i+1 < len(ln) && inBacktick {
+				cur.WriteByte(c)
+				cur.WriteByte(ln[i+1])
+				i++
+				continue
+			}
+			if c == '`' {
+				inBacktick = !inBacktick
+			}
+			cur.WriteByte(c)
+		}
+	}
+	if cur.Len() > 0 {
+		out = append(out, cur.String())
+	}
+	return out
+}
+
 type capyLibParser struct {
 	lines  []string
 	lineNo int
@@ -429,9 +470,117 @@ func (p *capyLibParser) parseFunction() (RawFunction, error) {
 			}
 			fn.Run = body
 		default:
-			return fn, p.errf("unknown directive inside function: %q", tokens[0])
+			// New-shape body: anything that isn't one of the recognised
+			// header directives is taken to be an inner-DSL statement
+			// (write / set / append / for / if / …). Collect all such
+			// lines (and any indented continuations) until the closing
+			// `end` of the function at indent 0.
+			body, err := p.parseFunctionBodyStatements(indent)
+			if err != nil {
+				return fn, err
+			}
+			fn.Body = body
 		}
 	}
+}
+
+// parseFunctionBodyStatements collects the remaining lines of a
+// function (from the current line until the closing `end` at indent
+// 0) as raw text. The text is later handed to the inner-DSL parser,
+// then to the translator that splits it into Template + Run.
+//
+// The first line is captured at its existing column; subsequent
+// lines are emitted verbatim (preserving their relative indent so
+// nested for/if blocks survive). Trailing whitespace is preserved
+// because backtick literals carry significant whitespace.
+func (p *capyLibParser) parseFunctionBodyStatements(startIndent int) (string, error) {
+	// Collect raw lines (NOT skipping blanks/comments via peekLine —
+	// we need every line to track multi-line backtick state). Stop
+	// at the next non-blank, non-backtick-continuation line at
+	// indent 0 (the function's closing `end`).
+	var raws []string
+	inBacktick := false
+	for {
+		if p.lineNo >= len(p.lines) {
+			return "", p.errf("unexpected EOF inside function body")
+		}
+		ln := p.lines[p.lineNo]
+		// While inside a multi-line backtick, every line belongs to
+		// the body regardless of indent. Track toggles on every
+		// unescaped ` in the line.
+		if inBacktick {
+			raws = append(raws, ln)
+			p.lineNo++
+			for i := 0; i < len(ln); i++ {
+				c := ln[i]
+				if c == '\\' && i+1 < len(ln) {
+					i++
+					continue
+				}
+				if c == '`' {
+					inBacktick = !inBacktick
+				}
+			}
+			continue
+		}
+		stripped := strings.TrimSpace(ln)
+		// Blank line OR comment line inside the body: keep going.
+		if stripped == "" || strings.HasPrefix(stripped, "#") {
+			raws = append(raws, ln)
+			p.lineNo++
+			continue
+		}
+		// Compute indent for non-blank.
+		leading := 0
+		for leading < len(ln) && (ln[leading] == ' ' || ln[leading] == '\t') {
+			leading++
+		}
+		if leading == 0 {
+			// indent==0 = the function's closing `end`. Stop here.
+			break
+		}
+		raws = append(raws, ln)
+		p.lineNo++
+		// After consuming the line, scan for unescaped backticks to
+		// learn if we're now inside one (so subsequent column-0 lines
+		// keep being collected as the backtick body).
+		for i := 0; i < len(ln); i++ {
+			c := ln[i]
+			if c == '\\' && i+1 < len(ln) {
+				i++
+				continue
+			}
+			if c == '`' {
+				inBacktick = !inBacktick
+			}
+		}
+	}
+	// Merge multi-line backticks inside the collected body slice.
+	raws = mergeBackticksInLines(raws)
+	// Strip the deepest common leading indent so the inner-DSL parser
+	// (which expects column-0 statements) is happy.
+	minIndent := -1
+	for _, ln := range raws {
+		if strings.TrimSpace(ln) == "" {
+			continue
+		}
+		leading := 0
+		for leading < len(ln) && (ln[leading] == ' ' || ln[leading] == '\t') {
+			leading++
+		}
+		if minIndent < 0 || leading < minIndent {
+			minIndent = leading
+		}
+	}
+	if minIndent < 0 {
+		return "", nil
+	}
+	for i, ln := range raws {
+		if len(ln) >= minIndent {
+			raws[i] = ln[minIndent:]
+		}
+	}
+	return strings.Join(raws, "\n") + "\n", nil
 }
 
 // parseIndentedBlock captures all subsequent lines whose indent is strictly

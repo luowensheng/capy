@@ -18,67 +18,51 @@ function app
     arg literal "app"
     arg capture name string
     block_closer end
-    template_str ""
-    run:
-        set context.name name
+    set context.name name
 end
 
 function package
     arg literal "package"
     arg capture v string
-    template_str ""
-    run:
-        set context.package v
+    set context.package v
 end
 
 function min_sdk
     arg literal "min_sdk"
     arg capture v int
-    template_str ""
-    run:
-        set context.min_sdk v
+    set context.min_sdk v
 end
 
 function target_sdk
     arg literal "target_sdk"
     arg capture v int
-    template_str ""
-    run:
-        set context.target_sdk v
+    set context.target_sdk v
 end
 
 function version_code
     arg literal "version_code"
     arg capture v int
-    template_str ""
-    run:
-        set context.version_code v
+    set context.version_code v
 end
 
 function version_name
     arg literal "version_name"
     arg capture v string
-    template_str ""
-    run:
-        set context.version_name v
+    set context.version_name v
 end
 
 function screen
     arg literal "screen"
     arg capture id ident
     arg capture title string
-    template_str ""
-    run:
-        append context.screens {id: id, title: title}
+    append context.screens {id: id, title: title}
 end
 
 function feature
     arg literal "feature"
     arg capture screen ident
     arg capture text string
-    template_str ""
-    run:
-        append context.features {screen: screen, text: text}
+    append context.features {screen: screen, text: text}
 end
 
 function end

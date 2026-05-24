@@ -5,7 +5,8 @@ extension py
 function scene
     arg literal "scene"
     arg capture name string
-    template_str "unreal.log({{ .name }})\n"
+    write `unreal.log(${name})
+`
 end
 
 function cube
@@ -15,9 +16,9 @@ function cube
     arg capture y any
     arg capture z any
     arg capture size any
-    template:
-        # cube ({{ .color }})
-        _spawn_primitive("Cube", unreal.Vector({{ .x }}*100, {{ .y }}*100, {{ .z }}*100), {{ .size }}, "{{ .color }}")
+    write `# cube (${color})
+_spawn_primitive("Cube", unreal.Vector(${x}*100, ${y}*100, ${z}*100), ${size}, "${color}")
+`
 end
 
 function sphere
@@ -27,9 +28,9 @@ function sphere
     arg capture y any
     arg capture z any
     arg capture radius any
-    template:
-        # sphere ({{ .color }})
-        _spawn_primitive("Sphere", unreal.Vector({{ .x }}*100, {{ .y }}*100, {{ .z }}*100), {{ .radius }}*2, "{{ .color }}")
+    write `# sphere (${color})
+_spawn_primitive("Sphere", unreal.Vector(${x}*100, ${y}*100, ${z}*100), ${radius}*2, "${color}")
+`
 end
 
 function plane
@@ -39,9 +40,9 @@ function plane
     arg capture y any
     arg capture z any
     arg capture size any
-    template:
-        # plane ({{ .color }})
-        _spawn_primitive("Plane", unreal.Vector({{ .x }}*100, {{ .y }}*100, {{ .z }}*100), {{ .size }}, "{{ .color }}")
+    write `# plane (${color})
+_spawn_primitive("Plane", unreal.Vector(${x}*100, ${y}*100, ${z}*100), ${size}, "${color}")
+`
 end
 
 function light
@@ -49,7 +50,8 @@ function light
     arg capture x any
     arg capture y any
     arg capture z any
-    template_str "unreal.EditorLevelLibrary.spawn_actor_from_class(unreal.PointLight, unreal.Vector({{ .x }}*100, {{ .y }}*100, {{ .z }}*100))\n"
+    write `unreal.EditorLevelLibrary.spawn_actor_from_class(unreal.PointLight, unreal.Vector(${x}*100, ${y}*100, ${z}*100))
+`
 end
 
 function camera
@@ -57,7 +59,8 @@ function camera
     arg capture x any
     arg capture y any
     arg capture z any
-    template_str "unreal.EditorLevelLibrary.spawn_actor_from_class(unreal.CameraActor, unreal.Vector({{ .x }}*100, {{ .y }}*100, {{ .z }}*100))\n"
+    write `unreal.EditorLevelLibrary.spawn_actor_from_class(unreal.CameraActor, unreal.Vector(${x}*100, ${y}*100, ${z}*100))
+`
 end
 
 file_template:

@@ -85,6 +85,9 @@ func (e *InnerEvaluator) execStmt(s domain.InnerStmt, caps map[string]domain.Cap
 		if truthy(v) {
 			return e.execBlock(n.Body, caps, locals)
 		}
+		if n.Else != nil {
+			return e.execBlock(*n.Else, caps, locals)
+		}
 		return nil
 	case domain.LoopStmt:
 		v, err := e.eval(n.Iter, caps, locals)
@@ -105,6 +108,11 @@ func (e *InnerEvaluator) execStmt(s domain.InnerStmt, caps map[string]domain.Cap
 		return nil
 	case domain.CallStmt:
 		return e.runPrimitive(n.Call, caps, locals)
+	case domain.WriteStmt:
+		// WriteStmt should be translated away at library-load time
+		// (see translateNewShape in make_library_loader.go). If one
+		// reaches here, it means the translator missed a case.
+		return fmt.Errorf("internal: unexpanded WriteStmt — please file a bug")
 	}
 	return fmt.Errorf("unknown inner stmt")
 }

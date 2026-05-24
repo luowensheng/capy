@@ -41,12 +41,10 @@ function landing_oneshot
     arg capture cta_text string
     arg literal "cta_link"
     arg capture cta_link string
-    template_str ""
-    run:
-        set context.title title
-        set context.tagline tagline
-        set context.cta_text cta_text
-        set context.cta_link cta_link
+    set context.title title
+    set context.tagline tagline
+    set context.cta_text cta_text
+    set context.cta_link cta_link
 end
 
 # ─── Level-2 primitives ─────────────────────────────────────────────
@@ -57,37 +55,29 @@ function landing
     arg literal "landing"
     arg capture title string
     block_closer end
-    template_str ""
-    run:
-        set context.title title
+    set context.title title
 end
 
 function hero
     arg literal "hero"
     arg capture headline string
     arg capture tagline string
-    template_str ""
-    run:
-        set context.tagline tagline
+    set context.tagline tagline
 end
 
 function feature
     arg literal "feature"
     arg capture headline string
     arg capture body string
-    template_str ""
-    run:
-        append context.features {headline: headline, body: body}
+    append context.features {headline: headline, body: body}
 end
 
 function cta
     arg literal "cta"
     arg capture text string
     arg capture link string
-    template_str ""
-    run:
-        set context.cta_text text
-        set context.cta_link link
+    set context.cta_text text
+    set context.cta_link link
 end
 
 # ─── Level-3 escape hatches ─────────────────────────────────────────
@@ -97,33 +87,25 @@ end
 function raw_head
     arg literal "raw_head"
     arg capture html string
-    template_str ""
-    run:
-        set context.extra_head html
+    set context.extra_head html
 end
 
 function style_override
     arg literal "style_override"
     arg capture css string
-    template_str ""
-    run:
-        set context.extra_style css
+    set context.extra_style css
 end
 
 function raw_section
     arg literal "raw_section"
     arg capture html string
-    template_str ""
-    run:
-        append context.extra_sections html
+    append context.extra_sections html
 end
 
 function raw_footer
     arg literal "raw_footer"
     arg capture html string
-    template_str ""
-    run:
-        set context.extra_footer html
+    set context.extra_footer html
 end
 
 function end

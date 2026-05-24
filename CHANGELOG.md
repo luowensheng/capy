@@ -8,6 +8,63 @@ may break between minor versions**.
 
 ## [Unreleased]
 
+## [0.18.0] — 2026-05-24
+
+Unified `write:` block. The split between `template:` (Go text/template
+output) and `run:` (Capy inner DSL state mutation) collapses into a
+single function body: a sequence of inner-DSL statements that may
+include `write \`...\`` calls. Backtick string literals support
+multi-line content and `${EXPR}` interpolation.
+
+### Added
+
+- **Backtick string literals** in `.capy` library files. Multi-line
+  bodies stay on the same logical line via an in-parser merger that
+  is scoped to function bodies (so `template:` blocks containing
+  Markdown code fences are unaffected).
+- **`write EXPR`** inner-DSL statement. Translated at library-load
+  time into Go-template syntax appended to the function's
+  `Template`. Most commonly used with a backtick string literal:
+  `write \`Hello, ${name}!\n\``.
+- **`${EXPR}`** value interpolation inside backtick strings. Supports
+  paths (`${name}`, `${context.foo}`, `${body}`) and inline helper
+  calls (`${indent 4 body}`, `${pascalCase name}`).
+- **`else` / `else if`** arms for the inner-DSL `if`.
+- **`for`** as a synonym for `loop`. Reads more naturally inside
+  `write`-heavy function bodies.
+- **New-shape function body.** A function declaration may have
+  inner-DSL statements directly in its body (after the `arg` /
+  `block_closer` / `description` / `priority` header lines), with
+  no `template:` or `run:` block required.
+- **`infra.RawFunction.Body`** (`body:` in YAML) — the new-shape
+  body string. Mutually exclusive with `Template` + `Run`.
+- **`domain.WriteStmt`** — new inner-DSL AST node.
+- **`orchestrator/features/translate_new_shape.go`** — the
+  translator that splits a unified body into Template + Run before
+  the engine sees it. Control-flow blocks (for / if) that contain
+  a mix of writes and state mutations are duplicated: one copy
+  goes into the template (writes only, with state stripped), one
+  goes into the run block (mutations only). Both phases see the
+  same iteration / branching shape.
+
+### Migrated
+
+- **39 of ~51 library files** in `samples/` converted to the
+  unified shape. Output byte-identical to v0.17 in every case;
+  goldens unchanged. The remaining ~12 keep the legacy shape (they
+  use template / range / if patterns the bulk migrator chose not
+  to auto-convert) — both shapes work, mix freely.
+- Key docs (`library-authoring.md`, `getting-started.md`,
+  `CAPY_FOR_LLMS.md`) lead with the unified shape; legacy form
+  documented as the backwards-compat path.
+
+### Backwards compatibility
+
+- The legacy `template_str` / `template:` / `run:` blocks continue
+  to work. The engine accepts either shape per function; libraries
+  can mix.
+- Existing libraries don't need any change to keep running.
+
 ## [0.17.0] — 2026-05-24
 
 Honour "zero predefined grammar" all the way down: source-level

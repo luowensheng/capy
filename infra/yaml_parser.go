@@ -46,6 +46,12 @@ type RawFunction struct {
 	Block       *RawBlock `yaml:"block"`
 	Run         string    `yaml:"run"`
 	Priority    int       `yaml:"priority"`
+
+	// Body is the new-shape unified function body (inner-DSL
+	// statements including `write` calls). When non-empty, the loader
+	// translates it into Template + Run before constructing the
+	// FuncDef. Mutually exclusive with Template + Run.
+	Body string `yaml:"body,omitempty"`
 }
 
 type RawBlock struct {

@@ -30,9 +30,7 @@ function handler_with_accepts
     arg capture accepts string
     arg literal "returns"
     arg capture returns string
-    template_str ""
-    run:
-        append context.handlers {name: name, method: method, path: path, accepts: accepts, returns: returns}
+    append context.handlers {name: name, method: method, path: path, accepts: accepts, returns: returns}
 end
 
 function handler_no_accepts
@@ -44,9 +42,7 @@ function handler_no_accepts
     arg capture path string
     arg literal "returns"
     arg capture returns string
-    template_str ""
-    run:
-        append context.handlers {name: name, method: method, path: path, accepts: "", returns: returns}
+    append context.handlers {name: name, method: method, path: path, accepts: "", returns: returns}
 end
 
 # Output file #1: handlers + router in one .go file.

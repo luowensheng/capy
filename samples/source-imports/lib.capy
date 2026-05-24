@@ -19,37 +19,37 @@ function menu
     arg literal "menu"
     arg capture name string
     block_closer end
-    template:
-        # {{ .name | unquote }}
-        {{ .body }}
-    run:
-        set context.name name
+    write `# ${unquote name}
+${body}
+`
+    set context.name name
 end
 
 function section
     arg literal "section"
     arg capture name string
     block_closer end
-    template:
+    write `
+## ${unquote name}
 
-        ## {{ .name | unquote }}
-
-        {{ .body }}
+${body}
+`
 end
 
 function item
     arg literal "item"
     arg capture name string
     arg capture price string
-    template_str "- **{{ .name | unquote }}** — {{ .price | unquote }}\n"
+    write `- **${unquote name}** — ${unquote price}
+`
 end
 
 function note
     arg literal "note"
     arg capture text string
-    template:
-        > {{ .text | unquote }}
+    write `> ${unquote text}
 
+`
 end
 
 function end

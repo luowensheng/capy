@@ -15,18 +15,14 @@ function log
     arg literal "age"
     arg capture age int
     block_closer end
-    template_str ""
-    run:
-        set context.title title
-        set context.age age
+    set context.title title
+    set context.age age
 end
 
 function goal
     arg literal "goal"
     arg capture g int
-    template_str ""
-    run:
-        set context.goal g
+    set context.goal g
 end
 
 function book
@@ -36,9 +32,7 @@ function book
     arg capture pages int
     arg literal "rating"
     arg capture rating int
-    template_str ""
-    run:
-        append context.books {title: title, pages: pages, rating: rating}
+    append context.books {title: title, pages: pages, rating: rating}
 end
 
 function end

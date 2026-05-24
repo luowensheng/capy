@@ -15,9 +15,7 @@ end
 function port
     arg literal "port"
     arg capture p int
-    template_str ""
-    run:
-        set context.port p
+    set context.port p
 end
 
 function endpoint
@@ -26,9 +24,7 @@ function endpoint
     arg capture method ident
     arg capture path string
     arg capture verb ident
-    template_str ""
-    run:
-        append context.endpoints {method: method, path: path, verb: verb}
+    append context.endpoints {method: method, path: path, verb: verb}
 end
 
 file_template:

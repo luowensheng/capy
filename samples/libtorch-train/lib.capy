@@ -22,49 +22,37 @@ function model
     arg literal "model"
     arg capture name string
     block_closer end
-    template_str ""
-    run:
-        set context.name name
+    set context.name name
 end
 
 function dataset
     arg literal "dataset"
     arg capture v ident
-    template_str ""
-    run:
-        set context.dataset v
+    set context.dataset v
 end
 
 function batch_size
     arg literal "batch_size"
     arg capture v int
-    template_str ""
-    run:
-        set context.batch_size v
+    set context.batch_size v
 end
 
 function epochs
     arg literal "epochs"
     arg capture v int
-    template_str ""
-    run:
-        set context.epochs v
+    set context.epochs v
 end
 
 function learning_rate
     arg literal "learning_rate"
     arg capture v any
-    template_str ""
-    run:
-        set context.learning_rate v
+    set context.learning_rate v
 end
 
 function optimizer
     arg literal "optimizer"
     arg capture v ident
-    template_str ""
-    run:
-        set context.optimizer v
+    set context.optimizer v
 end
 
 # Layer declarations. Each layer is appended to context.layers and
@@ -79,9 +67,7 @@ function layer_conv2d
     arg capture out_ch int
     arg literal "kernel"
     arg capture k int
-    template_str ""
-    run:
-        append context.layers {kind: "conv2d", in_ch: in_ch, out_ch: out_ch, k: k}
+    append context.layers {kind: "conv2d", in_ch: in_ch, out_ch: out_ch, k: k}
 end
 
 function layer_linear
@@ -92,9 +78,7 @@ function layer_linear
     arg capture in_f int
     arg literal "out"
     arg capture out_f int
-    template_str ""
-    run:
-        append context.layers {kind: "linear", in_f: in_f, out_f: out_f}
+    append context.layers {kind: "linear", in_f: in_f, out_f: out_f}
 end
 
 function layer_maxpool
@@ -103,17 +87,13 @@ function layer_maxpool
     arg literal "maxpool"
     arg literal "kernel"
     arg capture k int
-    template_str ""
-    run:
-        append context.layers {kind: "maxpool", k: k}
+    append context.layers {kind: "maxpool", k: k}
 end
 
 function layer_simple
     arg literal "layer"
     arg capture kind ident
-    template_str ""
-    run:
-        append context.layers {kind: kind}
+    append context.layers {kind: kind}
 end
 
 function end

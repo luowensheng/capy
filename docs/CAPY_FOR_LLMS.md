@@ -10,11 +10,11 @@ pitfalls. About 500 lines of prose; designed to be self-contained.
 
 A transpiler engine. You define a source-language grammar + transformation
 in a **`.capy` library file**. Capy reads source code, matches each
-statement against the library's function shapes, and for each match
-(a) renders the function's `template:` into the output body and
-(b) updates an accumulated `context` via the function's `run:` snippet.
-A top-level `file_template:` assembles `body` + `context` into the
-final output.
+statement against the library's function shapes, and for each match runs
+the function's body — a sequence of inner-DSL statements that may
+emit output (`write \`...\``) and/or mutate an accumulated `context`
+(`set` / `append` / …). A top-level `file_template:` assembles
+`body` + `context` into the final output.
 
 There are NO built-in user-facing keywords. Every shape is
 library-defined.
@@ -51,20 +51,26 @@ function <NAME>              # one DSL statement shape
     arg capture <NAME> <TYPE> # capture a typed named variable
     block_closer <NAME>      # block opener: body runs until <NAME> appears
     block_open "OPEN" close "CLOSE"   # alternative: explicit delimiters
-    template_str "..."       # single-line inline template
-    template:                # multi-line template; ends at dedent
-        ...
-    run:                     # inner-DSL block (context mutations)
-        ...
+
+    # Function body — sequence of inner-DSL statements:
+    write `Hello, ${name}!\n`        # emit literal text + interpolations
+    append context.greetings name    # mutate state
+    # if / for / set / prepend / merge / delete also available
 end
 
 file_template:               # whole-file wrapper; captures to EOF
     ...
 ```
 
-Strings use double quotes with Go-style escapes (`\n`, `\t`, `\"`, `\\`).
-Bare words are accepted for `extension`, type names, and capture names.
-Indentation delimits `template:` / `run:` / `file_template:` blocks.
+Strings use double quotes (with Go-style escapes `\n` `\t` `\"`
+`\\`) or backticks (multi-line, with `${EXPR}` interpolation).
+Bare words are accepted for `extension`, type names, and capture
+names. Indentation delimits the function body and `file_template:`.
+
+Legacy form: `template:` / `template_str` / `run:` blocks are still
+accepted for backwards compatibility — every example in this doc
+could be written either way. Prefer the unified body shown above
+for new libraries.
 
 (For the YAML form of the same schema, see the end of this doc.
 All other examples below are `.capy`.)
@@ -277,30 +283,30 @@ end
 function import
     arg literal "import"
     arg capture name Identifier
-    template_str ""
-    run:
-        append context.imports name
+    append context.imports name
 end
 
 function say
     arg capture msg any
-    template_str "print({{ .msg }})\n"
+    write `print(${msg})
+`
 end
 
 function assign
     arg capture name Identifier
     arg literal "="
     arg capture value any
-    template_str "{{ .name }} = {{ .value }}\n"
+    write `${name} = ${value}
+`
 end
 
 function if
     arg literal "if"
     arg capture cond any
     block_closer end
-    template:
-        if {{ .cond }}:
-        {{ .body | indent 4 }}
+    write `if ${cond}:
+${indent 4 body}
+`
 end
 
 function loop
@@ -309,9 +315,9 @@ function loop
     arg literal "in"
     arg capture iter any
     block_closer end
-    template:
-        for {{ .var }} in {{ .iter }}:
-        {{ .body | indent 4 }}
+    write `for ${var} in ${iter}:
+${indent 4 body}
+`
 end
 
 function end

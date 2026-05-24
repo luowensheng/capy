@@ -10,9 +10,9 @@ function fn
     arg capture b ident
     arg literal ")"
     block_closer end
-    template:
-        def {{ .name }}({{ .a }}, {{ .b }}):
-        {{ .body | indent 4 }}
+    write `def ${name}(${a}, ${b}):
+${indent 4 body}
+`
 end
 
 function return
@@ -20,16 +20,17 @@ function return
     arg capture l any
     arg literal "+"
     arg capture r any
-    template_str "return {{ .l }} + {{ .r }}\n"
+    write `return ${l} + ${r}
+`
 end
 
 function main
     arg literal "main"
     block_closer end
-    template:
-
-        if __name__ == "__main__":
-        {{ .body | indent 4 }}
+    write `
+if __name__ == "__main__":
+${indent 4 body}
+`
 end
 
 function let_call
@@ -43,7 +44,8 @@ function let_call
     arg literal ","
     arg capture b any
     arg literal ")"
-    template_str "{{ .name }} = {{ .fn }}({{ .a }}, {{ .b }})\n"
+    write `${name} = ${fn}(${a}, ${b})
+`
 end
 
 function let
@@ -51,13 +53,15 @@ function let
     arg capture name ident
     arg literal "="
     arg capture value any
-    template_str "{{ .name }} = {{ .value }}\n"
+    write `${name} = ${value}
+`
 end
 
 function print
     arg literal "print"
     arg capture value any
-    template_str "print({{ .value }})\n"
+    write `print(${value})
+`
 end
 
 function end
