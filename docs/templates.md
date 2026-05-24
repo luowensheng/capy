@@ -1,43 +1,53 @@
 # Templates
 
-Capy uses Go's [`text/template`](https://pkg.go.dev/text/template) for both
-the per-function `template:` and the top-level `file_template:`. This page
-documents the data model and the Capy-specific helpers.
+Capy emits text via `write` calls inside function bodies and
+`file_template`. The string body of a `write` call is a backtick
+literal with `${EXPR}` interpolation — that's the primary surface.
 
-## Per-function template data
+Under the hood Capy translates `write \`...\`` and the control
+flow that wraps it into Go [`text/template`](https://pkg.go.dev/text/template)
+syntax, so the helpers below are Go-template helpers but you call
+them Capy-style via `${func arg arg}`.
 
-When a function's template is rendered, these variables are available:
+## Per-function values in scope
 
-| Variable        | Source                                                                     |
-|-----------------|----------------------------------------------------------------------------|
-| `.<capture>`    | One entry per capture, the captured source text as a string.               |
-| `.body`         | The inner block's rendered output (block functions only).                  |
-| `.context`      | Read-only snapshot of the current accumulated context.                     |
+Inside a function body, these are visible to `${EXPR}` interpolation:
 
-```yaml
-greet:
-  args: [{ kind: capture, name: name, type: any }]
-  template: "Hello, {{ .name }}!\n"
+| Reference          | Source                                                          |
+|--------------------|-----------------------------------------------------------------|
+| `${<capture>}`     | One entry per capture; the captured source text as a string.    |
+| `${body}`          | The inner block's rendered output (block functions only).       |
+| `${context.X}`     | Read-only snapshot of the current accumulated context.          |
+| `${func arg arg}`  | Call a helper inline (see Helpers below).                       |
+
+```
+function greet
+    arg capture name any
+    write `Hello, ${name}!
+`
+end
 ```
 
-`.name` is the source text of the captured value (`"Alice"` with quotes, or
-`Alice` if the user passed a bare identifier).
+`${name}` is the source text of the captured value (`"Alice"` with
+quotes, or `Alice` if the user passed a bare identifier).
 
-## File template data
+## file_template values in scope
 
-When the top-level `file_template:` is rendered, these variables are
-available:
+In `file_template`:
 
-| Variable     | Source                                                                |
-|--------------|-----------------------------------------------------------------------|
-| `.body`      | Concatenation of all top-level statements' rendered templates.        |
-| `.context`   | The final accumulated context.                                        |
+| Reference        | Source                                                              |
+|------------------|---------------------------------------------------------------------|
+| `${body}`        | Concatenation of all top-level statements' written output.          |
+| `${context.X}`   | The final accumulated context.                                      |
 
-```yaml
-file_template: |
-  {{- range .context.imports }}import {{ . }}
-  {{ end }}
-  {{- .body -}}
+```
+file_template
+    for imp in context.imports
+        write `import ${imp}
+`
+    end
+    write body
+end
 ```
 
 ## Helpers
@@ -48,42 +58,52 @@ Beyond Go's stdlib helpers, Capy provides:
 
 Indents every line of a string by N spaces. Most useful for block bodies.
 
-```yaml
-template: |
-  if {{ .cond }}:
-  {{ .body | indent 4 }}
+```
+function if
+    arg literal "if"
+    arg capture cond any
+    block_closer end
+    write `if ${cond}:
+${indent 4 body}
+`
+end
 ```
 
 ### `toQuoted`
 
-Wraps a string in JSON-style double quotes (with proper escaping). Useful
-for emitting string literals in target languages.
+Wraps a string in JSON-style double quotes (with proper escaping).
+Useful for emitting string literals in target languages.
 
-```yaml
-say:
-  args: [{ kind: capture, name: msg, type: any }]
-  template: "print({{ .msg | toQuoted }})\n"
+```
+function say
+    arg capture msg any
+    write `print(${toQuoted msg})
+`
+end
 ```
 
 ### `toPyLit`
 
-Formats a Go value as a Python literal (`True`/`False`, `None`, quoted
-strings, list/dict syntax). Useful when accumulated `context` carries real
-Go values you want to splat into Python.
+Formats a Go value as a Python literal (`True`/`False`, `None`,
+quoted strings, list/dict syntax). Useful when accumulated `context`
+carries real Go values you want to splat into Python.
 
-```yaml
-file_template: |
-  CONFIG = {{ .context.config | toPyLit }}
+```
+file_template
+    write `CONFIG = ${toPyLit context.config}
+`
+end
 ```
 
 ### `toJSON` / `toJSONIndent`
 
-Marshal any value to JSON. Compact and pretty respectively. Excellent for
-config-file targets.
+Marshal any value to JSON. Compact and pretty respectively.
+Excellent for config-file targets.
 
-```yaml
-file_template: |
-  {{ .context | toJSONIndent }}
+```
+file_template
+    write (toJSONIndent context)
+end
 ```
 
 ### `lower` / `upper`
@@ -94,68 +114,83 @@ Case helpers.
 
 Join a list of strings (or any-types coerced to strings).
 
-```yaml
-file_template: |
-  scripts: {{ join ", " .context.script_names }}
+```
+file_template
+    write `scripts: ${join ", " context.script_names}
+`
+end
 ```
 
 ## Common patterns
 
 ### Imports at top, body below
 
-```yaml
-file_template: |
-  {{- range .context.imports }}import {{ . }}
-  {{ end }}
-  {{- .body -}}
+```
+file_template
+    for imp in context.imports
+        write `import ${imp}
+`
+    end
+    write body
+end
 ```
 
 ### A block function emitting an indented body
 
-```yaml
-if:
-  args:
-    - { kind: literal, value: "if" }
-    - { kind: capture, name: cond, type: any }
-  block: { closer: end }
-  template: |
-    if {{ .cond }}:
-    {{ .body | indent 4 }}
-end: {}
+```
+function if
+    arg literal "if"
+    arg capture cond any
+    block_closer end
+    write `if ${cond}:
+${indent 4 body}
+`
+end
+
+function end
+end
 ```
 
 ### Pure-context output (no body emission)
 
-```yaml
-functions:
-  set_name:
-    args: [{ kind: capture, name: n, type: any }]
-    template: ""
-    run: |
-      set context.name n
+```
+function set_name
+    arg capture n any
+    set context.name n
+end
 
-file_template: |
-  {{ .context | toJSONIndent }}
+file_template
+    write (toJSONIndent context)
+end
 ```
 
-### Computing a value with template logic
+### Mixing output and state in one function
 
-Inside a single template you can use Go's `if`/`with`/`range`:
+```
+function section
+    arg literal "section"
+    arg capture title string
+    block_closer end
+    # Record this section in the TOC AND emit its heading.
+    append context.toc title
+    write `## ${title}
 
-```yaml
-template: |
-  {{ if .verbose }}# Generated for {{ .target }}{{ end }}
-  print({{ .msg }})
+${body}
+`
+end
 ```
 
-## Whitespace control
+## Whitespace
 
-Go templates use `{{-` and `-}}` to trim surrounding whitespace. Helpful for
-keeping output clean when ranges produce stray newlines:
+There is no `{{- -}}` trimming sigil in the unified shape. You
+control whitespace by where `write` is called and what bytes are
+inside the backtick literal. To avoid blank lines between iterations,
+make sure each `write` ends with the exact newline you want and no
+more:
 
-```yaml
-file_template: |
-  {{- range .context.imports }}import {{ . }}
-  {{ end -}}
-  {{ .body }}
+```
+for imp in context.imports
+    write `import ${imp}
+`
+end
 ```

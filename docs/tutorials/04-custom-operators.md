@@ -15,26 +15,28 @@ the entire shape — and the function key is just a reference name.
 
 ## Pattern A: assignment
 
-```yaml
-assign:
-  args:
-    - { kind: capture, name: var, type: ident }
-    - { kind: literal, value: "=" }
-    - { kind: capture, name: value, type: any }
-  template: "{{ .var }} = {{ .value }}\n"
+```
+function assign
+    arg capture var ident
+    arg literal "="
+    arg capture value any
+    write `${var} = ${value}
+`
+end
 ```
 
-Matches `x = 1`. The function key `assign` does not appear in source.
+Matches `x = 1`. The function name `assign` does not appear in source.
 
 ## Pattern B: walrus-operator style
 
-```yaml
-walrus:
-  args:
-    - { kind: capture, name: var, type: ident }
-    - { kind: literal, value: ":=" }
-    - { kind: capture, name: value, type: any }
-  template: "{{ .var }} := {{ .value }}\n"
+```
+function walrus
+    arg capture var ident
+    arg literal ":="
+    arg capture value any
+    write `${var} := ${value}
+`
+end
 ```
 
 The lexer reads `:=` as one `PUNCT` token because both characters are in
@@ -42,15 +44,16 @@ the punctuation set — your literal must match the full text.
 
 ## Pattern C: arithmetic-flavored assignment
 
-```yaml
-assign_add:
-  args:
-    - { kind: capture, name: var, type: ident }
-    - { kind: literal, value: "=" }
-    - { kind: capture, name: a, type: any }
-    - { kind: literal, value: "+" }
-    - { kind: capture, name: b, type: any }
-  template: "{{ .var }} = {{ .a }} + {{ .b }}\n"
+```
+function assign_add
+    arg capture var ident
+    arg literal "="
+    arg capture a any
+    arg literal "+"
+    arg capture b any
+    write `${var} = ${a} + ${b}
+`
+end
 ```
 
 Matches `x = 4 + 5`. Five tokens, three captures, two literals.
@@ -77,18 +80,19 @@ doesn't pick the right one.
 
 A `for x in xs { ... }` C-style block:
 
-```yaml
-for:
-  args:
-    - { kind: literal, value: "for" }
-    - { kind: capture, name: v, type: ident }
-    - { kind: literal, value: "in" }
-    - { kind: capture, name: i, type: any }
-  block: { open: "{", close: "}" }
-  template: |
-    for {{ .v }} in {{ .i }} {
-    {{ .body | indent 2 }}
-    }
+```
+function for
+    arg literal "for"
+    arg capture v ident
+    arg literal "in"
+    arg capture i any
+    block_open "{"
+    block_close "}"
+    write `for ${v} in ${i} {
+${indent 2 body}
+}
+`
+end
 ```
 
 This is Mode B (delimiter blocks). The opener consumes everything up to
@@ -102,16 +106,28 @@ Contrast with Mode A (indent + named closer) from Tutorial 3.
 You can declare two functions with the same surface keyword, one Mode A
 and one Mode B:
 
-```yaml
-for_indent:
-  args: [{kind: literal, value: "for"}, ..., {kind: literal, value: "do"}]
-  block: { closer: end }
-  template: ...
+```
+function for_indent
+    arg literal "for"
+    arg capture v ident
+    arg literal "in"
+    arg capture i any
+    arg literal "do"
+    block_closer end
+    write `for ${v} in ${i}:
+${indent 4 body}`
+end
 
-for_brace:
-  args: [{kind: literal, value: "for"}, ...]
-  block: { open: "{", close: "}" }
-  template: ...
+function for_brace
+    arg literal "for"
+    arg capture v ident
+    arg literal "in"
+    arg capture i any
+    block_open "{"
+    block_close "}"
+    write `for ${v} in ${i} { ${body} }
+`
+end
 ```
 
 The matcher picks based on which delimiter shows up in source.

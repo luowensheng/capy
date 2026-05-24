@@ -44,7 +44,7 @@ A function can have both, either, or neither.
 ## What's `context` for?
 
 State accumulated across all statements. Lists, maps, scalars. Common use:
-collect imports/dependencies at the top, emit them via `file_template:`.
+collect imports/dependencies at the top, emit them via `file_template`.
 
 ## Why do captures appear different in templates vs `run:`?
 

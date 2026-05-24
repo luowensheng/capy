@@ -58,8 +58,10 @@ function <NAME>              # one DSL statement shape
     # if / for / set / prepend / merge / delete also available
 end
 
-file_template:               # whole-file wrapper; captures to EOF
-    ...
+file_template                # whole-file assembler
+    # inner-DSL body (write calls + for/if + state reads)
+    write body
+end
 ```
 
 Strings use double quotes (with Go-style escapes `\n` `\t` `\"`
@@ -234,9 +236,9 @@ function if
     arg literal "if"
     arg capture cond any
     block_closer end
-    template:
-        if {{ .cond }}:
-        {{ .body | indent 4 }}
+    write `if ${cond}:
+${indent 4 body}
+`
 end
 
 function end
@@ -256,10 +258,10 @@ function for
     arg capture i any
     block_open "{"
     block_close "}"
-    template:
-        for {{ .v }} in {{ .i }} {
-        {{ .body | indent 2 }}
-        }
+    write `for ${v} in ${i} {
+${indent 2 body}
+}
+`
 end
 ```
 
@@ -323,10 +325,13 @@ end
 function end
 end
 
-file_template:
-    {{- range .context.imports }}import {{ . }}
-    {{ end }}
-    {{- .body -}}
+file_template
+    for imp in context.imports
+        write `import ${imp}
+`
+    end
+    write body
+end
 ```
 
 Source:

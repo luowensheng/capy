@@ -36,8 +36,9 @@ function greet                        # one DSL statement shape
 `
 end
 
-file_template:                        # final-output assembler
-    {{- .body -}}
+file_template                         # final-output assembler
+    write body
+end
 ```
 
 ## Functions
@@ -254,24 +255,32 @@ context
 end
 ```
 
-## `file_template:` — final assembly
+## `file_template` — final assembly
 
-Receives `.body` (concatenation of all top-level statements' rendered
-templates) and `.context` (final accumulated state). Common patterns:
+Receives `body` (concatenation of all top-level statements' written
+output) and `context` (final accumulated state). Common patterns:
 
 ```
 # Python-style: imports at top, then body.
-file_template:
-    {{- range .context.imports }}import {{ . }}
-    {{ end }}
-    {{- .body -}}
+file_template
+    for imp in context.imports
+        write `import ${imp}
+`
+    end
+    write body
+end
 ```
 
 ```
 # Pure JSON: ignore body entirely, render context.
-file_template:
-    {{ .context | toJSONIndent }}
+file_template
+    write (toJSONIndent context)
+end
 ```
+
+The block form (`file_template ... end`) is the unified shape.
+Legacy `file_template: ...` (colon, with Go-template body) still
+works for libraries that haven't migrated.
 
 ## `priority`
 

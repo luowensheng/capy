@@ -33,24 +33,25 @@ You now have `lib.yaml`, `script.capy`, and `README.md`.
 
 Open `lib.yaml`. Replace it with:
 
-```yaml
-extension: txt
+```
+extension txt
 
-functions:
-  greet:
-    args:
-      - { kind: capture, name: name, type: any }
-    template: "Hello, {{ .name }}!\n"
+function greet
+    arg capture name any
+    write `Hello, ${name}!
+`
+end
 ```
 
 What this says:
 
-- One function whose name is `greet`.
-- `args:` has one entry — a capture named `name`, accepting any value.
-- Because there are zero `kind: literal` entries, the engine
-  **auto-prepends** the function key (`greet`) as a leading literal. So
-  the surface shape is `greet <any>`.
-- The `template:` renders `Hello, <name>!\n` per match.
+- One function named `greet`.
+- One `arg` — a capture named `name`, accepting any value.
+- Because there are zero `arg literal` lines, the engine
+  **auto-prepends** the function name (`greet`) as a leading literal.
+  So the surface shape is `greet <any>`.
+- The function body `write`s `Hello, <name>!\n` per match. The
+  newline inside the backtick literal is exactly what gets emitted.
 
 ## Step 3 — write the source
 
@@ -64,7 +65,7 @@ greet "Bob"
 ## Step 4 — run it
 
 ```sh
-capy run lib.yaml script.capy
+capy run lib.capy script.capy
 ```
 
 Output:
@@ -84,9 +85,9 @@ literal).
 
 ## Try it
 
-- Change the template to `"hi {{ .name }}\n"`. Re-run. Output updates.
-- Add a second function `shout` that emits uppercase using the `upper`
-  helper: `template: "{{ .name | upper }}\n"`.
+- Change the write to `` write `hi ${name}\n` ``. Re-run. Output updates.
+- Add a second function `shout` that emits uppercase using the
+  `upper` helper: `` write `${upper name}\n` ``.
 - Try invalid input: `greet` (no argument) → see the structured error.
 
 ## Next

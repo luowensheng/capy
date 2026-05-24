@@ -23,7 +23,7 @@ links; this page is a quick reference for "is X supported?".
 | `types` | optional | Library-defined argument types with `base`, `pattern`, `options`. |
 | `context` | optional | Initial schema for the accumulated context (lists/maps/scalars). |
 | `functions` | required | Every recognised source-language construct. |
-| `file_template` | optional | Top-level Go template; defaults to `{{ .body }}`. |
+| `file_template` | optional | Top-level assembler block. Defaults to emitting `body` verbatim. |
 
 ## Function definitions
 
@@ -182,26 +182,27 @@ Flags for `run`:
 
 ## Output assembly
 
-Each library function's `template:` contributes to a per-block **body**
-string. Block functions reference `{{ .body }}` to get the rendered
-output of their children. The top-level program's body, plus the
-accumulated `context`, are passed to `file_template:` for the final
-output.
+Each library function's body `write`s text into a per-block **body**
+string. Block functions reference `${body}` (or `${indent N body}`)
+to get the rendered output of their children. The top-level
+program's body, plus the accumulated `context`, are passed to
+`file_template` for the final output.
 
-Inside any template:
+Inside any function body / `write` literal:
 
-| Variable | What it is |
-|----------|------------|
-| `.<capture>` | Source-text form of a capture (with quotes for string literals). |
-| `.body` | Inner block's rendered output (only on block-opener functions). |
-| `.context` | Read-only snapshot of the accumulated context at this point. |
+| Reference | What it is |
+|-----------|------------|
+| `${<capture>}` | Source-text form of a capture (with quotes for string literals). |
+| `${body}` | Inner block's rendered output (only inside block-opener functions). |
+| `${context.X}` | Read-only snapshot of the accumulated context at this point. |
+| `${func arg arg}` | Call a helper inline (`indent`, `pascalCase`, `toQuoted`, …). |
 
-Inside `file_template:`:
+Inside `file_template`:
 
-| Variable | What it is |
-|----------|------------|
-| `.body` | Concatenation of all top-level statements' rendered output. |
-| `.context` | Final accumulated context. |
+| Reference | What it is |
+|-----------|------------|
+| `${body}` / `write body` | Concatenation of all top-level statements' rendered output. |
+| `${context.X}` | Final accumulated context. |
 
 ## Source vs evaluated captures
 

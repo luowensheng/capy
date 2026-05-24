@@ -29,52 +29,46 @@ Output (a `package.json`-ish file):
 
 ## Step 1 — initial library
 
-```yaml
-extension: json
-output_file: ""
+```
+extension json
 
-context:
-  name: ""
-  version: ""
-  dependencies: []
+context
+    name ""
+    version ""
+    dependencies []
+end
 
-functions:
-  set_name:
-    args:
-      - { kind: capture, name: n, type: any }
-    template: ""
-    run: |
-      set context.name n
+function set_name
+    arg capture n any
+    set context.name n
+end
 
-  set_version:
-    args:
-      - { kind: capture, name: v, type: any }
-    template: ""
-    run: |
-      set context.version v
+function set_version
+    arg capture v any
+    set context.version v
+end
 
-  depend:
-    args:
-      - { kind: literal, value: "depend" }
-      - { kind: literal, value: "on" }
-      - { kind: capture, name: pkg, type: any }
-    template: ""
-    run: |
-      append context.dependencies pkg
+function depend
+    arg literal "depend"
+    arg literal "on"
+    arg capture pkg any
+    append context.dependencies pkg
+end
 
-file_template: |
-  {{ .context | toJSONIndent }}
+file_template
+    write (toJSONIndent context)
+end
 ```
 
 Key concepts here:
 
-- **`context:`** declares the initial state. Maps to `{}`, lists to `[]`.
-- **Every function's `template:` is empty.** The body emits nothing —
-  the entire output is the rendered context.
-- **`run:`** mutates context: `set`, `append`.
-- **`file_template:`** uses `toJSONIndent` to marshal context.
-- **`depend on`** is a multi-literal pattern. The function key `depend`
-  is NOT auto-prepended because the args list contains literals.
+- **`context`** declares the initial state. Maps to `{}`, lists to `[]`.
+- **No function calls `write`** — the body emits nothing; the entire
+  output is the rendered context.
+- **`set` / `append`** mutate context.
+- **`file_template`** uses `toJSONIndent` to marshal context.
+- **`depend on`** is a multi-literal pattern. The function name `depend`
+  is NOT auto-prepended because the args list already contains literals.
 
 ## Step 2 — add validation
 
@@ -109,7 +103,7 @@ depend on "lodash"
 Run:
 
 ```sh
-capy run lib.yaml script.capy
+capy run lib.capy script.capy
 ```
 
 Output:
@@ -125,16 +119,18 @@ Output:
 }
 ```
 
-Note that JSON object keys are alphabetised by the marshaller — if you
-want a specific order, render the file_template manually:
+Note that JSON object keys are alphabetised by the marshaller — if
+you want a specific order, render the file_template manually:
 
-```yaml
-file_template: |
-  {
-    "name": {{ .context.name | toQuoted }},
-    "version": {{ .context.version | toQuoted }},
-    "dependencies": {{ .context.dependencies | toJSON }}
-  }
+```
+file_template
+    write `{
+  "name": ${toQuoted context.name},
+  "version": ${toQuoted context.version},
+  "dependencies": ${toJSON context.dependencies}
+}
+`
+end
 ```
 
 ## Try it

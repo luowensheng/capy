@@ -93,10 +93,11 @@ ${indent 4 body}
     function end
     end
 
-    file_template:
-        #include <stdio.h>
+    file_template
+        write `#include <stdio.h>
 
-        {{ .body }}
+${body}`
+    end
     ```
 
 Both files, run against the same `script.capy`, emit byte-identical C source.
@@ -130,15 +131,22 @@ function <NAME>
     #     ...
 end
 
-file_template:
-    {{ .body }}                            # whole-file wrapper
+file_template                                # whole-file assembler
+    write body
+end
+
+# Legacy alternative (still accepted):
+# file_template:
+#     {{ .body }}
 ```
 
-- **Strings** use double quotes with Go-style escapes (`\n`, `\t`, `\"`, `\\`).
-- **Bare words** are accepted for `extension`, type names, and capture names.
-- **Indentation** delimits `template:` / `run:` / `file_template:` blocks — the
-  block ends when a line returns to the parent indent. The deepest common
-  indent is stripped, so your template reads naturally.
+- **Strings** use double quotes with Go-style escapes (`\n`, `\t`,
+  `\"`, `\\`) — or backticks (multi-line, with `${EXPR}` interpolation).
+- **Bare words** are accepted for `extension`, type names, and
+  capture names.
+- **Indentation** delimits block bodies — the block ends at `end`
+  (for `function` / `file_template` / `file "X"`) or when a line
+  returns to the parent indent (for legacy `template:` / `run:`).
 - **Comments** start with `#` and run to end of line.
 
 ## Why `.capy` is the default

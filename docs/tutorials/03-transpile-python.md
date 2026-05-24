@@ -34,33 +34,32 @@ for item in [1, 2, 3]:
 
 ## Step 1 — basic functions
 
-```yaml
-extension: py
-output_file: ""
+```
+extension py
 
-context:
-  imports: []
+context
+    imports []
+end
 
-functions:
-  import:
-    args:
-      - { kind: literal, value: "import" }
-      - { kind: capture, name: name, type: ident }
-    template: ""
-    run: |
-      append context.imports name
+function import
+    arg literal "import"
+    arg capture name ident
+    append context.imports name
+end
 
-  say:
-    args:
-      - { kind: capture, name: msg, type: any }
-    template: "print({{ .msg }})\n"
+function say
+    arg capture msg any
+    write `print(${msg})
+`
+end
 
-  assign:
-    args:
-      - { kind: capture, name: name, type: ident }
-      - { kind: literal, value: "=" }
-      - { kind: capture, name: value, type: any }
-    template: "{{ .name }} = {{ .value }}\n"
+function assign
+    arg capture name ident
+    arg literal "="
+    arg capture value any
+    write `${name} = ${value}
+`
+end
 ```
 
 Try `capy run` so far — should handle `import`, `say`, and `x = ...`.
@@ -70,42 +69,41 @@ Try `capy run` so far — should handle `import`, `say`, and `x = ...`.
 The `if` block emits Python `if cond:` + indented body. The body is the
 already-rendered output of inner statements.
 
-```yaml
-functions:
-  if:
-    args:
-      - { kind: literal, value: "if" }
-      - { kind: capture, name: cond, type: any }
-    block: { closer: end }
-    template: |
-      if {{ .cond }}:
-      {{ .body | indent 4 }}
+```
+function if
+    arg literal "if"
+    arg capture cond any
+    block_closer end
+    write `if ${cond}:
+${indent 4 body}
+`
+end
 
-  end: {}
+function end
+end
 ```
 
 Two key bits:
 
-- `block: { closer: end }` — body is indent-delimited; after DEDENT, the
+- `block_closer end` — body is indent-delimited; after DEDENT, the
   `end` function must match.
-- `{{ .body | indent 4 }}` — `.body` is the concatenated rendered output
-  of the inner statements; `indent 4` prefixes every line with 4 spaces
-  for Python's syntax.
+- `${indent 4 body}` — `body` is the concatenated rendered output of
+  the inner statements; `indent 4 body` prefixes every line with 4
+  spaces for Python's syntax.
 
 ## Step 3 — add the `loop` block
 
-```yaml
-functions:
-  loop:
-    args:
-      - { kind: literal, value: "loop" }
-      - { kind: capture, name: var, type: ident }
-      - { kind: literal, value: "in" }
-      - { kind: capture, name: iter, type: any }
-    block: { closer: end }
-    template: |
-      for {{ .var }} in {{ .iter }}:
-      {{ .body | indent 4 }}
+```
+function loop
+    arg literal "loop"
+    arg capture var ident
+    arg literal "in"
+    arg capture iter any
+    block_closer end
+    write `for ${var} in ${iter}:
+${indent 4 body}
+`
+end
 ```
 
 Same shape — emits Python `for x in xs:` + indented body.
@@ -114,25 +112,29 @@ Same shape — emits Python `for x in xs:` + indented body.
 
 Assemble imports at the top, body below:
 
-```yaml
-file_template: |
-  {{- range .context.imports }}import {{ . }}
-  {{ end }}
-  {{- .body -}}
+```
+file_template
+    for imp in context.imports
+        write `import ${imp}
+`
+    end
+    write body
+end
 ```
 
-The `{{-` and `-}}` trim whitespace to keep output tight.
+Each `write` emits exactly the bytes inside the backticks — no
+whitespace-trimming sigils needed; you control the output directly.
 
 ## Step 5 — run
 
 ```sh
-capy run lib.yaml script.capy
+capy run lib.capy script.capy
 ```
 
 You should see valid Python that runs:
 
 ```sh
-capy run lib.yaml script.capy | python3
+capy run lib.capy script.capy | python3
 # hello
 # x is set
 # 1
@@ -150,8 +152,9 @@ The transpiler model has three moving parts:
    nesting. Used for imports here.
 3. **File template** — final assembler that gets both.
 
-Block functions reference `{{ .body }}` to get their inner output. The
-file template references both `{{ .context }}` and `{{ .body }}`.
+Block functions reference `${body}` (or `${indent N body}` for
+indented output) to get their inner output. The file template
+references both `${context...}` and `${body}` / `write body`.
 
 ## Try it
 

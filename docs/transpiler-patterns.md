@@ -2,18 +2,21 @@
 
 Capy is, fundamentally, a transpiler: source in, target out. This page
 collects the standard ways Capy libraries divide work between
-**body templates** (text that flows through statement-by-statement) and
-**accumulated context** (state that's assembled at the end).
+**written output** (text that flows through statement-by-statement
+via `write`) and **accumulated context** (state assembled at the
+end and consumed by `file_template`).
 
-## Pattern 1: Statement renders directly to body
+## Pattern 1: Statement writes directly to body
 
-The simplest pattern. Each statement's `template:` produces text that
-appears in the output body in source order.
+The simplest pattern. Each statement's body `write`s text that
+appears in the output in source order.
 
-```yaml
-say:
-  args: [{ kind: capture, name: msg, type: any }]
-  template: "print({{ .msg }})\n"
+```
+function say
+    arg capture msg any
+    write `print(${msg})
+`
+end
 ```
 
 ```
@@ -24,164 +27,180 @@ say "b"      →     print("b")
 Used in: most "code generators" where source and output have similar
 structure.
 
-## Pattern 2: Statement updates context, body stays empty
+## Pattern 2: Statement updates context, writes nothing
 
 Use when the source declares something that contributes to a different
 output position (often the top, often deduplicated).
 
-```yaml
-import:
-  args:
-    - { kind: literal, value: "import" }
-    - { kind: capture, name: name, type: ident }
-  template: ""                        # contributes nothing to body
-  run: |
+```
+function import
+    arg literal "import"
+    arg capture name ident
+    # No `write` → nothing flows into body.
     append context.imports name
+end
 
-file_template: |
-  {{- range .context.imports }}import {{ . }}
-  {{ end }}
-  {{- .body -}}
+file_template
+    for imp in context.imports
+        write `import ${imp}
+`
+    end
+    write body
+end
 ```
 
 Used in: import collection, decl ordering, "front matter" assembly.
 
-## Pattern 3: Block opener emits header, body emits children, closer emits footer
+## Pattern 3: Block opener writes a header + the rendered body
 
 The canonical control-flow shape.
 
-```yaml
-if:
-  args:
-    - { kind: literal, value: "if" }
-    - { kind: capture, name: cond, type: any }
-  block: { closer: end }
-  template: |
-    if {{ .cond }}:
-    {{ .body | indent 4 }}
-end: {}
+```
+function if
+    arg literal "if"
+    arg capture cond any
+    block_closer end
+    write `if ${cond}:
+${indent 4 body}
+`
+end
+
+function end
+end
 ```
 
-The opener's template references `{{ .body }}` which is the concatenated
-output of every statement inside the block. The closer here is silent.
+`${body}` inside the write literal is the rendered output of every
+statement inside the block, indented by 4. The closer here is
+silent (empty body).
 
 ## Pattern 4: Body is irrelevant, context IS the output
 
 Useful for declarative formats (JSON, TOML, YAML configs).
 
-```yaml
-set_name:
-  args: [{ kind: capture, name: n, type: any }]
-  template: ""
-  run: |
+```
+function set_name
+    arg capture n any
     set context.name n
+end
 
-file_template: |
-  {{ .context | toJSONIndent }}
+file_template
+    write (toJSONIndent context)
+end
 ```
 
-Used in: `samples/transpile-json/`. The body is empty; the entire output is
-the marshaled context.
+Used in: `samples/transpile-json/`. No function writes; the entire
+output is the marshalled context.
 
 ## Pattern 5: Deduplication via context
 
 If the same source can produce duplicate items, use a map-keyed set
 instead of a list:
 
-```yaml
-context:
-  seen_imports: {}                  # map used as a set
+```
+context
+    seen_imports {}                  # map used as a set
+end
 
-functions:
-  import:
-    args:
-      - { kind: literal, value: "import" }
-      - { kind: capture, name: name, type: ident }
-    template: ""
-    run: |
-      set context.seen_imports[name] true
+function import
+    arg literal "import"
+    arg capture name ident
+    set context.seen_imports[name] true
+end
 
-file_template: |
-  {{- range $name, $_ := .context.seen_imports }}import {{ $name }}
-  {{ end }}
-  {{ .body }}
+file_template
+    for k in (keys context.seen_imports)
+        write `import ${k}
+`
+    end
+    write body
+end
 ```
 
-Each `import json` writes to the same key. `range` over a map iterates
-keys.
+Each `import json` writes to the same key — duplicates collapse.
 
 ## Pattern 6: Conditional context updates
 
-The inner DSL's `if` is for library-author logic, not user logic.
+`if`/`else` in a function body is library-author logic, not user
+logic. Use it to route a single match into different context lists.
 
-```yaml
-import:
-  args:
-    - { kind: literal, value: "import" }
-    - { kind: capture, name: name, type: ident }
-  template: ""
-  run: |
+```
+function import
+    arg literal "import"
+    arg capture name ident
     if (regex_match name "^test_")
         append context.test_imports name
-    end
-    if not (regex_match name "^test_")
+    else
         append context.app_imports name
     end
+end
 ```
 
 ## Pattern 7: Pre/post fragments around a block
 
-When you need to wrap a generated block in target-specific boilerplate,
-emit the header in the opener's template, the footer in the closer's
-template, and the body via `.body`.
+When you need to wrap a generated block in target-specific
+boilerplate, write the header before `${body}` and the footer after.
 
-```yaml
-begin_class:
-  args: [{ kind: capture, name: name, type: ident }]
-  block: { closer: end_class }
-  template: |
-    class {{ .name }}:
-    {{ .body | indent 4 }}
-end_class:
-  template: "    # end class\n"
+```
+function class
+    arg literal "class"
+    arg capture name ident
+    block_closer end
+    write `class ${name}:
+${indent 4 body}
+    # end class
+`
+end
+
+function end
+end
 ```
 
 ## Pattern 8: One source produces multiple output sections
 
-When the target has distinct sections (e.g. SQL DDL vs DML), accumulate
-each into its own context list and join them in the file template.
+When the target has distinct sections (e.g. SQL DDL vs DML),
+accumulate each into its own context list and join them in
+`file_template`.
 
-```yaml
-context:
-  ddl: []
-  dml: []
+```
+context
+    ddl []
+    dml []
+end
 
-functions:
-  create_table:
-    args: [...]
-    template: ""
-    run: |
-      append context.ddl "CREATE TABLE ..."
-  insert:
-    args: [...]
-    template: ""
-    run: |
-      append context.dml "INSERT INTO ..."
+function create_table
+    arg literal "create_table"
+    arg capture name string
+    append context.ddl "CREATE TABLE ..."
+end
 
-file_template: |
-  -- DDL
-  {{ range .context.ddl }}{{ . }}
-  {{ end }}
-  -- DML
-  {{ range .context.dml }}{{ . }}
-  {{ end }}
+function insert
+    arg literal "insert"
+    arg capture row string
+    append context.dml "INSERT INTO ..."
+end
+
+file_template
+    write `-- DDL
+`
+    for q in context.ddl
+        write `${q}
+`
+    end
+    write `-- DML
+`
+    for q in context.dml
+        write `${q}
+`
+    end
+end
 ```
 
 ## Anti-pattern: trying to execute user logic
 
-Capy does not run the source. `if x ... end` in the source emits an `if`
-in the target (or whatever the library defines); it doesn't decide at
-transpile time whether to skip rendering.
+Capy does not run the source. `if x ... end` in the source emits an
+`if` in the target (or whatever the library defines); it doesn't
+decide at transpile time whether to skip rendering.
 
-If you want compile-time conditional emission, do it in the **library's
-inner `run:` snippet** by reading `context`, not by reading user variables.
+If you want compile-time conditional emission, do it in the
+**library's** function body by reading `context`, not by reading
+user-script variables.

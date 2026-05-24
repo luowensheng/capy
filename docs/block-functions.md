@@ -6,17 +6,18 @@ surface syntax you're aiming for.
 
 ## Mode A — named closer + indentation
 
-```yaml
-if:
-  args:
-    - { kind: literal, value: "if" }
-    - { kind: capture, name: cond, type: any }
-  block: { closer: end }
-  template: |
-    if {{ .cond }}:
-    {{ .body | indent 4 }}
+```
+function if
+    arg literal "if"
+    arg capture cond any
+    block_closer end
+    write `if ${cond}:
+${indent 4 body}
+`
+end
 
-end: {}
+function end
+end
 ```
 
 Source:
@@ -30,24 +31,26 @@ end
 - The body is delimited by INDENT / DEDENT tokens (4 spaces or 1 tab per
   level).
 - After DEDENT, the engine expects to match the function named in
-  `block.closer:` (here `end`).
-- The closer is itself a library function. Often a silent one (`end: {}` —
-  no template, no `run:`), but you can give it a `template:` that emits
-  closing text (e.g. `end_route` emitting a `}`).
+  `block_closer` (here `end`).
+- The closer is itself a library function. Often a silent one (an
+  empty `function end ... end`), but you can give it a `write` that
+  emits closing text (e.g. `end_route` emitting a `}`).
 
 ### Closers with output
 
-```yaml
-begin_route:
-  args:
-    - { kind: capture, name: m, type: string }
-    - { kind: capture, name: p, type: string }
-  block: { closer: end_route }
-  template: |
-    route {{ .m }} {{ .p }} {
+```
+function begin_route
+    arg capture m string
+    arg capture p string
+    block_closer end_route
+    write `route ${m} ${p} {
+${body}`
+end
 
-end_route:
-  template: "}\n"
+function end_route
+    write `}
+`
+end
 ```
 
 Source:
@@ -68,18 +71,19 @@ route GET /api/hello {
 
 ## Mode B — explicit delimiters
 
-```yaml
-for:
-  args:
-    - { kind: literal, value: "for" }
-    - { kind: capture, name: var, type: ident }
-    - { kind: literal, value: "in" }
-    - { kind: capture, name: iter, type: any }
-  block: { open: "{", close: "}" }
-  template: |
-    for {{ .var }} in {{ .iter }} {
-    {{ .body | indent 2 }}
-    }
+```
+function for
+    arg literal "for"
+    arg capture var ident
+    arg literal "in"
+    arg capture iter any
+    block_open "{"
+    block_close "}"
+    write `for ${var} in ${iter} {
+${indent 2 body}
+}
+`
+end
 ```
 
 Source:

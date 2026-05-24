@@ -67,7 +67,7 @@ shapes. For each match:
 - The function's `run:` (if any) updated the **accumulated context**
   (lists, maps, scalars).
 
-At the end, the library's `file_template:` produced the final output
+At the end, the library's `file_template` produced the final output
 from `.body` (concatenated rendered fragments) and `.context` (final
 accumulated state).
 

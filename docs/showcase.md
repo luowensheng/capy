@@ -1693,7 +1693,7 @@ declarations while the runtime still consumes plain target syntax.
     | **Mermaid**          | High-level diagram syntax → node + edge DSL            |
 
     The recipe is always identical: define a Capy library whose
-    `file_template:` outputs the host format. Authors compose at
+    `file_template` outputs the host format. Authors compose at
     the high level; the existing runtime consumes the low-level
     output unchanged.
 

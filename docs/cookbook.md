@@ -5,45 +5,47 @@ delta — copy into your own library and adjust types/names.
 
 ## Emit an import block at the top of the output
 
-```yaml
-context:
-  imports: []
+```
+context
+    imports []
+end
 
-functions:
-  import:
-    args:
-      - { kind: literal, value: "import" }
-      - { kind: capture, name: name, type: ident }
-    template: ""
-    run: |
-      append context.imports name
+function import
+    arg literal "import"
+    arg capture name ident
+    append context.imports name
+end
 
-file_template: |
-  {{- range .context.imports }}import {{ . }}
-  {{ end }}
-  {{- .body -}}
+file_template
+    for imp in context.imports
+        write `import ${imp}
+`
+    end
+    write body
+end
 ```
 
 ## Deduplicate context entries
 
 Use a map as a set:
 
-```yaml
-context:
-  imports: {}                       # map, not list
+```
+context
+    imports {}                       # map, not list
+end
 
-functions:
-  import:
-    args:
-      - { kind: literal, value: "import" }
-      - { kind: capture, name: name, type: ident }
-    template: ""
-    run: |
-      set context.imports[name] true
+function import
+    arg literal "import"
+    arg capture name ident
+    set context.imports[name] true
+end
 
-file_template: |
-  {{- range $name, $_ := .context.imports }}import {{ $name }}
-  {{ end -}}
+file_template
+    for k in (keys context.imports)
+        write `import ${k}
+`
+    end
+end
 ```
 
 ## Validate that a string matches multiple patterns
@@ -64,66 +66,75 @@ multiple captures in different functions or open a feature request for
 
 ## Emit indented bodies for a block construct
 
-```yaml
-if:
-  args:
-    - { kind: literal, value: "if" }
-    - { kind: capture, name: cond, type: any }
-  block: { closer: end }
-  template: |
-    if {{ .cond }}:
-    {{ .body | indent 4 }}
-end: {}
+```
+function if
+    arg literal "if"
+    arg capture cond any
+    block_closer end
+    write `if ${cond}:
+${indent 4 body}
+`
+end
+
+function end
+end
 ```
 
 ## Render a list of objects from context
 
-```yaml
-context:
-  routes: []
+```
+context
+    routes []
+end
 
-functions:
-  route:
-    args:
-      - { kind: literal, value: "route" }
-      - { kind: capture, name: method, type: any }
-      - { kind: capture, name: path, type: any }
-    template: ""
-    run: |
-      append context.routes {method: method, path: path}
+function route
+    arg literal "route"
+    arg capture method any
+    arg capture path any
+    append context.routes {method: method, path: path}
+end
 
-file_template: |
-  ROUTES = [
-  {{- range .context.routes }}
-      { "method": {{ .method | toQuoted }}, "path": {{ .path | toQuoted }} },
-  {{- end }}
-  ]
+file_template
+    write `ROUTES = [
+`
+    for r in context.routes
+        write `    { "method": ${toQuoted r.method}, "path": ${toQuoted r.path} },
+`
+    end
+    write `]
+`
+end
 ```
 
 ## Support both `do…end` and `{…}` block styles
 
 Define two functions:
 
-```yaml
-for_indent:
-  args:
-    - { kind: literal, value: "for" }
-    - { kind: capture, name: v, type: ident }
-    - { kind: literal, value: "in" }
-    - { kind: capture, name: i, type: any }
-    - { kind: literal, value: "do" }
-  block: { closer: end }
-  template: "for {{ .v }} in {{ .i }}:\n{{ .body | indent 4 }}"
-end: {}
+```
+function for_indent
+    arg literal "for"
+    arg capture v ident
+    arg literal "in"
+    arg capture i any
+    arg literal "do"
+    block_closer end
+    write `for ${v} in ${i}:
+${indent 4 body}`
+end
 
-for_brace:
-  args:
-    - { kind: literal, value: "for" }
-    - { kind: capture, name: v, type: ident }
-    - { kind: literal, value: "in" }
-    - { kind: capture, name: i, type: any }
-  block: { open: "{", close: "}" }
-  template: "for {{ .v }} in {{ .i }}: { {{ .body }} }\n"
+function end
+end
+
+function for_brace
+    arg literal "for"
+    arg capture v ident
+    arg literal "in"
+    arg capture i any
+    block_open "{"
+    block_close "}"
+    write `for ${v} in ${i}: { ${body} }
+`
+end
 ```
 
 The matcher picks whichever shape the source uses; the longer literal
@@ -131,64 +142,77 @@ prefix wins on ties.
 
 ## Emit a function name only if a context flag is set
 
-Inside the file template:
+In `file_template`:
 
-```yaml
-file_template: |
-  {{ if .context.has_main -}}
-  if __name__ == "__main__":
-      main()
-  {{- end }}
+```
+file_template
+    write body
+    if context.has_main
+        write `if __name__ == "__main__":
+    main()
+`
+    end
+end
 ```
 
-Inside a function's template:
+Inside a function body:
 
-```yaml
-say:
-  args: [{ kind: capture, name: msg, type: any }]
-  template: |
-    {{ if .context.verbose }}# log: {{ .msg }}{{ end }}
-    print({{ .msg }})
+```
+function say
+    arg capture msg any
+    if context.verbose
+        write `# log: ${msg}
+`
+    end
+    write `print(${msg})
+`
+end
 ```
 
 ## Build a deeply nested context
 
-Use dotted paths in `run:`:
+Use dotted paths in a function body:
 
-```yaml
-run: |
-  set context.config.api.url "https://example.com"
-  set context.config.api.timeout 30
-  set context.config.db.host "localhost"
+```
+function configure
+    arg literal "configure"
+    set context.config.api.url "https://example.com"
+    set context.config.api.timeout 30
+    set context.config.db.host "localhost"
+end
 ```
 
 You can also use bracket indexing for dynamic keys:
 
-```yaml
-run: |
-  set context.scripts[name] cmd
 ```
-
-…where `name` is a capture.
+function register
+    arg capture name ident
+    arg capture cmd string
+    set context.scripts[name] cmd
+end
+```
 
 ## Stop transpilation with a clear error
 
-```yaml
-run: |
-  if (regex_match name "^_")
-      error "names starting with underscore are reserved"
-  end
+```
+function declare
+    arg capture name ident
+    if (regex_match name "^_")
+        error "names starting with underscore are reserved"
+    end
+    append context.declared name
+end
 ```
 
 ## Have a function that adds nothing to body, just runs side effects
 
-Omit `template:` (defaults to nothing) — only `run:` updates state:
+Just don't call `write`:
 
-```yaml
-register:
-  args: [{ kind: capture, name: name, type: ident }]
-  run: |
+```
+function register
+    arg capture name ident
     append context.registered name
+end
 ```
 
 Body output: empty. Context: gains the new name.
