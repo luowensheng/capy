@@ -1,0 +1,33 @@
+# A tiny query DSL → SQL.
+extension sql
+
+comments
+    line "#"
+end
+
+function table
+    arg literal "table"
+    arg capture name ident
+    write `-- table: ${name}
+`
+end
+
+function select
+    arg literal "select"
+    arg capture cols any
+    arg literal "from"
+    arg capture tbl ident
+    arg literal "where"
+    arg capture cond any
+    write `SELECT ${cols} FROM ${tbl} WHERE ${cond};
+`
+end
+
+function insert
+    arg literal "insert"
+    arg literal "into"
+    arg capture tbl ident
+    arg capture vals any
+    write `INSERT INTO ${tbl} VALUES ${vals};
+`
+end

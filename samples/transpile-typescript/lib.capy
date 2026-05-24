@@ -1,0 +1,49 @@
+# Tiny declarative source → TypeScript interface + factory.
+#
+# Source:
+#   model User
+#       field id : "number"
+#       field name : "string"
+#       field email : "string"
+#   end
+#
+# Output: TypeScript interface + factory function.
+
+extension ts
+
+comments
+    line "#"
+end
+
+context
+    models []
+end
+
+function model
+    arg literal "model"
+    arg capture name ident
+    block_closer end
+    append context.models name
+    write `export interface ${name} {
+${indent 2 body}
+}
+`
+end
+
+function field
+    arg literal "field"
+    arg capture name ident
+    arg literal ":"
+    arg capture t any
+    write `${name}: ${t};
+`
+end
+
+function end
+end
+
+file_template
+    write `// Models: ${join ", " context.models}
+${body}
+`
+end

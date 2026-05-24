@@ -1,0 +1,43 @@
+# State machine DSL → Mermaid state diagram.
+extension mmd
+
+comments
+    line "#"
+end
+
+function machine
+    arg literal "machine"
+    arg capture name ident
+    block_closer end
+    write `stateDiagram-v2
+  [*] --> ${name}
+${indent 2 body}
+`
+end
+
+function state
+    arg literal "state"
+    arg capture name ident
+    write `state ${name}
+`
+end
+
+function transition
+    arg capture from ident
+    arg literal "->"
+    arg capture to ident
+    arg literal "on"
+    arg capture event any
+    write `${from} --> ${to} : ${unquote event}
+`
+end
+
+function final
+    arg literal "final"
+    arg capture name ident
+    write `${name} --> [*]
+`
+end
+
+function end
+end
