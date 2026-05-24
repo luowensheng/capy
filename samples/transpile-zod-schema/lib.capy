@@ -4,6 +4,10 @@
 # translates each to a Zod chain. Swap the library to retarget
 # Yup, Joi, or pydantic without touching the source.
 extension ts
+
+comments
+    line "#"
+end
 output_file "schemas.ts"
 
 description "Compact schema DSL → Zod TypeScript validators. Source declares schemas, then fields with abstract type names (string / int / float / bool / string_list) and abstract refinement keywords (format_email, min_length N, max_length N, optional, default_empty). The library translates each to the matching Zod call. Swap the library to retarget Yup / Joi / pydantic."

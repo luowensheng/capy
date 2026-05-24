@@ -38,6 +38,12 @@ type RawLibrary struct {
 	// no preprocessing runs. Keeps "zero predefined grammar" honest.
 	Preprocess []string `yaml:"preprocess,omitempty"`
 
+	// Comments — line-comment markers the library opts into for
+	// user scripts. Empty list → user scripts have NO comment
+	// syntax. Mirrors Preprocess: the engine ships zero defaults
+	// and the library must declare what to recognise.
+	Comments []string `yaml:"comments,omitempty"`
+
 	// Manifest fields (set when the library declares them at the
 	// top level of its .capy file — `name "X"`, `version "X"`).
 	LibName    string `yaml:"name,omitempty"`
@@ -47,6 +53,29 @@ type RawLibrary struct {
 	// blocks at the top level. The body is collected as raw text;
 	// the loader parses it via the inner-DSL parser.
 	Commands map[string]RawCommand `yaml:"commands,omitempty"`
+
+	// Implementations: `impl "NAME" "FILE" ... end` blocks at the
+	// top level. Each entry points at a sibling .capy file that
+	// provides the actual functions. The CLI picks one per
+	// invocation via --impl / CAPY_IMPL / default. When the map
+	// is non-empty, the manifest file itself only carries
+	// metadata + commands; the real library lives in the chosen
+	// impl file.
+	Impls map[string]RawImpl `yaml:"impls,omitempty"`
+
+	// DefaultImpl names the impl chosen when neither --impl nor
+	// CAPY_IMPL picks one. If empty + Impls is non-empty + only
+	// one impl declared, that one is used; otherwise an error.
+	DefaultImpl string `yaml:"default_impl,omitempty"`
+}
+
+// RawImpl is one `impl "NAME" "FILE" ... end` declaration.
+type RawImpl struct {
+	Name        string `yaml:"name"`
+	File        string `yaml:"file"`
+	Description string `yaml:"description,omitempty"`
+	Version     string `yaml:"version,omitempty"`
+	IsDefault   bool   `yaml:"default,omitempty"`
 }
 
 // RawCommand is one `command "X" ... end` declaration.

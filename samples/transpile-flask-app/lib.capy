@@ -3,6 +3,10 @@
 # Same shape as the Express sample. The source uses ABSTRACT
 # handler verbs; this library translates each to Python+Flask.
 extension py
+
+comments
+    line "#"
+end
 output_file "app.py"
 
 description "Declarative REST-route DSL → runnable Python Flask app. Source uses abstract handler verbs (health_check, list_mock_users, create_user); swap the library (e.g. to lib for Express, FastAPI, Gin) to retarget without touching the source."

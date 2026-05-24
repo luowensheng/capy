@@ -4,6 +4,10 @@
 # Aurora, Supabase) consumes directly.
 extension sql
 
+comments
+    line "#"
+end
+
 function table
     arg literal "table"
     arg capture name ident

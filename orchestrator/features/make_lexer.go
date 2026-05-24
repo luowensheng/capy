@@ -13,11 +13,26 @@ import (
 // punctuation, and indentation. It does NOT classify any word as a keyword —
 // "if", "loop", "end", "true", etc. are all just TokIdent. The library's
 // patterns decide what those words mean. This is the core of "0 default grammar".
+// defaultCommentMarkers is the marker set used when no explicit
+// list is supplied. The engine has NO predefined user-script
+// comment syntax — but Capy's own manifest/inner-DSL format uses
+// `#`, so the no-args entry point keeps `#` to lex manifests and
+// inner-DSL run bodies. User scripts go through TokenizeWith and
+// pass lib.Comments instead.
+var defaultCommentMarkers = []string{"#"}
+
 func MakeLexer() features.Lexer {
-	return features.Lexer{Tokenize: tokenize}
+	return features.Lexer{
+		Tokenize:     tokenize,
+		TokenizeWith: tokenizeWith,
+	}
 }
 
 func tokenize(source string) ([]domain.Token, error) {
+	return tokenizeWith(source, defaultCommentMarkers)
+}
+
+func tokenizeWith(source string, commentMarkers []string) ([]domain.Token, error) {
 	var toks []domain.Token
 	indents := []int{0}
 	bracket := 0
@@ -41,7 +56,7 @@ func tokenize(source string) ([]domain.Token, error) {
 				}
 			}
 			rest := strings.TrimSpace(line[i:])
-			if rest == "" || strings.HasPrefix(rest, "#") {
+			if rest == "" || hasCommentPrefix(rest, commentMarkers) {
 				continue
 			}
 			if indent%4 != 0 {
@@ -63,7 +78,7 @@ func tokenize(source string) ([]domain.Token, error) {
 			line = line[i:]
 		}
 
-		newToks, openDelta, err := tokenizeLine(line, li+1)
+		newToks, openDelta, err := tokenizeLine(line, li+1, commentMarkers)
 		if err != nil {
 			return nil, err
 		}
@@ -97,7 +112,18 @@ var punctChars = "=<>!+-*/%&|^~?:,.;@$"
 
 func isPunct(b byte) bool { return strings.IndexByte(punctChars, b) >= 0 }
 
-func tokenizeLine(line string, lineNo int) ([]domain.Token, int, error) {
+// hasCommentPrefix reports whether s begins with any of the
+// supplied comment markers. Empty markers list → never a comment.
+func hasCommentPrefix(s string, markers []string) bool {
+	for _, m := range markers {
+		if m != "" && strings.HasPrefix(s, m) {
+			return true
+		}
+	}
+	return false
+}
+
+func tokenizeLine(line string, lineNo int, commentMarkers []string) ([]domain.Token, int, error) {
 	var toks []domain.Token
 	open := 0
 	i := 0
@@ -108,7 +134,7 @@ func tokenizeLine(line string, lineNo int) ([]domain.Token, int, error) {
 		case c == ' ' || c == '\t':
 			i++
 			col++
-		case c == '#':
+		case hasCommentPrefix(line[i:], commentMarkers):
 			i = len(line)
 		case c == '"' || c == '\'':
 			s, n, err := readString(line[i:], c)

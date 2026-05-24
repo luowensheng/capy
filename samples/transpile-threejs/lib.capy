@@ -6,6 +6,10 @@
 # raw WebGL) just by swapping the library.
 
 extension html
+
+comments
+    line "#"
+end
 output_file ""
 
 description "Tiny three.js scene DSL. Declare a scene title, camera distance, ambient + directional lights, and coloured primitives (cube, sphere, torus, cone, plane) with abstract motion verbs (spin, orbit, bob, pulse, none). Generates a complete runnable HTML page that imports three.js from a CDN, sets up a renderer + camera + lights, and animates each mesh in a requestAnimationFrame loop. Swap the library to retarget Babylon.js, A-Frame, or raw WebGL — your scene script never changes."

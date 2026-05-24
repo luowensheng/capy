@@ -228,6 +228,36 @@ func (p *capyLibParser) parseTop() (RawLibrary, error) {
 				return lib, err
 			}
 			lib.Commands[cmdName] = cmd
+		case "impl":
+			// `impl "NAME" "FILE" ... end` block declaring an
+			// implementation of the library's interface.
+			if len(tokens) < 3 {
+				return lib, p.errf("impl requires name + file string, e.g. `impl \"d3\" \"impl/d3.capy\"`")
+			}
+			name := tokens[1]
+			file := tokens[2]
+			p.nextLine()
+			ri, err := p.parseImplBlock()
+			if err != nil {
+				return lib, err
+			}
+			ri.Name = name
+			ri.File = file
+			if lib.Impls == nil {
+				lib.Impls = map[string]RawImpl{}
+			}
+			lib.Impls[name] = ri
+			if ri.IsDefault {
+				lib.DefaultImpl = name
+			}
+		case "default_impl":
+			// `default_impl "NAME"` alternative to the inline
+			// `default` directive inside an impl block.
+			p.nextLine()
+			if len(tokens) < 2 {
+				return lib, p.errf("default_impl requires a string name")
+			}
+			lib.DefaultImpl = tokens[1]
 		case "extension":
 			p.nextLine()
 			if len(tokens) < 2 {
@@ -318,6 +348,44 @@ func (p *capyLibParser) parseTop() (RawLibrary, error) {
 					continue
 				}
 				return lib, p.errf("inside preprocess: expected `include \"@NAME\"` or `end`, got %q", strings.TrimSpace(ln))
+			}
+		case "comments":
+			// comments
+			//     line "#"
+			//     line "//"
+			// end
+			//
+			// Each `line "MARKER"` opts user-script lexing into
+			// recognising MARKER as a line comment. Empty block →
+			// no comment syntax (default — Capy has zero predefined
+			// grammar, comments included).
+			p.nextLine()
+			for {
+				ln, indent, ok := p.peekLine()
+				if !ok {
+					return lib, p.errf("unexpected EOF inside comments")
+				}
+				toks, err := tokenizeLibLine(ln)
+				if err != nil {
+					return lib, p.errf("%v", err)
+				}
+				if indent == 0 && len(toks) == 1 && toks[0] == "end" {
+					p.nextLine()
+					break
+				}
+				if indent == 0 {
+					return lib, p.errf("expected `end` to close comments, got %q", strings.TrimSpace(ln))
+				}
+				if len(toks) == 0 {
+					p.nextLine()
+					continue
+				}
+				if len(toks) == 2 && toks[0] == "line" {
+					lib.Comments = append(lib.Comments, toks[1])
+					p.nextLine()
+					continue
+				}
+				return lib, p.errf("inside comments: expected `line \"MARKER\"` or `end`, got %q", strings.TrimSpace(ln))
 			}
 		case "file":
 			// Two shapes:
@@ -556,6 +624,56 @@ func (p *capyLibParser) parseFunction() (RawFunction, error) {
 // lines are emitted verbatim (preserving their relative indent so
 // nested for/if blocks survive). Trailing whitespace is preserved
 // because backtick literals carry significant whitespace.
+// parseImplBlock reads everything from after the `impl "NAME"
+// "FILE"` header until a matching `end` at indent 0. Recognised
+// directives inside the body:
+//
+//	description "STR"
+//	version     "STR"
+//	default                 # mark as the default impl
+func (p *capyLibParser) parseImplBlock() (RawImpl, error) {
+	var ri RawImpl
+	for {
+		ln, indent, ok := p.peekLine()
+		if !ok {
+			return ri, p.errf("unexpected EOF inside impl")
+		}
+		toks, err := tokenizeLibLine(ln)
+		if err != nil {
+			return ri, p.errf("%v", err)
+		}
+		if indent == 0 && len(toks) == 1 && toks[0] == "end" {
+			p.nextLine()
+			break
+		}
+		if indent == 0 {
+			return ri, p.errf("expected `end` to close impl, got %q", strings.TrimSpace(ln))
+		}
+		if len(toks) == 0 {
+			p.nextLine()
+			continue
+		}
+		switch toks[0] {
+		case "description":
+			if len(toks) < 2 {
+				return ri, p.errf("description requires a string value")
+			}
+			ri.Description = toks[1]
+		case "version":
+			if len(toks) < 2 {
+				return ri, p.errf("version requires a string value")
+			}
+			ri.Version = toks[1]
+		case "default":
+			ri.IsDefault = true
+		default:
+			return ri, p.errf("unknown directive inside impl: %q (allowed: description / version / default)", toks[0])
+		}
+		p.nextLine()
+	}
+	return ri, nil
+}
+
 // parseCommandBlock reads everything from after the
 // `command "NAME"` header line until a matching `end` at indent 0.
 // Currently recognises one header directive — `description "STR"`

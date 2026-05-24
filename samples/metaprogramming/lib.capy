@@ -6,6 +6,10 @@
 # without needing the library author to add new patterns.
 extension md
 
+comments
+    line "#"
+end
+
 function print
     arg literal "print"
     arg capture text string

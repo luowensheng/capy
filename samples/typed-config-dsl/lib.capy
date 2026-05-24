@@ -11,6 +11,10 @@
 
 extension hcl
 
+comments
+    line "#"
+end
+
 # ─── Custom types ─────────────────────────────────────────────────────
 
 type Email

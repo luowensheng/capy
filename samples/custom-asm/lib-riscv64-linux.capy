@@ -3,6 +3,10 @@
 # Same five ops as the x86_64 and arm64 libraries. Encodes the
 # RV64 Linux syscall ABI: number in a7, args in a0-a5, `ecall` to trap.
 extension s
+
+comments
+    line "#"
+end
 output_file "hello.s"
 
 description "Generate RISC-V 64 (RV64I) Linux assembly from the architecture-neutral assembly DSL. Encodes the RV64 Linux syscall ABI: syscall number in a7, args in a0-a5, `ecall` to trap. Same source produces x86_64 (lib-x86_64-linux.capy) or AArch64 (lib-arm64-linux.capy) variants."

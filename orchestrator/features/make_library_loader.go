@@ -143,6 +143,19 @@ func mergeRaw(dst *infra.RawLibrary, src infra.RawLibrary) {
 			dst.Preprocess = append(dst.Preprocess, d)
 		}
 	}
+	// Comments markers are unioned, same rationale as Preprocess.
+	for _, c := range src.Comments {
+		seen := false
+		for _, e := range dst.Comments {
+			if e == c {
+				seen = true
+				break
+			}
+		}
+		if !seen {
+			dst.Comments = append(dst.Comments, c)
+		}
+	}
 }
 
 func mapLibrary(r infra.RawLibrary, tokenize func(string) ([]domain.Token, error)) (domain.Library, error) {
@@ -201,9 +214,21 @@ func mapLibrary(r infra.RawLibrary, tokenize func(string) ([]domain.Token, error
 		FileTemplate: ft,
 		Files:        files,
 		Preprocess:   r.Preprocess,
+		Comments:     r.Comments,
 		Commands:     map[string]*domain.CommandDef{},
 		LibName:      r.LibName,
 		LibVersion:   r.LibVersion,
+		Impls:        map[string]*domain.ImplDef{},
+		DefaultImpl:  r.DefaultImpl,
+	}
+	for name, im := range r.Impls {
+		lib.Impls[name] = &domain.ImplDef{
+			Name:        name,
+			File:        im.File,
+			Description: im.Description,
+			Version:     im.Version,
+			IsDefault:   im.IsDefault,
+		}
 	}
 	if lib.Files == nil {
 		lib.Files = map[string]string{}

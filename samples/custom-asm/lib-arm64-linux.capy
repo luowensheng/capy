@@ -3,6 +3,10 @@
 # Same five ops as the x86_64 and riscv64 libraries. Encodes the
 # AArch64 Linux syscall ABI: number in x8, args in x0-x5, `svc #0`.
 extension s
+
+comments
+    line "#"
+end
 output_file "hello.s"
 
 description "Generate AArch64 (ARM64) Linux assembly from the architecture-neutral assembly DSL. Encodes the AArch64 Linux syscall ABI: syscall number in x8, args in x0-x5, `svc #0` to trap. Same source produces x86_64 (lib-x86_64-linux.capy) or RISC-V (lib-riscv64-linux.capy) variants."

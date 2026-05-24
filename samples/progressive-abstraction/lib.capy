@@ -15,6 +15,10 @@
 # but the user picks how much they want to specify.
 extension html
 
+comments
+    line "#"
+end
+
 context
     title ""
     tagline ""

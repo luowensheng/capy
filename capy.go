@@ -173,7 +173,7 @@ func (l *Library) RunMulti(scriptSrc string) (string, map[string]string, error) 
 		}
 		libToUse = merged
 	}
-	toks, err := l.lex.Tokenize(cleaned)
+	toks, err := l.lex.TokenizeWith(cleaned, libToUse.Comments)
 	if err != nil {
 		return "", nil, err
 	}

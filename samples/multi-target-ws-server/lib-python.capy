@@ -1,5 +1,9 @@
 # Python WebSocket server (websockets library, asyncio).
 extension py
+
+comments
+    line "#"
+end
 output_file "server.py"
 
 description "Generates a Python WebSocket echo server using the `websockets` library on asyncio. Same handler verbs as the Go/Node variants; the library translates them to Python."

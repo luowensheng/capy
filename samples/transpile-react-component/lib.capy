@@ -5,6 +5,10 @@
 # JSX with hooks. Drop in a sibling lib_vue.capy or lib_svelte.capy
 # to retarget without touching the script.
 extension tsx
+
+comments
+    line "#"
+end
 output_file "Counter.tsx"
 
 description "Compact component DSL → React function component with TypeScript hooks + JSX. Source uses abstract widget primitives (heading_for, button_inc, button_toggle, paragraph_when_not); the library translates each to JSX. Drop in a sibling Vue or Svelte library to retarget."

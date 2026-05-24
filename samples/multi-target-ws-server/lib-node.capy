@@ -1,5 +1,9 @@
 # Node.js WebSocket server (ws package).
 extension js
+
+comments
+    line "#"
+end
 output_file "server.js"
 
 description "Generates a Node.js WebSocket echo server using the `ws` package. Same handler verbs as the Go/Python variants; the library translates them to JavaScript."

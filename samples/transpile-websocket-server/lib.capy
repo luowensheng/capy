@@ -3,6 +3,10 @@
 # — never a target-language literal — so the same source survives
 # unchanged when you swap the library to Node, Python, Rust, etc.
 extension go
+
+comments
+    line "#"
+end
 output_file "main.go"
 
 description "Declarative WebSocket-server DSL. Source declares routes, typed fields per message, and abstract handler verbs (broadcast / announce); the library emits a complete runnable Go server with typed JSON dispatch and a broadcast helper. Every platform detail — channel plumbing, JSON envelope, dispatch switch — lives in the library, not the source. Swap the library to retarget another language without touching the script."

@@ -47,6 +47,16 @@ type Library struct {
 	LibName    string // canonical name declared in the manifest
 	LibVersion string // semver string
 
+	// Impls catalogues every implementation the library declared
+	// via `impl "NAME" "FILE" ... end` blocks in its manifest.
+	// When non-empty, the manifest file itself carries no
+	// functions — the real ones live in the selected impl's
+	// file. The CLI picks one per invocation; the loader records
+	// the choice in SelectedImpl.
+	Impls        map[string]*ImplDef
+	DefaultImpl  string // name from the manifest's `default` directive
+	SelectedImpl string // populated by the CLI after selection
+
 	// Preprocess is the list of source-level inclusion directives the
 	// library OPTS INTO. The engine ships zero default preprocessing —
 	// if Preprocess is empty, lines like `@import "x.capy"` are NOT
@@ -66,6 +76,28 @@ type Library struct {
 	// directives that look universal come from the library, not the
 	// engine.
 	Preprocess []string
+
+	// Comments is the list of line-comment markers the library opts
+	// into for its USER SCRIPTS. The engine ships zero default
+	// comment syntax — if Comments is empty, a `#` or `//` at the
+	// start of a script line is NOT a comment; it flows into the
+	// lexer as ordinary characters (and will usually error).
+	//
+	// Declare opt-ins in the manifest:
+	//
+	//   comments
+	//       line "#"
+	//       line "//"
+	//   end
+	//
+	// Each entry is matched at the start of a line (after any
+	// indent) and at any point on a line; everything from the
+	// marker to end-of-line is discarded.
+	//
+	// This declaration ONLY affects user-script lexing. The
+	// manifest itself, including inner-DSL `run:` bodies and
+	// command bodies, always uses `#` (Capy's own config syntax).
+	Comments []string
 }
 
 // FuncDef is a single library-defined source-language construct.

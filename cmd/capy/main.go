@@ -90,16 +90,27 @@ func dispatch(args []string) error {
 	// if the first arg looks like a library name AND resolves on
 	// CAPY_LIBS.
 	if libraryNameLooksValid(args[0]) {
-		libPath, resErr := resolveLib(args[0])
+		// Pre-scan args for --impl <name>; the rest flow to the
+		// command body unchanged.
+		implFlag, rest := extractImplFlag(args[1:])
+
+		implPath, manifestPath, _, resErr := resolveLibWithImpl(args[0], implFlag)
 		if resErr == nil {
-			// `capy <lib> --help` lists declared commands.
-			if len(args) >= 2 && (args[1] == "--help" || args[1] == "-h") {
-				return printLibraryHelp(libPath)
+			// `capy <lib> --help` lists declared commands from the
+			// manifest (visible regardless of which impl is picked).
+			if len(rest) >= 1 && (rest[0] == "--help" || rest[0] == "-h") {
+				return printLibraryHelp(manifestPath)
 			}
-			if len(args) < 2 {
-				return fmt.Errorf("library %q resolved at %s; pick a command (try: run, build, compile, docs)", args[0], libPath)
+			if len(rest) == 0 {
+				return fmt.Errorf("library %q resolved at %s; pick a command (try: run, build, compile, docs)", args[0], manifestPath)
 			}
-			return orchestrator.RunCommand(libPath, args[1], args[2:])
+			return orchestrator.RunCommand(implPath, rest[0], rest[1:])
+		}
+		// Resolution failed because of the impl selector (multiple
+		// impls, no default) — that error is more useful than
+		// "library not found."
+		if resErr != nil && strings.Contains(resErr.Error(), "impl") {
+			return resErr
 		}
 		// First arg didn't resolve as a library. If it also doesn't
 		// exist as a file on disk AND the user supplied a second
@@ -121,6 +132,33 @@ func dispatch(args []string) error {
 	}
 	// Legacy positional form: `capy <library.capy> <script>`.
 	return cmdRun(args)
+}
+
+// extractImplFlag pulls `--impl <name>` (or `--impl=<name>`) out
+// of args. Returns the impl name (empty if not present) and the
+// rest of args with the flag removed. Handles both spellings:
+//
+//	capy chart --impl d3 run …
+//	capy chart --impl=d3 run …
+func extractImplFlag(args []string) (string, []string) {
+	out := make([]string, 0, len(args))
+	impl := ""
+	for i := 0; i < len(args); i++ {
+		a := args[i]
+		if a == "--impl" || a == "-i" {
+			if i+1 < len(args) {
+				impl = args[i+1]
+				i++
+			}
+			continue
+		}
+		if strings.HasPrefix(a, "--impl=") {
+			impl = strings.TrimPrefix(a, "--impl=")
+			continue
+		}
+		out = append(out, a)
+	}
+	return impl, out
 }
 
 // resolveLibFromScriptExt tries to find a library based on a

@@ -1,6 +1,10 @@
 # Capy → TypeScript HTTP client (same DSL as lib_openapi.capy).
 extension ts
 
+comments
+    line "#"
+end
+
 context
     title ""
     endpoints []

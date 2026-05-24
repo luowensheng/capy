@@ -1,6 +1,10 @@
 # Capy → OpenAPI 3.0 YAML.
 extension yaml
 
+comments
+    line "#"
+end
+
 context
     title ""
     version ""

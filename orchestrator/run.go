@@ -99,7 +99,7 @@ func RunMultiWithArgs(libraryPath, scriptPath string, userArgs []string) (string
 			lib.Functions[name] = fn
 		}
 	}
-	toks, err := lex.Tokenize(expanded)
+	toks, err := lex.TokenizeWith(expanded, lib.Comments)
 	if err != nil {
 		return "", nil, err
 	}
@@ -143,7 +143,7 @@ func RunStrings(libraryYAML, libraryPath, scriptSrc string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	toks, err := lex.Tokenize(scriptSrc)
+	toks, err := lex.TokenizeWith(scriptSrc, lib.Comments)
 	if err != nil {
 		return "", err
 	}

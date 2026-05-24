@@ -2,6 +2,7 @@
 
 extension: txt
 output_file: ""
+comments: ["#"]
 
 types:
   Email:

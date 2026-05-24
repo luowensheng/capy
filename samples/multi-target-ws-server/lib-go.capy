@@ -1,5 +1,9 @@
 # Go WebSocket server (net/http + gorilla/websocket).
 extension go
+
+comments
+    line "#"
+end
 output_file "server.go"
 
 description "Generates a Go WebSocket echo server with typed message dispatch. The handler verb (reply / uppercase / close) is mapped to Go code by this library."

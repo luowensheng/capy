@@ -1,6 +1,10 @@
 # A tiny menu DSL — illustrates source-file imports.
 extension md
 
+comments
+    line "#"
+end
+
 # Opt into source-level file inclusion. Without this block the
 # engine recognises NO `@import` / `@include` lines — Capy ships
 # zero default preprocessor grammar; every directive is library-

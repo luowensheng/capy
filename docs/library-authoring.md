@@ -20,6 +20,11 @@ except at least one `function`):
 extension py                          # informational; suggests target extension
 output_file ""                        # if set, capy writes here instead of stdout
 
+comments                              # OPTIONAL — opt user scripts into a
+    line "#"                          # comment syntax. With no `comments`
+end                                   # block, user scripts have NO comments
+                                      # (the engine ships zero defaults).
+
 context                               # initial schema for the accumulated context
     imports []
     classes []
@@ -40,6 +45,34 @@ file_template                         # final-output assembler
     write body
 end
 ```
+
+## Comments — opt-in, not automatic
+
+Capy ships **zero predefined grammar**, and that includes comment
+syntax. Out of the box, a user script that starts a line with `#`
+or `//` will fail to lex with `unexpected character '#'`. To allow
+comments in scripts written against your library, declare them:
+
+```
+comments
+    line "#"
+    line "//"
+end
+```
+
+Each `line "MARKER"` entry adds one line-comment prefix. The marker
+matches at the start of a line (after any indent) and at any point
+on a line; everything from the marker to the end of the line is
+discarded by the lexer.
+
+This declaration only affects **user scripts**. The library
+manifest itself, and inner-DSL `run:`/command bodies, always use
+`#` for comments — that's Capy's own config syntax.
+
+Why opt-in: a library targeting a host language that uses `#` as
+a meaningful character (e.g. CSS selectors, Markdown headings,
+Mermaid flowcharts) might want to forbid `#` comments to avoid
+ambiguity. The grammar belongs to the library, end-to-end.
 
 ## Functions
 

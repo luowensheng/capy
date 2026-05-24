@@ -7,6 +7,10 @@
 #     capy run lib.capy script.capy v2.3.1 us-west-2
 extension yaml
 
+comments
+    line "#"
+end
+
 description "Generate a deployment manifest by combining declared values with env vars, CLI args, and a sibling secrets file."
 
 context

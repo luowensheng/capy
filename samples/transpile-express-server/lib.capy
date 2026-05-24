@@ -4,6 +4,10 @@
 # (method, path) with an ABSTRACT verb; this library translates
 # each verb to an Express handler body. Add a verb = add a case.
 extension js
+
+comments
+    line "#"
+end
 output_file "server.js"
 
 description "Declarative REST-route DSL → runnable Node/Express server. Source uses abstract handler verbs (health_check, list_mock_users, create_user, get_user_by_id); swap the library to retarget Flask, Rails, Gin, etc. without touching the source."

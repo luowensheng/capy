@@ -4,6 +4,10 @@
 # script can target a different runtime (Pygame, Love2D) by swapping
 # the library.
 extension html
+
+comments
+    line "#"
+end
 output_file ""
 
 description "Tiny canvas-game DSL. Declare a canvas size, coloured sprites, key bindings, and per-sprite motion as ABSTRACT verbs (the library translates each verb to a target-language motion routine). Generates a complete runnable HTML5 + JS canvas page; swap the library to retarget Pygame, Love2D, etc."

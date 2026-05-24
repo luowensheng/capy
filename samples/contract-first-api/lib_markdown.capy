@@ -1,6 +1,10 @@
 # Capy → Markdown API documentation (same DSL).
 extension md
 
+comments
+    line "#"
+end
+
 context
     title ""
     version ""
