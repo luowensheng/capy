@@ -11,6 +11,9 @@ package domain
 type Library struct {
 	Extension    string
 	OutputFile   string
+	// Description is a free-form summary of what the library is for —
+	// shown at the top of `capy docs <library>` output.
+	Description  string
 	Functions    map[string]*FuncDef
 	Types        map[string]TypeDef
 	Context      map[string]any // initial context values (lists, maps, scalars)
@@ -34,24 +37,26 @@ type Library struct {
 //	run:      context-mutation snippet (does NOT execute user code)
 //	block:    when set, this function opens a body block closed by Block.Closer
 type FuncDef struct {
-	Name     string
-	Args     []ArgEntry
-	Elements []PatternElement // compiled from Args
-	Template string
-	Block    *BlockSpec
-	Run      string
-	RunAST   *InnerBlock
-	Priority int
+	Name        string
+	Description string // free-form, surfaced by `capy docs`
+	Args        []ArgEntry
+	Elements    []PatternElement // compiled from Args
+	Template    string
+	Block       *BlockSpec
+	Run         string
+	RunAST      *InnerBlock
+	Priority    int
 }
 
 // ArgEntry is a single args-list entry with an explicit Kind discriminator.
 // Kind = "literal" → only Value is meaningful.
 // Kind = "capture" → only Name and Type are meaningful.
 type ArgEntry struct {
-	Kind  string // "literal" | "capture"
-	Value string
-	Name  string
-	Type  string
+	Kind        string // "literal" | "capture"
+	Value       string
+	Name        string
+	Type        string
+	Description string // optional, only meaningful when Kind=capture
 }
 
 // BlockSpec marks a function as a block opener. There are two modes:
@@ -81,8 +86,9 @@ type PatternElement struct {
 // TypeDef is a library-defined argument type. Three optional fields applied
 // in order at validation time: Base → Pattern → Options.
 type TypeDef struct {
-	Name    string
-	Base    string   // any | string | int | float | bool
-	Pattern string   // optional regex on the value's string form
-	Options []string // optional enum membership
+	Name        string
+	Description string   // optional, surfaced by `capy docs`
+	Base        string   // any | string | int | float | bool
+	Pattern     string   // optional regex on the value's string form
+	Options     []string // optional enum membership
 }

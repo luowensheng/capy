@@ -175,6 +175,7 @@
         <div class="left-tabs" id="left-tabs">
           <button class="left-tab active" data-target="script">YOUR SOURCE <em>script.capy</em></button>
           <button class="left-tab" data-target="library">LIBRARY <em>lib.capy</em></button>
+          <button class="left-tab" data-target="docs">DOCS <em>auto-generated</em></button>
         </div>
       </div>
       <div class="editor-wrap" id="script-wrap">
@@ -183,6 +184,9 @@
       <div class="editor-wrap" id="library-wrap" style="display: none;">
         <textarea id="library-editor" class="editor" spellcheck="false"
                   placeholder="Loading library…"></textarea>
+      </div>
+      <div class="editor-wrap" id="docs-wrap" style="display: none;">
+        <iframe id="docs-frame" sandbox="allow-same-origin" style="width:100%;height:100%;border:0;background:white;" title="Auto-generated library docs"></iframe>
       </div>
     </section>
     <section class="pane">
@@ -512,18 +516,62 @@
       if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); run(); }
     });
 
-    // Tab toggle for the left pane (Script vs Library).
+    // Tab toggle for the left pane (Script / Library / Docs).
     for (const btn of document.querySelectorAll(".left-tab")) {
       btn.addEventListener("click", () => {
-        const target = btn.dataset.target; // "script" | "library"
+        const target = btn.dataset.target; // "script" | "library" | "docs"
         for (const b of document.querySelectorAll(".left-tab")) {
           b.classList.toggle("active", b === btn);
         }
-        $("script-wrap").style.display = target === "script" ? "" : "none";
+        $("script-wrap").style.display  = target === "script"  ? "" : "none";
         $("library-wrap").style.display = target === "library" ? "" : "none";
-        // Focus the visible textarea so the user can start typing immediately.
-        ($(target + "-editor")).focus();
+        $("docs-wrap").style.display    = target === "docs"    ? "" : "none";
+        if (target === "docs") {
+          renderDocs();
+        } else if (target === "script" || target === "library") {
+          // Focus the visible textarea so the user can start typing immediately.
+          ($(target + "-editor")).focus();
+        }
       });
+    }
+
+    // Render Markdown docs for the currently-loaded library into the
+    // docs iframe via the wasm-exposed capyDocs() helper. Markdown is
+    // parsed by marked.js (already loaded for the output preview).
+    function renderDocs() {
+      if (typeof window.capyDocs !== "function") {
+        $("docs-frame").srcdoc = "<p style='padding:24px;color:#666;font-family:sans-serif'>Loading…</p>";
+        return;
+      }
+      const lib = $("library-editor").value;
+      let mdOrError;
+      try {
+        const res = window.capyDocs(lib, "auto");
+        if (!res.ok) {
+          mdOrError = `**Could not parse the library.**\n\n${res.error || ""}\n\n` +
+                       (res.hint ? `*Hint: ${res.hint}*` : "");
+        } else {
+          mdOrError = res.docs || "_(empty library)_";
+        }
+      } catch (e) {
+        mdOrError = "**Error**: " + String(e);
+      }
+      const html = (window.marked ? window.marked.parse(mdOrError) : `<pre>${escapeHTML(mdOrError)}</pre>`);
+      $("docs-frame").srcdoc = `<!doctype html><html><head><meta charset="utf-8"><style>
+        body { margin:0; padding: 24px 32px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; color: #1f2328; line-height: 1.55; max-width: 760px; }
+        h1, h2, h3 { line-height: 1.25; margin-top: 1.4em; }
+        h1 { font-size: 26px; border-bottom: 1px solid #d0d7de; padding-bottom: 0.3em; }
+        h2 { font-size: 20px; border-bottom: 1px solid #d0d7de; padding-bottom: 0.3em; margin-top: 28px; }
+        h3 { font-size: 16px; color: #0969da; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+        code { background: #f6f8fa; padding: 0.2em 0.4em; border-radius: 4px; font-size: 0.88em; }
+        pre { background: #f6f8fa; padding: 12px 14px; border-radius: 6px; overflow: auto; }
+        pre code { background: transparent; padding: 0; }
+        table { border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+        th, td { border: 1px solid #d0d7de; padding: 6px 10px; vertical-align: top; }
+        th { background: #f6f8fa; text-align: left; }
+        em { color: #57606a; }
+        blockquote { color:#57606a; border-left:4px solid #d0d7de; padding:0 1em; margin:1em 0; }
+      </style></head><body>${html}</body></html>`;
     }
 
     (async function bootstrap() {

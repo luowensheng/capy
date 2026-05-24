@@ -98,6 +98,29 @@ func (p *capyLibParser) nextLine() (string, int, bool) {
 	return "", 0, false
 }
 
+// isIdent reports whether s looks like a bareword identifier — used to
+// distinguish a TYPE token from a trailing description string in
+// `arg capture NAME TYPE [DESC]`. Our tokenizer already strips quotes
+// from string tokens, so a description like "An email address" arrives
+// here as a single token with spaces in it (which fails isIdent).
+func isIdent(s string) bool {
+	if s == "" {
+		return false
+	}
+	for i, c := range s {
+		if i == 0 {
+			if !(c == '_' || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) {
+				return false
+			}
+			continue
+		}
+		if !(c == '_' || (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) {
+			return false
+		}
+	}
+	return true
+}
+
 func indentOf(s string) int {
 	n := 0
 	for _, c := range s {
@@ -149,6 +172,12 @@ func (p *capyLibParser) parseTop() (RawLibrary, error) {
 				return lib, p.errf("output_file requires a value")
 			}
 			lib.OutputFile = tokens[1]
+		case "description":
+			p.nextLine()
+			if len(tokens) < 2 {
+				return lib, p.errf("description requires a string")
+			}
+			lib.Description = tokens[1]
 		case "function":
 			if len(tokens) < 2 {
 				return lib, p.errf("function requires a name")
@@ -263,6 +292,12 @@ func (p *capyLibParser) parseFunction() (RawFunction, error) {
 		}
 
 		switch tokens[0] {
+		case "description":
+			p.nextLine()
+			if len(tokens) != 2 {
+				return fn, p.errf("description requires one string argument")
+			}
+			fn.Description = tokens[1]
 		case "priority":
 			p.nextLine()
 			if len(tokens) != 2 {
@@ -280,17 +315,39 @@ func (p *capyLibParser) parseFunction() (RawFunction, error) {
 			}
 			switch tokens[1] {
 			case "literal":
-				if len(tokens) != 3 {
-					return fn, p.errf("arg literal requires a value")
-				}
-				fn.Args = append(fn.Args, RawArg{Kind: "literal", Value: tokens[2]})
-			case "capture":
+				// `arg literal "TEXT"` or `arg literal "TEXT" "DESCRIPTION"`
 				if len(tokens) < 3 || len(tokens) > 4 {
-					return fn, p.errf("arg capture NAME [TYPE]")
+					return fn, p.errf("arg literal requires a value (and optional description string)")
+				}
+				ra := RawArg{Kind: "literal", Value: tokens[2]}
+				if len(tokens) == 4 {
+					ra.Description = tokens[3]
+				}
+				fn.Args = append(fn.Args, ra)
+			case "capture":
+				// `arg capture NAME [TYPE] [DESCRIPTION]`
+				if len(tokens) < 3 || len(tokens) > 5 {
+					return fn, p.errf("arg capture NAME [TYPE] [DESCRIPTION]")
 				}
 				a := RawArg{Kind: "capture", Name: tokens[2], Type: "any"}
-				if len(tokens) == 4 {
-					a.Type = tokens[3]
+				if len(tokens) >= 4 {
+					// 4th token is TYPE unless it looks like a description
+					// (starts with a capital letter or contains spaces). Since
+					// our tokenizer already unquotes strings, we differentiate
+					// by checking if it looks like an ident.
+					t := tokens[3]
+					if isIdent(t) {
+						a.Type = t
+						if len(tokens) == 5 {
+							a.Description = tokens[4]
+						}
+					} else {
+						// 4th token is the description; type stays "any"
+						a.Description = t
+						if len(tokens) == 5 {
+							return fn, p.errf("arg capture: TYPE must precede DESCRIPTION")
+						}
+					}
 				}
 				fn.Args = append(fn.Args, a)
 			default:
@@ -556,6 +613,12 @@ func (p *capyLibParser) parseType() (RawType, error) {
 			continue
 		}
 		switch tokens[0] {
+		case "description":
+			p.nextLine()
+			if len(tokens) != 2 {
+				return td, p.errf("description requires one string argument")
+			}
+			td.Description = tokens[1]
 		case "base":
 			p.nextLine()
 			if len(tokens) != 2 {

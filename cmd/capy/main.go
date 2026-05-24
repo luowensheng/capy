@@ -39,6 +39,8 @@ func dispatch(args []string) error {
 		return cmdRun(args[1:])
 	case "check":
 		return cmdCheck(args[1:])
+	case "docs":
+		return cmdDocs(args[1:])
 	case "init":
 		return cmdInit(args[1:])
 	case "version", "--version", "-v":

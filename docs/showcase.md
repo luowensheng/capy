@@ -282,6 +282,105 @@ prototype DSL extensions before promoting them to the library.
 
 ---
 
+## 📖 Auto-generated library reference docs
+
+Annotate functions, args, and types with `description "..."` and
+`capy docs lib.capy` produces a Markdown reference. The same
+renderer powers the **DOCS** tab in the playground — every library
+ships with browsable, regenerable documentation.
+
+=== "Annotated library (excerpt)"
+
+    ```
+    extension html
+    description "Recipe DSL for home cooks. Six keywords produce a
+                 polished printable HTML recipe card."
+
+    function recipe
+        description "Open a new recipe with a title. Wraps the rest
+                     of the file; closed by `end`."
+        arg literal "recipe"
+        arg capture title string  "Display name of the dish, shown as the H1."
+        block_closer end
+        template_str ""
+        run:
+            set context.title title
+    end
+
+    function ingredient
+        description "Add one ingredient. Listed in a two-column grid."
+        arg literal "ingredient"
+        arg capture name string  "Ingredient name, e.g. `\"olive oil\"`."
+        arg capture qty string   "Quantity with unit, e.g. `\"3/4 cup\"`."
+        template_str ""
+        run:
+            append context.ingredients {name: name, qty: qty}
+    end
+    ```
+
+=== "`capy docs samples/recipe-card/lib.capy`"
+
+    ````markdown
+    # Library reference (→ `.html`)
+
+    Recipe DSL for home cooks. Six keywords produce a polished
+    printable HTML recipe card.
+
+    | | |
+    |---|---|
+    | **Output extension** | `.html` |
+    | **Functions** | 7 |
+    | **Types** | 0 |
+
+    ## Functions
+
+    ### `recipe`
+
+    Open a new recipe with a title. Wraps the rest of the file;
+    closed by `end`.
+
+    ```
+    recipe <title>
+    ```
+
+    | Argument | Type | Description |
+    |---|---|---|
+    | `title` | `string` | Display name of the dish, shown as the H1. |
+
+    **Opens an indented block** — body runs until `end`.
+
+    ### `ingredient`
+
+    Add one ingredient. Listed in a two-column grid.
+
+    ```
+    ingredient <name> <qty>
+    ```
+
+    | Argument | Type | Description |
+    |---|---|---|
+    | `name` | `string` | Ingredient name, e.g. `"olive oil"`. |
+    | `qty` | `string` | Quantity with unit, e.g. `"3/4 cup"`. |
+    ````
+
+=== "Why this matters"
+
+    - **Onboarding** — new contributors read the auto-generated docs
+      and know every function the team uses without grep-ing the
+      library file.
+    - **CI gate** — fail the build if `capy docs lib.capy` doesn't
+      match the committed `LIB_REFERENCE.md`. Docs stay in lock-step
+      with implementation.
+    - **AI agents** — handing the agent a typed library + a
+      human-readable reference improves call-site accuracy.
+    - **Marketing** — "50-keyword schema DSL" lands harder when each
+      keyword has a one-sentence explanation a non-expert can read.
+
+    See [Auto-generated library docs](library-documentation.md) for
+    the full pattern + CI workflow.
+
+---
+
 ## 🩺 Errors that tell you how to fix them
 
 Every Capy error names what went wrong, hints at how to fix it,

@@ -19,6 +19,7 @@ import (
 type RawLibrary struct {
 	Extension    string                 `yaml:"extension"`
 	OutputFile   string                 `yaml:"output_file"`
+	Description  string                 `yaml:"description,omitempty"`
 	Types        map[string]RawType     `yaml:"types"`
 	Context      map[string]interface{} `yaml:"context"`
 	Functions    map[string]RawFunction `yaml:"functions"`
@@ -34,11 +35,12 @@ type RawLibrary struct {
 }
 
 type RawFunction struct {
-	Args     []RawArg  `yaml:"args"`
-	Template string    `yaml:"template"`
-	Block    *RawBlock `yaml:"block"`
-	Run      string    `yaml:"run"`
-	Priority int       `yaml:"priority"`
+	Description string    `yaml:"description,omitempty"`
+	Args        []RawArg  `yaml:"args"`
+	Template    string    `yaml:"template"`
+	Block       *RawBlock `yaml:"block"`
+	Run         string    `yaml:"run"`
+	Priority    int       `yaml:"priority"`
 }
 
 type RawBlock struct {
@@ -53,16 +55,18 @@ type RawBlock struct {
 //	kind: literal  → value: "TEXT"
 //	kind: capture  → name: NAME, type: TYPE
 type RawArg struct {
-	Kind  string `yaml:"kind"`
-	Value string `yaml:"value,omitempty"`
-	Name  string `yaml:"name,omitempty"`
-	Type  string `yaml:"type,omitempty"`
+	Kind        string `yaml:"kind"`
+	Value       string `yaml:"value,omitempty"`
+	Name        string `yaml:"name,omitempty"`
+	Type        string `yaml:"type,omitempty"`
+	Description string `yaml:"description,omitempty"`
 }
 
 type RawType struct {
-	Base    string   `yaml:"base"`
-	Pattern string   `yaml:"pattern"`
-	Options []string `yaml:"options"`
+	Description string   `yaml:"description,omitempty"`
+	Base        string   `yaml:"base"`
+	Pattern     string   `yaml:"pattern"`
+	Options     []string `yaml:"options"`
 }
 
 type YamlParser struct{}

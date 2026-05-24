@@ -86,6 +86,7 @@ nav:
     - Errors & debugging: errors-and-debugging.md
     - Transpiler patterns: transpiler-patterns.md
     - CLI reference: cli.md
+    - Auto-generated library docs: library-documentation.md
     - Feature list: features.md
 
   # Integrate — connect Capy to other systems.

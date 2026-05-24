@@ -139,6 +139,15 @@ func (l *Library) Extension() string { return l.lib.Extension }
 // OutputFile reports the library's optional `output_file:` field.
 func (l *Library) OutputFile() string { return l.lib.OutputFile }
 
+// RenderLibraryDocs returns Markdown reference documentation for the
+// given Library — the same format `capy docs <lib>` writes on the
+// CLI. Exposed at the top-level package so the wasm bundle and any
+// embedded Go program can render docs without depending on the
+// internal `domain` import.
+func RenderLibraryDocs(lib *Library) string {
+	return domain.RenderLibraryDocs(lib.lib)
+}
+
 // FunctionNames returns the sorted list of function names declared by
 // the library. Useful for diagnostics and auto-discovery.
 func (l *Library) FunctionNames() []string {

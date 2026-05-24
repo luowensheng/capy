@@ -33,11 +33,51 @@ var version = "dev"
 
 func main() {
 	js.Global().Set("capyRun", js.FuncOf(capyRun))
+	js.Global().Set("capyDocs", js.FuncOf(capyDocs))
 	js.Global().Set("capyVersion", js.FuncOf(func(this js.Value, args []js.Value) any {
 		return version
 	}))
 	// Block forever so the module stays alive for callbacks.
 	<-make(chan struct{})
+}
+
+// capyDocs(libSrc, format) → { ok, docs } or { ok:false, error, hint }
+//
+// Renders Markdown reference documentation for the supplied library.
+// Same engine path as `capy docs <library>` on the CLI.
+func capyDocs(this js.Value, args []js.Value) any {
+	if len(args) < 1 {
+		return errResult("capyDocs expects (libSrc [, format])", "")
+	}
+	libSrc := args[0].String()
+	format := "auto"
+	if len(args) >= 2 {
+		format = args[1].String()
+	}
+	if format == "" || format == "auto" {
+		if sniffCapy(libSrc) {
+			format = "capy"
+		} else {
+			format = "yaml"
+		}
+	}
+	var lib *capy.Library
+	var err error
+	switch format {
+	case "capy":
+		lib, err = capy.NewLibrary(libSrc)
+	case "yaml":
+		lib, err = capy.NewLibraryYAML(libSrc)
+	default:
+		return errResult("unknown format: "+format, `use "auto" / "yaml" / "capy"`)
+	}
+	if err != nil {
+		return errResultFromErr(err, libSrc)
+	}
+	return js.ValueOf(map[string]any{
+		"ok":   true,
+		"docs": capy.RenderLibraryDocs(lib),
+	})
 }
 
 // capyRun(libSrc, format, scriptSrc) → result object.

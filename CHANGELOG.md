@@ -8,6 +8,43 @@ may break between minor versions** (see `CONTRIBUTING.md`).
 
 ## [Unreleased]
 
+## [0.13.0] — 2026-05-24
+
+Auto-generated library reference documentation. Library authors can
+annotate functions, args, types, and the library itself with
+`description "..."` directives; `capy docs <library>` produces
+Markdown reference docs ready to commit alongside the library.
+
+### Added
+
+- **`description` directives** at four scopes:
+  - Library top-level: `description "..."`
+  - `type NAME ... end` body
+  - `function NAME ... end` body
+  - `arg literal "TEXT" "DESC"` and `arg capture NAME TYPE "DESC"`
+- **`capy docs <library> [--out path]`** CLI subcommand that renders
+  Markdown reference documentation (title, library description,
+  metadata strip, types, functions with signatures + arg tables).
+- **`capy.RenderLibraryDocs(lib)`** top-level Go API for programs
+  that ship docs alongside generated code.
+- **`window.capyDocs(libSrc, format)`** wasm binding so the
+  browser playground can render docs for any loaded library.
+- **Playground DOCS tab** — third tab in the left pane renders
+  Markdown via marked.js into a sandboxed iframe, updates as you
+  edit the library.
+- **`samples/recipe-card/`** annotated with descriptions on every
+  function and arg, plus committed `LIB_REFERENCE.md` as a
+  side-by-side example.
+- **`docs/library-documentation.md`** — full pattern doc covering
+  the annotation surface, three ways to surface the docs (CLI,
+  embedded Go, playground), tips, and a suggested CI workflow.
+
+### Changed
+
+- DTO / domain / loader threaded `Description` through `Library`,
+  `FuncDef`, `ArgEntry`, `TypeDef`. YAML libraries gain matching
+  `description:` keys.
+
 ## [0.12.0] — 2026-05-24
 
 Progressive abstraction. One Capy library can expose primitives at

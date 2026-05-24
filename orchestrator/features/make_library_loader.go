@@ -134,6 +134,7 @@ func mapLibrary(r infra.RawLibrary, tokenize func(string) ([]domain.Token, error
 	lib := domain.Library{
 		Extension:    r.Extension,
 		OutputFile:   r.OutputFile,
+		Description:  r.Description,
 		Functions:    map[string]*domain.FuncDef{},
 		Types:        map[string]domain.TypeDef{},
 		Context:      r.Context,
@@ -152,10 +153,11 @@ func mapLibrary(r infra.RawLibrary, tokenize func(string) ([]domain.Token, error
 
 	for name, t := range r.Types {
 		lib.Types[name] = domain.TypeDef{
-			Name:    name,
-			Base:    t.Base,
-			Pattern: t.Pattern,
-			Options: t.Options,
+			Name:        name,
+			Description: t.Description,
+			Base:        t.Base,
+			Pattern:     t.Pattern,
+			Options:     t.Options,
 		}
 	}
 
@@ -223,12 +225,13 @@ func compileFunction(name string, f infra.RawFunction, tokenize func(string) ([]
 	elements := compileElements(args)
 
 	fd := &domain.FuncDef{
-		Name:     name,
-		Args:     args,
-		Elements: elements,
-		Template: f.Template,
-		Run:      f.Run,
-		Priority: f.Priority,
+		Name:        name,
+		Description: f.Description,
+		Args:        args,
+		Elements:    elements,
+		Template:    f.Template,
+		Run:         f.Run,
+		Priority:    f.Priority,
 	}
 	if f.Block != nil {
 		fd.Block = &domain.BlockSpec{Closer: f.Block.Closer, Open: f.Block.Open, Close: f.Block.Close}
@@ -260,7 +263,7 @@ func compileArgs(raws []infra.RawArg, fname string) ([]domain.ArgEntry, error) {
 			if r.Name != "" || r.Type != "" {
 				return nil, fmt.Errorf("function %q arg %d: kind=literal cannot have name/type", fname, i)
 			}
-			out = append(out, domain.ArgEntry{Kind: "literal", Value: r.Value})
+			out = append(out, domain.ArgEntry{Kind: "literal", Value: r.Value, Description: r.Description})
 		case "capture":
 			if r.Name == "" {
 				return nil, fmt.Errorf("function %q arg %d: kind=capture requires name", fname, i)
@@ -272,7 +275,7 @@ func compileArgs(raws []infra.RawArg, fname string) ([]domain.ArgEntry, error) {
 			if t == "" {
 				t = "any"
 			}
-			out = append(out, domain.ArgEntry{Kind: "capture", Name: r.Name, Type: t})
+			out = append(out, domain.ArgEntry{Kind: "capture", Name: r.Name, Type: t, Description: r.Description})
 		default:
 			return nil, fmt.Errorf("function %q arg %d: unknown or missing kind %q (must be \"literal\" or \"capture\")", fname, i, r.Kind)
 		}

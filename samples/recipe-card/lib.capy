@@ -2,6 +2,8 @@
 # Designed for home cooks: no programming concepts required.
 extension html
 
+description "Recipe DSL for home cooks. Six keywords (recipe, serves, time, ingredient, step, tip) produce a polished printable HTML recipe card. Anyone can use it within five minutes — no programming background required."
+
 context
     title ""
     serves ""
@@ -12,8 +14,9 @@ context
 end
 
 function recipe
+    description "Open a new recipe with a title. Wraps the rest of the file; closed by `end`."
     arg literal "recipe"
-    arg capture title string
+    arg capture title string  "Display name of the dish, shown as the H1."
     block_closer end
     template_str ""
     run:
@@ -21,41 +24,46 @@ function recipe
 end
 
 function serves
+    description "How many portions the recipe makes."
     arg literal "serves"
-    arg capture n any
+    arg capture n any  "Number of servings (bare number, e.g. `serves 8`)."
     template_str ""
     run:
         set context.serves n
 end
 
 function time
+    description "Total cooking time, shown in the meta line under the title."
     arg literal "time"
-    arg capture t string
+    arg capture t string  "Free-form time string, e.g. `\"45 minutes\"`."
     template_str ""
     run:
         set context.time t
 end
 
 function ingredient
+    description "Add one ingredient to the recipe. Listed in a two-column grid above the method."
     arg literal "ingredient"
-    arg capture name string
-    arg capture qty string
+    arg capture name string  "Ingredient name, e.g. `\"olive oil\"`."
+    arg capture qty string   "Quantity with unit, e.g. `\"3/4 cup\"`."
     template_str ""
     run:
         append context.ingredients {name: name, qty: qty}
 end
 
 function step
+    description "Add one numbered step to the method. Render in source order."
     arg literal "step"
-    arg capture text string
+    arg capture text string  "What the cook should do at this step."
     template_str ""
     run:
         append context.steps text
 end
 
 function tip
+    description "Optional tip box highlighted at the bottom of the card. Multiple tips render as separate boxes."
     arg literal "tip"
-    arg capture text string
+    arg capture text string  "Suggestion, variation, or chef's note."
     template_str ""
     run:
         append context.tips text
