@@ -75,6 +75,23 @@ event handlers. 226 lines of working JS generated.</p>
 
 <div class="show-card" markdown>
 <div class="show-card-head" markdown>
+<div class="show-card-eyebrow">3D</div>
+<h3>Three.js scene — declarative 3D</h3>
+<p>11 declarative lines (cube / sphere / torus / cone / plane with
+abstract motion verbs) → a runnable HTML page that imports three.js
+from a CDN and animates the scene. Drag to orbit.</p>
+</div>
+<div class="canvas" markdown>
+<iframe src="assets/demos/threejs.html" sandbox="allow-scripts allow-same-origin" style="width: 100%; max-width: 480px; height: 320px; border: 1px solid #333; border-radius: 6px; background: #0a0a14;" title="Three.js scene"></iframe>
+</div>
+<div class="footer">
+<a href="playground/">Try it in the playground →</a>
+<code>samples/transpile-threejs</code>
+</div>
+</div>
+
+<div class="show-card" markdown>
+<div class="show-card-head" markdown>
 <div class="show-card-eyebrow">EVERYDAY</div>
 <h3>Recipe card — printable HTML</h3>
 <p>A home cook writes 6 keywords (`recipe`, `serves`, `ingredient`,

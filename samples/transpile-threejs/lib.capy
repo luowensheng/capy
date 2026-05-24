@@ -1,0 +1,238 @@
+# Tiny three.js scene DSL → a fully-runnable HTML page that pulls
+# three.js from a CDN and animates the declared objects.
+#
+# Source uses ABSTRACT motion verbs (spin, orbit, bob, pulse, none) so
+# the same scene script can target a different renderer (Babylon, A-Frame,
+# raw WebGL) just by swapping the library.
+
+extension html
+output_file ""
+
+description "Tiny three.js scene DSL. Declare a scene title, camera distance, ambient + directional lights, and coloured primitives (cube, sphere, torus, cone, plane) with abstract motion verbs (spin, orbit, bob, pulse, none). Generates a complete runnable HTML page that imports three.js from a CDN, sets up a renderer + camera + lights, and animates each mesh in a requestAnimationFrame loop. Swap the library to retarget Babylon.js, A-Frame, or raw WebGL — your scene script never changes."
+
+context
+    title "Three.js scene"
+    camera 6
+    background "#0a0a14"
+    ambient {color: "#ffffff", intensity: 0.4}
+    lights []
+    meshes []
+end
+
+function scene
+    description "Set the scene title (used as the page <title> + heading)."
+    arg literal "scene"
+    arg capture title any
+    set context.title title
+end
+
+function camera
+    description "Distance of the perspective camera from the origin (along +Z)."
+    arg literal "camera"
+    arg capture distance any
+    set context.camera distance
+end
+
+function background
+    description "Renderer clear-color, as a CSS hex string."
+    arg literal "background"
+    arg capture color any
+    set context.background color
+end
+
+function ambient
+    description "Ambient light: color + intensity. One per scene."
+    arg literal "ambient"
+    arg capture color any
+    arg capture intensity any
+    set context.ambient {color: color, intensity: intensity}
+end
+
+function light
+    description "Directional light: color, intensity, x, y, z."
+    arg literal "light"
+    arg capture color any
+    arg capture intensity any
+    arg capture x any
+    arg capture y any
+    arg capture z any
+    append context.lights {color: color, intensity: intensity, x: x, y: y, z: z}
+end
+
+function cube
+    description "Coloured cube: name color x y z motion. Motion is one of spin, orbit, bob, pulse, none."
+    arg literal "cube"
+    arg capture name ident
+    arg capture color any
+    arg capture x any
+    arg capture y any
+    arg capture z any
+    arg capture motion ident
+    append context.meshes {kind: "cube", name: name, color: color, x: x, y: y, z: z, motion: motion}
+end
+
+function sphere
+    description "Coloured sphere: name color x y z motion."
+    arg literal "sphere"
+    arg capture name ident
+    arg capture color any
+    arg capture x any
+    arg capture y any
+    arg capture z any
+    arg capture motion ident
+    append context.meshes {kind: "sphere", name: name, color: color, x: x, y: y, z: z, motion: motion}
+end
+
+function torus
+    description "Coloured torus (ring): name color x y z motion."
+    arg literal "torus"
+    arg capture name ident
+    arg capture color any
+    arg capture x any
+    arg capture y any
+    arg capture z any
+    arg capture motion ident
+    append context.meshes {kind: "torus", name: name, color: color, x: x, y: y, z: z, motion: motion}
+end
+
+function cone
+    description "Coloured cone: name color x y z motion."
+    arg literal "cone"
+    arg capture name ident
+    arg capture color any
+    arg capture x any
+    arg capture y any
+    arg capture z any
+    arg capture motion ident
+    append context.meshes {kind: "cone", name: name, color: color, x: x, y: y, z: z, motion: motion}
+end
+
+function plane
+    description "Coloured flat plane (good for ground): name color x y z motion."
+    arg literal "plane"
+    arg capture name ident
+    arg capture color any
+    arg capture x any
+    arg capture y any
+    arg capture z any
+    arg capture motion ident
+    append context.meshes {kind: "plane", name: name, color: color, x: x, y: y, z: z, motion: motion}
+end
+
+file_template:
+    <!doctype html>
+    <html lang="en">
+    <head>
+      <meta charset="utf-8" />
+      <title>{{ .context.title | unquote }}</title>
+      <style>
+        html, body { margin: 0; height: 100%; background: {{ .context.background | unquote }}; color: #eee; font-family: system-ui, sans-serif; overflow: hidden; }
+        #title { position: fixed; top: 10px; left: 12px; font-size: 13px; opacity: 0.75; pointer-events: none; }
+        canvas { display: block; }
+      </style>
+    </head>
+    <body>
+      <div id="title">{{ .context.title | unquote }} — drag to orbit</div>
+      <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+      }
+      </script>
+      <script type="module">
+        import * as THREE from "three";
+        import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color({{ .context.background | toQuoted }});
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 1.5, {{ .context.camera }});
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+
+        // Ambient light
+        scene.add(new THREE.AmbientLight({{ .context.ambient.color | toQuoted }}, {{ .context.ambient.intensity }}));
+
+        // Directional lights
+    {{- range .context.lights }}
+        {
+          const L = new THREE.DirectionalLight({{ .color | toQuoted }}, {{ .intensity }});
+          L.position.set({{ .x }}, {{ .y }}, {{ .z }});
+          scene.add(L);
+        }
+    {{- end }}
+
+        // Meshes
+        const meshes = {};
+    {{- range .context.meshes }}
+        {
+          let geo;
+          {{- if eq .kind "cube" }}
+          geo = new THREE.BoxGeometry(1, 1, 1);
+          {{- else if eq .kind "sphere" }}
+          geo = new THREE.SphereGeometry(0.6, 32, 32);
+          {{- else if eq .kind "torus" }}
+          geo = new THREE.TorusGeometry(0.55, 0.18, 16, 64);
+          {{- else if eq .kind "cone" }}
+          geo = new THREE.ConeGeometry(0.55, 1.0, 32);
+          {{- else if eq .kind "plane" }}
+          geo = new THREE.PlaneGeometry(4, 4);
+          {{- end }}
+          const mat = new THREE.MeshStandardMaterial({ color: {{ .color | toQuoted }}, roughness: 0.5, metalness: 0.1 });
+          const m = new THREE.Mesh(geo, mat);
+          m.position.set({{ .x }}, {{ .y }}, {{ .z }});
+          {{- if eq .kind "plane" }}
+          m.rotation.x = -Math.PI / 2;
+          {{- end }}
+          m.userData = { motion: {{ .motion | toQuoted }}, t0: { x: {{ .x }}, y: {{ .y }}, z: {{ .z }} } };
+          scene.add(m);
+          meshes[{{ .name | toQuoted }}] = m;
+        }
+    {{- end }}
+
+        window.addEventListener("resize", () => {
+          camera.aspect = window.innerWidth / window.innerHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        const clock = new THREE.Clock();
+        function tick() {
+          const t = clock.getElapsedTime();
+          for (const name in meshes) {
+            const m = meshes[name];
+            const motion = m.userData.motion;
+            const t0 = m.userData.t0;
+            if (motion === "spin") {
+              m.rotation.x += 0.01;
+              m.rotation.y += 0.015;
+            } else if (motion === "orbit") {
+              const r = Math.hypot(t0.x, t0.z) || 2;
+              const phase = Math.atan2(t0.z, t0.x);
+              m.position.x = r * Math.cos(t * 0.6 + phase);
+              m.position.z = r * Math.sin(t * 0.6 + phase);
+              m.rotation.y += 0.02;
+            } else if (motion === "bob") {
+              m.position.y = t0.y + Math.sin(t * 2) * 0.3;
+            } else if (motion === "pulse") {
+              const s = 1 + Math.sin(t * 3) * 0.15;
+              m.scale.set(s, s, s);
+            }
+          }
+          controls.update();
+          renderer.render(scene, camera);
+          requestAnimationFrame(tick);
+        }
+        tick();
+      </script>
+    </body>
+    </html>

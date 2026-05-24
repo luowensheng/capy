@@ -58,6 +58,10 @@ var CURATED = []struct {
 	{"scene-dsl", "Games", "🎬 Scene description",
 		"High-level scene declaration → rendering-engine setup.",
 		"Add new entities.", "", ""},
+	// ─── 3D ────────────────────────────────────────────────────────
+	{"transpile-threejs", "3D", "🌐 Three.js scene",
+		"11 declarative lines → a runnable HTML page that imports three.js from a CDN and animates cubes, spheres, torus, cone, and plane with abstract motion verbs (spin / orbit / bob / pulse). Drag to orbit, scroll to zoom.",
+		"Add another `sphere foo \"#color\" x y z orbit` line, or change `motion` verbs on existing meshes.", "", ""},
 	// ─── Web / UI ──────────────────────────────────────────────────
 	{"transpile-landing-page", "Web", "🌐 Landing page",
 		"Marketing landing page DSL → polished HTML.",

@@ -1,0 +1,17 @@
+# A complete animated 3D scene in 11 declarative lines.
+# No JavaScript here — every motion is an ABSTRACT verb the library
+# translates to three.js.
+
+scene "Capy ✕ three.js"
+camera 7
+background "#0a0a14"
+
+ambient "#ffffff" 0.45
+light   "#ffffff" 0.9  5  6  3
+light   "#88aaff" 0.4 -4  2 -3
+
+cube   hero    "#4dd6c1"   0  0  0  spin
+sphere planet  "#f6a05a"  -2.5  1  0  orbit
+torus  ring    "#fdd835"   2.5 -0.6 0  spin
+cone   beacon  "#b388ff"   0   1.8 -2 bob
+plane  floor   "#1f1f2e"   0  -1.2 0  none
