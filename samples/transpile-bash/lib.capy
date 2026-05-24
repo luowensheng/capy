@@ -1,0 +1,32 @@
+# Script DSL → defensive bash with error handling + logging.
+extension sh
+
+comments
+    line "#"
+end
+
+function header
+    arg literal "script"
+    arg capture name any
+    write `#!/usr/bin/env bash
+# script: ${name}
+set -euo pipefail
+log() { printf "[%s] %s\\n" "$(date +%T)" "$*"; }
+`
+end
+
+function step
+    arg literal "step"
+    arg capture name any
+    arg capture cmd any
+    write `log step: ${name}
+${cmd}
+`
+end
+
+function guard
+    arg literal "require"
+    arg capture cmd ident
+    write `command -v ${cmd} >/dev/null || { echo "missing: ${cmd}"; exit 1; }
+`
+end

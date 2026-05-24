@@ -1,0 +1,59 @@
+# Declarative build steps → Dockerfile.
+extension Dockerfile
+
+comments
+    line "#"
+end
+
+function base
+    arg literal "base"
+    arg capture img any
+    write `FROM ${img}
+`
+end
+
+function workdir
+    arg literal "workdir"
+    arg capture dir any
+    write `WORKDIR ${dir}
+`
+end
+
+function copy
+    arg literal "copy"
+    arg capture src any
+    arg literal "to"
+    arg capture dst any
+    write `COPY ${src} ${dst}
+`
+end
+
+function run_cmd
+    arg literal "run"
+    arg capture cmd any
+    write `RUN ${cmd}
+`
+end
+
+function env
+    arg literal "env"
+    arg capture k ident
+    arg literal "="
+    arg capture v any
+    write `ENV ${k}=${v}
+`
+end
+
+function expose
+    arg literal "expose"
+    arg capture port int
+    write `EXPOSE ${port}
+`
+end
+
+function entrypoint
+    arg literal "entrypoint"
+    arg capture cmd any
+    write `ENTRYPOINT ${cmd}
+`
+end

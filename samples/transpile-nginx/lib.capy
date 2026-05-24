@@ -1,0 +1,42 @@
+# nginx server-block DSL → nginx.conf snippet.
+extension conf
+
+comments
+    line "#"
+end
+
+function server
+    arg literal "server"
+    arg capture domain any
+    block_open "{" close "}"
+    write `server {
+    server_name ${unquote domain};
+${indent 4 body}
+}
+`
+end
+
+function listen
+    arg literal "listen"
+    arg capture port int
+    write `listen ${port};
+`
+end
+
+function root
+    arg literal "root"
+    arg capture path any
+    write `root ${unquote path};
+`
+end
+
+function proxy
+    arg literal "proxy"
+    arg capture path any
+    arg literal "to"
+    arg capture target any
+    write `location ${unquote path} {
+    proxy_pass ${unquote target};
+}
+`
+end
