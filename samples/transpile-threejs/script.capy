@@ -1,8 +1,8 @@
-# A complete animated 3D scene in 11 declarative lines.
-# No JavaScript here — every motion is an ABSTRACT verb the library
-# translates to three.js.
+# A complete interactive 3D scene in ~25 declarative lines.
+# No JavaScript here — every event and action is an ABSTRACT verb
+# the library translates to three.js.
 
-scene "Capy ✕ three.js"
+scene "Capy ✕ three.js — interactive"
 camera 7
 background "#0a0a14"
 
@@ -15,3 +15,26 @@ sphere planet  "#f6a05a"  -2.5  1  0  orbit
 torus  ring    "#fdd835"   2.5 -0.6 0  spin
 cone   beacon  "#b388ff"   0   1.8 -2 bob
 plane  floor   "#1f1f2e"   0  -1.2 0  none
+
+# ── Click bindings: click any object to do its action ──
+click hero    cycle_motion
+click planet  randomize_color
+click ring    wireframe
+click beacon  explode
+
+# ── Hover: tiny visual feedback ──
+hover hero   randomize_color
+
+# ── Keyboard shortcuts ──
+key " " hero   toggle_motion
+key "r" any    reset_all
+key "x" planet explode
+key "d" any    disco
+key "w" ring   wireframe
+
+# ── HUD buttons ──
+button "▶ Toggle hero motion" hero toggle_motion
+button "🎨 Randomize hero"     hero randomize_color
+button "💥 Explode beacon"     beacon explode
+button "🪩 Toggle disco"       any disco
+button "↺ Reset all"           any reset_all

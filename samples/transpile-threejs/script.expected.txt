@@ -2,15 +2,31 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Capy ✕ three.js</title>
+  <title>Capy ✕ three.js — interactive</title>
   <style>
     html, body { margin: 0; height: 100%; background: #0a0a14; color: #eee; font-family: system-ui, sans-serif; overflow: hidden; }
-    #title { position: fixed; top: 10px; left: 12px; font-size: 13px; opacity: 0.75; pointer-events: none; }
-    canvas { display: block; }
+    #title { position: fixed; top: 10px; left: 12px; font-size: 13px; opacity: 0.8; pointer-events: none; line-height: 1.45; }
+    #title small { display:block; opacity:0.55; font-size:11px; margin-top:2px; }
+    #hud { position: fixed; right: 12px; top: 12px; display: flex; flex-direction: column; gap: 6px; font-size: 12px; }
+    #hud button { background: rgba(30,30,46,0.85); color: #eee; border: 1px solid #444; border-radius: 6px; padding: 6px 10px; cursor: pointer; font-family: inherit; min-width: 120px; text-align: left; backdrop-filter: blur(4px); }
+    #hud button:hover { background: rgba(60,60,90,0.95); border-color: #88aaff; }
+    #status { position: fixed; bottom: 12px; left: 12px; font-size: 12px; opacity: 0.65; }
+    canvas { display: block; cursor: grab; }
+    canvas:active { cursor: grabbing; }
   </style>
 </head>
 <body>
-  <div id="title">Capy ✕ three.js — drag to orbit</div>
+  <div id="title">Capy ✕ three.js — interactive
+    <small>drag&nbsp;= orbit · scroll&nbsp;= zoom · click an object · keys: see HUD</small>
+  </div>
+  <div id="hud">
+    <button data-target="hero" data-action="toggle_motion">▶ Toggle hero motion</button>
+    <button data-target="hero" data-action="randomize_color">🎨 Randomize hero</button>
+    <button data-target="beacon" data-action="explode">💥 Explode beacon</button>
+    <button data-target="any" data-action="disco">🪩 Toggle disco</button>
+    <button data-target="any" data-action="reset_all">↺ Reset all</button>
+  </div>
+  <div id="status">ready</div>
   <script type="importmap">
   {
     "imports": {
@@ -60,7 +76,16 @@
       const mat = new THREE.MeshStandardMaterial({ color: "#4dd6c1", roughness: 0.5, metalness: 0.1 });
       const m = new THREE.Mesh(geo, mat);
       m.position.set(0, 0, 0);
-      m.userData = { motion: "spin", t0: { x: 0, y: 0, z: 0 } };
+      m.userData = {
+        name: "hero",
+        motion: "spin",
+        defaultMotion: "spin",
+        color0: "#4dd6c1",
+        t0: { x: 0, y: 0, z: 0 },
+        paused: false,
+        wireframe: false,
+        explodeT: 0,
+      };
       scene.add(m);
       meshes["hero"] = m;
     }
@@ -70,7 +95,16 @@
       const mat = new THREE.MeshStandardMaterial({ color: "#f6a05a", roughness: 0.5, metalness: 0.1 });
       const m = new THREE.Mesh(geo, mat);
       m.position.set(-2.5, 1, 0);
-      m.userData = { motion: "orbit", t0: { x: -2.5, y: 1, z: 0 } };
+      m.userData = {
+        name: "planet",
+        motion: "orbit",
+        defaultMotion: "orbit",
+        color0: "#f6a05a",
+        t0: { x: -2.5, y: 1, z: 0 },
+        paused: false,
+        wireframe: false,
+        explodeT: 0,
+      };
       scene.add(m);
       meshes["planet"] = m;
     }
@@ -80,7 +114,16 @@
       const mat = new THREE.MeshStandardMaterial({ color: "#fdd835", roughness: 0.5, metalness: 0.1 });
       const m = new THREE.Mesh(geo, mat);
       m.position.set(2.5, -0.6, 0);
-      m.userData = { motion: "spin", t0: { x: 2.5, y: -0.6, z: 0 } };
+      m.userData = {
+        name: "ring",
+        motion: "spin",
+        defaultMotion: "spin",
+        color0: "#fdd835",
+        t0: { x: 2.5, y: -0.6, z: 0 },
+        paused: false,
+        wireframe: false,
+        explodeT: 0,
+      };
       scene.add(m);
       meshes["ring"] = m;
     }
@@ -90,7 +133,16 @@
       const mat = new THREE.MeshStandardMaterial({ color: "#b388ff", roughness: 0.5, metalness: 0.1 });
       const m = new THREE.Mesh(geo, mat);
       m.position.set(0, 1.8, -2);
-      m.userData = { motion: "bob", t0: { x: 0, y: 1.8, z: -2 } };
+      m.userData = {
+        name: "beacon",
+        motion: "bob",
+        defaultMotion: "bob",
+        color0: "#b388ff",
+        t0: { x: 0, y: 1.8, z: -2 },
+        paused: false,
+        wireframe: false,
+        explodeT: 0,
+      };
       scene.add(m);
       meshes["beacon"] = m;
     }
@@ -101,9 +153,148 @@
       const m = new THREE.Mesh(geo, mat);
       m.position.set(0, -1.2, 0);
       m.rotation.x = -Math.PI / 2;
-      m.userData = { motion: "none", t0: { x: 0, y: -1.2, z: 0 } };
+      m.userData = {
+        name: "floor",
+        motion: "none",
+        defaultMotion: "none",
+        color0: "#1f1f2e",
+        t0: { x: 0, y: -1.2, z: 0 },
+        paused: false,
+        wireframe: false,
+        explodeT: 0,
+      };
       scene.add(m);
       meshes["floor"] = m;
+    }
+
+    // ── Status + action dispatch ────────────────────────────────
+    const status = document.getElementById("status");
+    let statusTimer = 0;
+    function setStatus(s) {
+      status.textContent = s;
+      clearTimeout(statusTimer);
+      statusTimer = setTimeout(() => { status.textContent = "ready"; }, 1800);
+    }
+
+    let disco = false;
+    const motionCycle = ["spin", "orbit", "bob", "pulse", "none"];
+
+    function applyAction(target, action) {
+      const list = (target === "any" || target === "all")
+        ? Object.values(meshes)
+        : (meshes[target] ? [meshes[target]] : []);
+      if (list.length === 0) { setStatus("no such mesh: " + target); return; }
+
+      for (const m of list) {
+        switch (action) {
+          case "randomize_color":
+            m.material.color.setHSL(Math.random(), 0.6, 0.55);
+            break;
+          case "toggle_motion":
+            m.userData.paused = !m.userData.paused;
+            break;
+          case "cycle_motion": {
+            const i = motionCycle.indexOf(m.userData.motion);
+            m.userData.motion = motionCycle[(i + 1) % motionCycle.length];
+            break;
+          }
+          case "reset":
+            m.position.set(m.userData.t0.x, m.userData.t0.y, m.userData.t0.z);
+            m.rotation.set(0, 0, 0);
+            m.scale.set(1, 1, 1);
+            m.material.color.set(m.userData.color0);
+            m.material.wireframe = false;
+            m.userData.paused = false;
+            m.userData.motion = m.userData.defaultMotion;
+            m.userData.explodeT = 0;
+            break;
+          case "reset_all":
+            for (const k in meshes) applyAction(k, "reset");
+            disco = false;
+            return;
+          case "explode":
+            m.userData.explodeT = 1.0;
+            break;
+          case "wireframe":
+            m.userData.wireframe = !m.userData.wireframe;
+            m.material.wireframe = m.userData.wireframe;
+            break;
+          case "disco":
+            disco = !disco;
+            setStatus(disco ? "disco ON" : "disco OFF");
+            return;
+          default:
+            setStatus("unknown action: " + action);
+            return;
+        }
+      }
+      setStatus(action + " → " + target);
+    }
+
+    // ── Raycaster: click + hover dispatch ───────────────────────
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+    function pickMesh(ev) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.x = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((ev.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+      const hits = raycaster.intersectObjects(Object.values(meshes), false);
+      return hits.length ? hits[0].object : null;
+    }
+
+    const clickBindings = {
+      "hero": "cycle_motion",
+      "planet": "randomize_color",
+      "ring": "wireframe",
+      "beacon": "explode",
+    };
+    const hoverBindings = {
+      "hero": "randomize_color",
+    };
+
+    renderer.domElement.addEventListener("click", (ev) => {
+      const obj = pickMesh(ev);
+      if (!obj) return;
+      const action = clickBindings[obj.userData.name];
+      if (action) applyAction(obj.userData.name, action);
+    });
+
+    let lastHover = null;
+    renderer.domElement.addEventListener("pointermove", (ev) => {
+      const obj = pickMesh(ev);
+      renderer.domElement.style.cursor = obj && clickBindings[obj.userData.name] ? "pointer" : "grab";
+      if (obj !== lastHover) {
+        if (obj && hoverBindings[obj.userData.name]) {
+          applyAction(obj.userData.name, hoverBindings[obj.userData.name]);
+        }
+        lastHover = obj;
+      }
+    });
+
+    // ── Keyboard bindings ───────────────────────────────────────
+    const keyBindings = [
+      { key: " ", target: "hero", action: "toggle_motion" },
+      { key: "r", target: "any", action: "reset_all" },
+      { key: "x", target: "planet", action: "explode" },
+      { key: "d", target: "any", action: "disco" },
+      { key: "w", target: "ring", action: "wireframe" },
+    ];
+    window.addEventListener("keydown", (e) => {
+      for (const b of keyBindings) {
+        if (e.key === b.key) {
+          applyAction(b.target, b.action);
+          e.preventDefault();
+          return;
+        }
+      }
+    });
+
+    // ── HUD buttons ─────────────────────────────────────────────
+    for (const btn of document.querySelectorAll("#hud button")) {
+      btn.addEventListener("click", () => {
+        applyAction(btn.dataset.target, btn.dataset.action);
+      });
     }
 
     window.addEventListener("resize", () => {
@@ -113,10 +304,24 @@
     });
 
     const clock = new THREE.Clock();
+    let discoT = 0;
     function tick() {
       const t = clock.getElapsedTime();
+      const dt = Math.min(0.05, clock.getDelta());
+
+      if (disco) {
+        discoT += dt;
+        if (discoT > 0.18) {
+          discoT = 0;
+          for (const k in meshes) {
+            meshes[k].material.color.setHSL(Math.random(), 0.7, 0.55);
+          }
+        }
+      }
+
       for (const name in meshes) {
         const m = meshes[name];
+        if (m.userData.paused) continue;
         const motion = m.userData.motion;
         const t0 = m.userData.t0;
         if (motion === "spin") {
@@ -133,6 +338,22 @@
         } else if (motion === "pulse") {
           const s = 1 + Math.sin(t * 3) * 0.15;
           m.scale.set(s, s, s);
+        }
+
+        // Explode animation — independent of motion, decays back
+        // to identity scale. Triggered by `explode` action.
+        if (m.userData.explodeT > 0) {
+          m.userData.explodeT = Math.max(0, m.userData.explodeT - dt * 1.6);
+          const k = m.userData.explodeT;
+          const s = 1 + k * 1.2;
+          m.scale.multiplyScalar(s / (m.scale.x || 1));
+          m.material.opacity = 1 - k * 0.4;
+          m.material.transparent = k > 0.01;
+          if (m.userData.explodeT === 0) {
+            m.scale.set(1, 1, 1);
+            m.material.opacity = 1;
+            m.material.transparent = false;
+          }
         }
       }
       controls.update();

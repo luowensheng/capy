@@ -59,9 +59,9 @@ var CURATED = []struct {
 		"High-level scene declaration → rendering-engine setup.",
 		"Add new entities.", "", ""},
 	// ─── 3D ────────────────────────────────────────────────────────
-	{"transpile-threejs", "3D", "🌐 Three.js scene",
-		"11 declarative lines → a runnable HTML page that imports three.js from a CDN and animates cubes, spheres, torus, cone, and plane with abstract motion verbs (spin / orbit / bob / pulse). Drag to orbit, scroll to zoom.",
-		"Add another `sphere foo \"#color\" x y z orbit` line, or change `motion` verbs on existing meshes.", "", ""},
+	{"transpile-threejs", "3D", "🌐 Three.js scene (interactive)",
+		"~25 declarative lines → a runnable, interactive three.js page. Declare meshes, abstract motions (spin/orbit/bob/pulse), and EVENT bindings — `click <target> <action>`, `hover`, `key`, `button` — wired to named actions (randomize_color, toggle_motion, cycle_motion, wireframe, explode, disco, reset_all). Raycaster picks objects, keys dispatch actions, HUD buttons fire actions. Drag to orbit, scroll to zoom.",
+		"Click any object; press Space, R, D, X, W; or hit the HUD buttons. Try adding `click ring explode` or `key \"q\" any disco`.", "", ""},
 	// ─── Web / UI ──────────────────────────────────────────────────
 	{"transpile-landing-page", "Web", "🌐 Landing page",
 		"Marketing landing page DSL → polished HTML.",

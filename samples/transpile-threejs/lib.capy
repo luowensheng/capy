@@ -21,6 +21,10 @@ context
     ambient {color: "#ffffff", intensity: 0.4}
     lights []
     meshes []
+    clicks []
+    hovers []
+    keys []
+    buttons []
 end
 
 function scene
@@ -123,6 +127,52 @@ function plane
     append context.meshes {kind: "plane", name: name, color: color, x: x, y: y, z: z, motion: motion}
 end
 
+# ─── Interactivity ────────────────────────────────────────────────────
+# All actions are named verbs the library knows how to translate to
+# three.js code. Available actions:
+#   randomize_color   pick a new random colour
+#   toggle_motion     pause / resume per-mesh animation
+#   cycle_motion      cycle through spin → orbit → bob → pulse → none
+#   reset             return this mesh to its original transform
+#   reset_all         reset every mesh
+#   explode           briefly scale up + fade out then return
+#   wireframe         toggle wireframe material
+#   disco             toggle global "disco" mode (every mesh cycles colour)
+
+function click
+    description "When the user clicks `target`, run `action`. Uses raycasting against the rendered scene."
+    arg literal "click"
+    arg capture target ident
+    arg capture action ident
+    append context.clicks {target: target, action: action}
+end
+
+function hover
+    description "When the user hovers `target`, run `action`. Useful with `wireframe` or `pulse` to highlight."
+    arg literal "hover"
+    arg capture target ident
+    arg capture action ident
+    append context.hovers {target: target, action: action}
+end
+
+function key
+    description "Bind a keyboard key to an action on a target. Use `\"any\"` as target to apply to the whole scene (for `reset_all` / `disco`)."
+    arg literal "key"
+    arg capture k any
+    arg capture target ident
+    arg capture action ident
+    append context.keys {key: k, target: target, action: action}
+end
+
+function button
+    description "Adds a labelled HTML button to the on-screen HUD that triggers `action` on `target`."
+    arg literal "button"
+    arg capture label any
+    arg capture target ident
+    arg capture action ident
+    append context.buttons {label: label, target: target, action: action}
+end
+
 file_template:
     <!doctype html>
     <html lang="en">
@@ -131,12 +181,26 @@ file_template:
       <title>{{ .context.title | unquote }}</title>
       <style>
         html, body { margin: 0; height: 100%; background: {{ .context.background | unquote }}; color: #eee; font-family: system-ui, sans-serif; overflow: hidden; }
-        #title { position: fixed; top: 10px; left: 12px; font-size: 13px; opacity: 0.75; pointer-events: none; }
-        canvas { display: block; }
+        #title { position: fixed; top: 10px; left: 12px; font-size: 13px; opacity: 0.8; pointer-events: none; line-height: 1.45; }
+        #title small { display:block; opacity:0.55; font-size:11px; margin-top:2px; }
+        #hud { position: fixed; right: 12px; top: 12px; display: flex; flex-direction: column; gap: 6px; font-size: 12px; }
+        #hud button { background: rgba(30,30,46,0.85); color: #eee; border: 1px solid #444; border-radius: 6px; padding: 6px 10px; cursor: pointer; font-family: inherit; min-width: 120px; text-align: left; backdrop-filter: blur(4px); }
+        #hud button:hover { background: rgba(60,60,90,0.95); border-color: #88aaff; }
+        #status { position: fixed; bottom: 12px; left: 12px; font-size: 12px; opacity: 0.65; }
+        canvas { display: block; cursor: grab; }
+        canvas:active { cursor: grabbing; }
       </style>
     </head>
     <body>
-      <div id="title">{{ .context.title | unquote }} — drag to orbit</div>
+      <div id="title">{{ .context.title | unquote }}
+        <small>drag&nbsp;= orbit · scroll&nbsp;= zoom · click an object · keys: see HUD</small>
+      </div>
+      <div id="hud">
+    {{- range .context.buttons }}
+        <button data-target="{{ .target }}" data-action="{{ .action }}">{{ .label | unquote }}</button>
+    {{- end }}
+      </div>
+      <div id="status">ready</div>
       <script type="importmap">
       {
         "imports": {
@@ -197,11 +261,149 @@ file_template:
           {{- if eq .kind "plane" }}
           m.rotation.x = -Math.PI / 2;
           {{- end }}
-          m.userData = { motion: {{ .motion | toQuoted }}, t0: { x: {{ .x }}, y: {{ .y }}, z: {{ .z }} } };
+          m.userData = {
+            name: {{ .name | toQuoted }},
+            motion: {{ .motion | toQuoted }},
+            defaultMotion: {{ .motion | toQuoted }},
+            color0: {{ .color | toQuoted }},
+            t0: { x: {{ .x }}, y: {{ .y }}, z: {{ .z }} },
+            paused: false,
+            wireframe: false,
+            explodeT: 0,
+          };
           scene.add(m);
           meshes[{{ .name | toQuoted }}] = m;
         }
     {{- end }}
+
+        // ── Status + action dispatch ────────────────────────────────
+        const status = document.getElementById("status");
+        let statusTimer = 0;
+        function setStatus(s) {
+          status.textContent = s;
+          clearTimeout(statusTimer);
+          statusTimer = setTimeout(() => { status.textContent = "ready"; }, 1800);
+        }
+
+        let disco = false;
+        const motionCycle = ["spin", "orbit", "bob", "pulse", "none"];
+
+        function applyAction(target, action) {
+          const list = (target === "any" || target === "all")
+            ? Object.values(meshes)
+            : (meshes[target] ? [meshes[target]] : []);
+          if (list.length === 0) { setStatus("no such mesh: " + target); return; }
+
+          for (const m of list) {
+            switch (action) {
+              case "randomize_color":
+                m.material.color.setHSL(Math.random(), 0.6, 0.55);
+                break;
+              case "toggle_motion":
+                m.userData.paused = !m.userData.paused;
+                break;
+              case "cycle_motion": {
+                const i = motionCycle.indexOf(m.userData.motion);
+                m.userData.motion = motionCycle[(i + 1) % motionCycle.length];
+                break;
+              }
+              case "reset":
+                m.position.set(m.userData.t0.x, m.userData.t0.y, m.userData.t0.z);
+                m.rotation.set(0, 0, 0);
+                m.scale.set(1, 1, 1);
+                m.material.color.set(m.userData.color0);
+                m.material.wireframe = false;
+                m.userData.paused = false;
+                m.userData.motion = m.userData.defaultMotion;
+                m.userData.explodeT = 0;
+                break;
+              case "reset_all":
+                for (const k in meshes) applyAction(k, "reset");
+                disco = false;
+                return;
+              case "explode":
+                m.userData.explodeT = 1.0;
+                break;
+              case "wireframe":
+                m.userData.wireframe = !m.userData.wireframe;
+                m.material.wireframe = m.userData.wireframe;
+                break;
+              case "disco":
+                disco = !disco;
+                setStatus(disco ? "disco ON" : "disco OFF");
+                return;
+              default:
+                setStatus("unknown action: " + action);
+                return;
+            }
+          }
+          setStatus(action + " → " + target);
+        }
+
+        // ── Raycaster: click + hover dispatch ───────────────────────
+        const raycaster = new THREE.Raycaster();
+        const pointer = new THREE.Vector2();
+        function pickMesh(ev) {
+          const rect = renderer.domElement.getBoundingClientRect();
+          pointer.x = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
+          pointer.y = -((ev.clientY - rect.top) / rect.height) * 2 + 1;
+          raycaster.setFromCamera(pointer, camera);
+          const hits = raycaster.intersectObjects(Object.values(meshes), false);
+          return hits.length ? hits[0].object : null;
+        }
+
+        const clickBindings = {
+    {{- range .context.clicks }}
+          {{ .target | toQuoted }}: {{ .action | toQuoted }},
+    {{- end }}
+        };
+        const hoverBindings = {
+    {{- range .context.hovers }}
+          {{ .target | toQuoted }}: {{ .action | toQuoted }},
+    {{- end }}
+        };
+
+        renderer.domElement.addEventListener("click", (ev) => {
+          const obj = pickMesh(ev);
+          if (!obj) return;
+          const action = clickBindings[obj.userData.name];
+          if (action) applyAction(obj.userData.name, action);
+        });
+
+        let lastHover = null;
+        renderer.domElement.addEventListener("pointermove", (ev) => {
+          const obj = pickMesh(ev);
+          renderer.domElement.style.cursor = obj && clickBindings[obj.userData.name] ? "pointer" : "grab";
+          if (obj !== lastHover) {
+            if (obj && hoverBindings[obj.userData.name]) {
+              applyAction(obj.userData.name, hoverBindings[obj.userData.name]);
+            }
+            lastHover = obj;
+          }
+        });
+
+        // ── Keyboard bindings ───────────────────────────────────────
+        const keyBindings = [
+    {{- range .context.keys }}
+          { key: {{ .key | toQuoted }}, target: {{ .target | toQuoted }}, action: {{ .action | toQuoted }} },
+    {{- end }}
+        ];
+        window.addEventListener("keydown", (e) => {
+          for (const b of keyBindings) {
+            if (e.key === b.key) {
+              applyAction(b.target, b.action);
+              e.preventDefault();
+              return;
+            }
+          }
+        });
+
+        // ── HUD buttons ─────────────────────────────────────────────
+        for (const btn of document.querySelectorAll("#hud button")) {
+          btn.addEventListener("click", () => {
+            applyAction(btn.dataset.target, btn.dataset.action);
+          });
+        }
 
         window.addEventListener("resize", () => {
           camera.aspect = window.innerWidth / window.innerHeight;
@@ -210,10 +412,24 @@ file_template:
         });
 
         const clock = new THREE.Clock();
+        let discoT = 0;
         function tick() {
           const t = clock.getElapsedTime();
+          const dt = Math.min(0.05, clock.getDelta());
+
+          if (disco) {
+            discoT += dt;
+            if (discoT > 0.18) {
+              discoT = 0;
+              for (const k in meshes) {
+                meshes[k].material.color.setHSL(Math.random(), 0.7, 0.55);
+              }
+            }
+          }
+
           for (const name in meshes) {
             const m = meshes[name];
+            if (m.userData.paused) continue;
             const motion = m.userData.motion;
             const t0 = m.userData.t0;
             if (motion === "spin") {
@@ -230,6 +446,22 @@ file_template:
             } else if (motion === "pulse") {
               const s = 1 + Math.sin(t * 3) * 0.15;
               m.scale.set(s, s, s);
+            }
+
+            // Explode animation — independent of motion, decays back
+            // to identity scale. Triggered by `explode` action.
+            if (m.userData.explodeT > 0) {
+              m.userData.explodeT = Math.max(0, m.userData.explodeT - dt * 1.6);
+              const k = m.userData.explodeT;
+              const s = 1 + k * 1.2;
+              m.scale.multiplyScalar(s / (m.scale.x || 1));
+              m.material.opacity = 1 - k * 0.4;
+              m.material.transparent = k > 0.01;
+              if (m.userData.explodeT === 0) {
+                m.scale.set(1, 1, 1);
+                m.material.opacity = 1;
+                m.material.transparent = false;
+              }
             }
           }
           controls.update();
