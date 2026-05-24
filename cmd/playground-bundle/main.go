@@ -159,6 +159,9 @@ var CURATED = []struct {
 	{"typed-config-dsl", "Schemas", "🔒 Typed config (HCL)",
 		"Service config DSL with custom types (Email, Semver, LogLevel) → HCL.",
 		"Add new services. Bad values give clear type errors."},
+	{"metaprogramming", "Schemas", "🧬 Metaprogramming",
+		"Source declares its own DSL primitives via `define ... end` — the library doesn't need them.",
+		"Add a new `define ...` block at the top and use it below — your source extends the grammar."},
 
 	// ─── Code generation ───────────────────────────────────────────
 	{"transpile-py", "Code", "🐍 Python script",

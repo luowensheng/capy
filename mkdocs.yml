@@ -70,6 +70,7 @@ nav:
     - Backend code with auto-wired tests: backend-codegen.md
     - Supercharge existing syntax: extending-existing-syntax.md
     - One source → many files: one-source-many-files.md
+    - Metaprogramming (source-defined functions): metaprogramming.md
 
   # Reference — everything technical you need when building a library.
   - Reference:

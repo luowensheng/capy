@@ -133,6 +133,78 @@ do more than twice.
 
 ---
 
+## 🧬 Metaprogramming — source extends its own grammar
+
+A `define NAME ... end` block in a Capy source file introduces a new
+function. The rest of the source can then call it — no library
+change required. Use it to DRY up repetitive boilerplate or
+prototype DSL extensions before promoting them to the library.
+
+=== "Source with three inline defines"
+
+    ```
+    define heading
+        arg literal "heading"
+        arg capture text string
+        template:
+            # {{ .text | unquote }}
+
+    end
+
+    define quote
+        arg literal "quote"
+        arg capture text string
+        arg capture who string
+        template:
+            > {{ .text | unquote }}
+            >
+            > — *{{ .who | unquote }}*
+
+    end
+
+    define checklist_item
+        arg literal "todo"
+        arg capture done ident
+        arg capture text string
+        template:
+            - [{{ if eq .done "yes" }}x{{ else }} {{ end }}] {{ .text | unquote }}
+    end
+
+    # Use them — library has no `heading`, `quote`, or `todo`.
+    heading "Today's todos"
+    todo yes "Ship metaprogramming"
+    todo no  "Update the docs"
+    quote "Description over implementation." "Capy"
+    ```
+
+=== "Generated output"
+
+    ```markdown
+    # Today's todos
+    - [x] Ship metaprogramming
+    - [ ] Update the docs
+    > Description over implementation.
+    >
+    > — *Capy*
+    ```
+
+=== "When to use it"
+
+    | Pattern | Right tool |
+    |---|---|
+    | Repetitive boilerplate in one source file | `define` |
+    | Reused across many sources in one project | shared `.capy` file + `@import` |
+    | Reused across many projects | library-level `function` |
+    | Truly project-specific UI / behavior | `define` (don't bloat the shared library) |
+
+    Source defines OVERRIDE library functions of the same name —
+    use it to specialize without forking.
+
+[Full sample → `samples/metaprogramming/`](https://github.com/luowensheng/capy/tree/main/samples/metaprogramming) ·
+[Pattern docs →](metaprogramming.md)
+
+---
+
 ## 🩺 Errors that tell you how to fix them
 
 Every Capy error names what went wrong, hints at how to fix it,

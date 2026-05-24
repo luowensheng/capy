@@ -1,0 +1,15 @@
+# Deliberately minimal library — just a `print` primitive.
+# Everything else (heading, quote, todo) is declared by the SOURCE
+# via `define ... end` blocks. See script.capy.
+#
+# The point: source files can extend the library's grammar inline,
+# without needing the library author to add new patterns.
+extension md
+
+function print
+    arg literal "print"
+    arg capture text string
+    template:
+        {{ .text | unquote }}
+
+end

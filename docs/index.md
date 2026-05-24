@@ -232,6 +232,7 @@ artifact.</p>
 | **"Spec-first is impossible; backend always lags"** | The DSL parses today → frontend mocks against it today. Backend ships a library against the same source later. The contract is stable from day one. |
 | **"Multi-platform is exponentially expensive"** | One source → Android + iOS + web from three libraries. New platform = new library, not new project. |
 | **"Conventions in PR-review comments don't scale"** | A library is enforced by the tool, not by the reviewer. Whole categories of "you forgot the test / wrong package / missing audit field" disappear. |
+| **"Power users want to extend the DSL without forking"** | `define NAME ... end` in the source declares new functions [inline → see metaprogramming](metaprogramming.md). Library stays untouched. |
 
 ---
 

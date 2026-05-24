@@ -1,6 +1,7 @@
 package orchestrator
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -30,6 +31,16 @@ func RunMulti(libraryPath, scriptPath string) (string, map[string]string, error)
 	if err != nil {
 		return "", nil, err
 	}
+
+	// Extract any `define NAME ... end` blocks (metaprogramming): the
+	// source can introduce new functions for the rest of itself to use.
+	// `cleaned` is the source with the defines stripped; `defineLibSrc`
+	// is a synthetic `.capy` library text the loader can compile.
+	cleaned, defineLibSrc, err := infra.ExtractDefines(expanded)
+	if err != nil {
+		return "", nil, err
+	}
+	expanded = cleaned
 	yp := infra.YamlParser{}
 	tplE := infra.TemplateEngine{}
 	lex := orchfeatures.MakeLexer()
@@ -41,6 +52,18 @@ func RunMulti(libraryPath, scriptPath string) (string, map[string]string, error)
 	lib, err := libLoader.Load(libraryPath)
 	if err != nil {
 		return "", nil, err
+	}
+	// Merge source-defined functions into the library. Source defines
+	// WIN on conflict — `define foo ... end` in the script overrides
+	// `function foo` from the library.
+	if defineLibSrc != "" {
+		defineLib, err := orchfeatures.LoadLibraryFromBytes("capy", []byte(defineLibSrc), lex.Tokenize)
+		if err != nil {
+			return "", nil, fmt.Errorf("define block: %v", err)
+		}
+		for name, fn := range defineLib.Functions {
+			lib.Functions[name] = fn
+		}
 	}
 	toks, err := lex.Tokenize(expanded)
 	if err != nil {

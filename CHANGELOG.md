@@ -8,6 +8,52 @@ may break between minor versions** (see `CONTRIBUTING.md`).
 
 ## [Unreleased]
 
+## [0.11.0] — 2026-05-24
+
+Source-level metaprogramming. A Capy source file can now declare
+new functions inline via `define NAME ... end` blocks — the rest
+of the source (and any `@import`-ed files) can call them
+immediately. The library doesn't need to know about them.
+
+### Added — engine
+
+- **`infra.ExtractDefines(source) (cleaned, libSrc, err)`** — a
+  pre-pass that scans for top-level `define NAME ... end` blocks
+  with the same body shape as a library `function` declaration.
+  Rewrites them as a synthetic `.capy` library and returns it
+  alongside the source with the defines stripped.
+- **`orchestrator.RunMulti`** wires it in between Preprocess and
+  Lex. Compiled defines are merged into the working library with
+  source-wins-on-conflict semantics (i.e. `define foo` in the
+  source overrides `function foo` in the library — specialization
+  without forking).
+
+### Added — sample + tests + docs
+
+- **`samples/metaprogramming/`** — a deliberately minimal library
+  (one `print` function) plus a source that defines `heading`,
+  `quote`, and `todo` patterns inline and uses them to render a
+  Markdown document. Committed golden + golden test.
+- **`infra/define_extractor_test.go`** — 7 tests covering basic
+  usage, multiple blocks, unclosed `end`, malformed bodies, bad
+  identifiers, no-op (no defines), and the indented-define-
+  ignoring rule.
+- **`docs/metaprogramming.md`** — pattern docs with a worked
+  example, the full `define` body reference, when-to-use-it
+  decision table, conflict-resolution rules, and implementation
+  notes.
+
+### Changed
+
+- MkDocs nav: new "Metaprogramming (source-defined functions)"
+  entry under Patterns.
+- Showcase: new "🧬 Metaprogramming — source extends its own
+  grammar" tabbed section above the Errors section.
+- Homepage enterprise-concerns table: added a row mapping "power
+  users want to extend the DSL without forking" to metaprogramming.
+- Playground curated samples: added the metaprogramming sample (now
+  56 total across 7 categories).
+
 ## [0.10.0] — 2026-05-24
 
 Three new framings get first-class samples and documentation:
