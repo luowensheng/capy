@@ -75,10 +75,10 @@ Same engine, same output.
         arg capture b ident
         arg literal ")"
         block_closer end
-        template:
-            int {{ .name }}(int {{ .a }}, int {{ .b }}) {
-            {{ .body | indent 4 }}
-            }
+        write `int ${name}(int ${a}, int ${b}) {
+${indent 4 body}
+}
+`
     end
 
     function return
@@ -86,7 +86,8 @@ Same engine, same output.
         arg capture l any
         arg literal "+"
         arg capture r any
-        template_str "return {{ .l }} + {{ .r }};\n"
+        write `return ${l} + ${r};
+`
     end
 
     function end
@@ -112,11 +113,21 @@ function <NAME>
     arg capture <NAME> <TYPE>             # capture a token: any | ident | int | string | ...
     block_closer <NAME>                   # block opener: body runs until <NAME> appears
     block_open <STR> close <STR>          # OR: explicit delimiters
-    template_str <STR>                    # single-line inline template
-    template:                              # multi-line template; ends at dedent
-        {{ .capture }} ...
-    run:                                   # inner-DSL block (context mutations)
-        append context.imports "json"
+
+    # Function body — inner-DSL statements:
+    write `text ${capture} ...`          # emit literal text + ${EXPR} interpolation
+    set context.field value              # mutate state
+    append context.list value            # …or push to a list
+    if cond                              # conditional / control flow
+        write `…`
+    end
+
+    # Legacy shape (still accepted):
+    # template_str <STR>
+    # template:
+    #     ...
+    # run:
+    #     ...
 end
 
 file_template:

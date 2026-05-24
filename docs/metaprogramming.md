@@ -40,9 +40,9 @@ extension md
 function print
     arg literal "print"
     arg capture text string
-    template:
-        {{ .text | unquote }}
+    write `${unquote text}
 
+`
 end
 ```
 
@@ -52,28 +52,33 @@ end
 define heading
     arg literal "heading"
     arg capture text string
-    template:
-        # {{ .text | unquote }}
+    write `# ${unquote text}
 
+`
 end
 
 define quote
     arg literal "quote"
     arg capture text string
     arg capture who string
-    template:
-        > {{ .text | unquote }}
-        >
-        > — *{{ .who | unquote }}*
+    write `> ${unquote text}
+>
+> — *${unquote who}*
 
+`
 end
 
 define checklist_item
     arg literal "todo"
     arg capture done ident
     arg capture text string
-    template:
-        - [{{ if eq .done "yes" }}x{{ else }} {{ end }}] {{ .text | unquote }}
+    if eq done "yes"
+        write `- [x] ${unquote text}
+`
+    else
+        write `- [ ] ${unquote text}
+`
+    end
 end
 
 heading "Today's todos"
@@ -118,12 +123,13 @@ declaration in a `.capy` library file:
 |---|---|
 | `arg literal "TEXT"` | Match a literal token in the source. |
 | `arg capture NAME TYPE` | Capture one typed value. |
-| `template:` | Multi-line Go template, dedented at first content line. |
-| `template_str "..."` | Single-line template. |
-| `run:` | Inner-DSL block — mutate `context.*`. |
+| `write \`...\`` | Emit text (multi-line backticks, `${EXPR}` interpolation). |
+| `set` / `append` / `prepend` / `merge` / `delete` | Mutate `context.*`. |
+| `if` / `else` / `for` | Control flow inside the body. |
 | `block_closer NAME` | This function opens a block, closed by `NAME`. |
 | `block_open "{" close "}"` | Or: explicit delimiter-pair blocks. |
 | `priority N` | Disambiguation when two functions overlap. |
+| `template:` / `template_str "..."` / `run:` | Legacy two-block shape; still works. |
 
 The full reference is in [library authoring](library-authoring.md);
 everything that works in a library function works in a `define`.
@@ -165,9 +171,9 @@ the whole team should have it.
 - **Types.** A `define` can use `arg capture name Email` where
   `Email` is a library-defined type — the validation kicks in just
   like for library functions.
-- **`run:` blocks.** A `define` can mutate the same `context.*` as
-  library functions. Use it for source-side state that the rest of
-  the file consumes.
+- **State mutation.** A `define` body can `set` / `append` / etc.
+  the same `context.*` as library functions. Use it for source-side
+  state that the rest of the file consumes.
 - **Block functions.** `define` blocks can have `block_closer end`
   to introduce indented body blocks. Inline a whole DSL extension
   if you need one.

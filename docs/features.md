@@ -139,9 +139,9 @@ function if
     arg literal "if"
     arg capture cond any
     block_closer end
-    template:
-        if {{ .cond }}:
-        {{ .body | indent 4 }}
+    write `if ${cond}:
+${indent 4 body}
+`
 end
 ```
 

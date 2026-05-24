@@ -34,18 +34,16 @@ playground stays safe.
 | `(cwd)`               | current working directory        | `os.Getwd`           |
 | `(home_dir)`          | user's home directory            | `os.UserHomeDir`     |
 
-Use them in any `run:` block:
+Use them as expressions in any function body:
 
 ```
 function service
     arg literal "service"
     arg capture name string
-    template_str ""
-    run:
-        set context.service name
-        set context.environment (env "ENV")
-        set context.version (arg 0)
-        set context.api_keys (read_file "keys.txt")
+    set context.service name
+    set context.environment (env "ENV")
+    set context.version (arg 0)
+    set context.api_keys (read_file "keys.txt")
 end
 ```
 

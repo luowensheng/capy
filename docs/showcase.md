@@ -223,28 +223,33 @@ prototype DSL extensions before promoting them to the library.
     define heading
         arg literal "heading"
         arg capture text string
-        template:
-            # {{ .text | unquote }}
+        write `# ${unquote text}
 
+`
     end
 
     define quote
         arg literal "quote"
         arg capture text string
         arg capture who string
-        template:
-            > {{ .text | unquote }}
-            >
-            > — *{{ .who | unquote }}*
+        write `> ${unquote text}
+>
+> — *${unquote who}*
 
+`
     end
 
     define checklist_item
         arg literal "todo"
         arg capture done ident
         arg capture text string
-        template:
-            - [{{ if eq .done "yes" }}x{{ else }} {{ end }}] {{ .text | unquote }}
+        if eq done "yes"
+            write `- [x] ${unquote text}
+`
+        else
+            write `- [ ] ${unquote text}
+`
+        end
     end
 
     # Use them — library has no `heading`, `quote`, or `todo`.
@@ -621,24 +626,20 @@ empty values so libraries can't smuggle your filesystem into a browser.
     function service
         arg literal "service"
         arg capture name string
-        template_str ""
-        run:
-            set context.service name
-            # Pull deploy metadata from the host.
-            set context.environment  (env "ENV")
-            set context.database_url (env "DATABASE_URL")
-            set context.version (arg 0)
-            set context.region  (arg 1)
+        set context.service name
+        # Pull deploy metadata from the host.
+        set context.environment  (env "ENV")
+        set context.database_url (env "DATABASE_URL")
+        set context.version (arg 0)
+        set context.region  (arg 1)
     end
 
     function load_keys_from
         arg literal "load_keys_from"
         arg capture path string
-        template_str ""
-        run:
-            # read_file resolves relative to the script dir.
-            # Errors abort the transpilation cleanly.
-            set context.api_keys (read_file path)
+        # read_file resolves relative to the script dir.
+        # Errors abort the transpilation cleanly.
+        set context.api_keys (read_file path)
     end
     ```
 
@@ -716,9 +717,7 @@ ships with browsable, regenerable documentation.
         arg literal "recipe"
         arg capture title string  "Display name of the dish, shown as the H1."
         block_closer end
-        template_str ""
-        run:
-            set context.title title
+        set context.title title
     end
 
     function ingredient
@@ -726,9 +725,7 @@ ships with browsable, regenerable documentation.
         arg literal "ingredient"
         arg capture name string  "Ingredient name, e.g. `\"olive oil\"`."
         arg capture qty string   "Quantity with unit, e.g. `\"3/4 cup\"`."
-        template_str ""
-        run:
-            append context.ingredients {name: name, qty: qty}
+        append context.ingredients {name: name, qty: qty}
     end
     ```
 
@@ -1396,16 +1393,20 @@ Libraries can `import` other libraries. Use this to keep validators
         arg literal "post"
         arg capture title string
         block_closer end
-        template:
-            # {{ .title | unquote }}
+        write `# ${unquote title}
 
-            *By {{ .context.meta.author | unquote }}*
+*By ${unquote context.meta.author}*
 
-            Tags: {{ range $i, $t := .context.tags }}{{ if $i }}, {{ end }}#{{ $t }}{{ end }}
+Tags: `
+        for t in context.tags
+            write `#${t} `
+        end
+        write `
 
-            ---
+---
 
-            {{ .body }}
+${body}
+`
     end
     ```
 
@@ -1431,16 +1432,14 @@ Libraries can `import` other libraries. Use this to keep validators
     function tag
         arg literal "tag"
         arg capture name ident
-        template_str ""
-        run:
-            append context.tags name
+        append context.tags name
     end
 
     function note
         arg literal "note"
         arg capture text string
-        template:
-            > **Note:** {{ .text | unquote }}
+        write `> **Note:** ${unquote text}
+`
     end
     ```
 
@@ -1746,23 +1745,25 @@ a runtime surprise.
         arg literal "version"
         arg capture ver Semver
         block_closer end
-        template:
-            service {{ .name }} {
-              version = {{ .ver }}
-            {{ .body | indent 2 }}
-            }
+        write `service ${name} {
+  version = ${ver}
+${indent 2 body}
+}
+`
     end
 
     function port
         arg literal "port"
         arg capture n Port             # ← named "n", typed Port (= int)
-        template_str "port = {{ .n }}\n"
+        write `port = ${n}
+`
     end
 
     function owner
         arg literal "owner"
         arg capture who Email
-        template_str "owner = {{ .who }}\n"
+        write `owner = ${who}
+`
     end
     # ... env / log_level / brand_color / tls ...
     ```
@@ -2934,10 +2935,10 @@ prefer — they produce byte-identical output:
         arg capture b ident
         arg literal ")"
         block_closer end
-        template:
-            int {{ .name }}(int {{ .a }}, int {{ .b }}) {
-            {{ .body | indent 4 }}
-            }
+        write `int ${name}(int ${a}, int ${b}) {
+${indent 4 body}
+}
+`
     end
     ```
 

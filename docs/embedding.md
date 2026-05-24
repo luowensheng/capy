@@ -17,7 +17,8 @@ lib, _ := capy.NewLibrary(`
     function button
         arg literal "button"
         arg capture label string
-        template_str "<button>{{ .label }}</button>\n"
+        write `<button>${label}</button>
+`
     end
 `)
 
@@ -112,17 +113,18 @@ function server
     arg literal "server"
     arg capture name string
     block_closer end
-    template:
-        { "name": {{ .name }}, "routes": [
-        {{ .body | indent 4 }}
-        ]}
+    write `{ "name": ${name}, "routes": [
+${indent 4 body}
+]}
+`
 end
 
 function route
     arg literal "route"
     arg capture method ident
     arg capture path string
-    template_str "  { \"method\": \"{{ .method }}\", \"path\": {{ .path }} },\n"
+    write `  { "method": "${method}", "path": ${path} },
+`
 end
 
 function end

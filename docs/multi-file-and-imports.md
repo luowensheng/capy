@@ -130,16 +130,14 @@ end
 function tag
     arg literal "tag"
     arg capture name ident
-    template_str ""
-    run:
-        append context.tags name
+    append context.tags name
 end
 
 function note
     arg literal "note"
     arg capture text string
-    template:
-        > **Note:** {{ .text | unquote }}
+    write `> **Note:** ${unquote text}
+`
 end
 ```
 

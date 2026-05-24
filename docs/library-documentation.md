@@ -44,9 +44,7 @@ function recipe
     arg literal "recipe"
     arg capture title string  "Display name of the dish, shown as the H1."
     block_closer end
-    template_str ""
-    run:
-        set context.title title
+    set context.title title
 end
 ```
 

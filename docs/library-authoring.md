@@ -210,9 +210,9 @@ function if
     arg literal "if"
     arg capture cond any
     block_closer end
-    template:
-        if {{ .cond }}:
-        {{ .body | indent 4 }}
+    write `if ${cond}:
+${indent 4 body}
+`
 end
 
 function end
@@ -229,10 +229,10 @@ function for
     arg capture i any
     block_open "{"
     block_close "}"
-    template:
-        for {{ .v }} in {{ .i }} {
-        {{ .body | indent 2 }}
-        }
+    write `for ${v} in ${i} {
+${indent 2 body}
+}
+`
 end
 ```
 
@@ -240,7 +240,8 @@ See [block-functions.md](block-functions.md) for nesting and edge cases.
 
 ## `context` — initial schema
 
-Whatever fields your `run:` snippets will manipulate. Lists default to
+Whatever fields your function bodies will manipulate (via `set`/
+`append`/etc.). Lists default to
 `[]`, maps to `{}`. The context is rendered into the file template as
 `.context`.
 

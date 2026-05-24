@@ -143,28 +143,31 @@ function service
     arg literal "service"
     arg capture name ident
     block_closer end
-    template:
-        service {{ .name }} {
-        {{ .body | indent 2 }}
-        }
+    write `service ${name} {
+${indent 2 body}
+}
+`
 end
 
 function owner
     arg literal "owner"
     arg capture who Email                 # ← validated
-    template_str "owner = {{ .who }}\n"
+    write `owner = ${who}
+`
 end
 
 function log_level
     arg literal "log_level"
     arg capture lvl LogLevel              # ← enum
-    template_str "log_level = {{ .lvl }}\n"
+    write `log_level = ${lvl}
+`
 end
 
 function port
     arg literal "port"
     arg capture n Port                    # ← typed int
-    template_str "port = {{ .n }}\n"
+    write `port = ${n}
+`
 end
 ```
 
@@ -219,7 +222,8 @@ function card
     arg literal "card"
     arg capture title string
     arg capture price any
-    template_str "<div class=\"card\"><h3>{{ .title }}</h3><p>${{ .price }}</p></div>\n"
+    write `<div class="card"><h3>${title}</h3><p>\$${price}</p></div>
+`
 end
 `
 

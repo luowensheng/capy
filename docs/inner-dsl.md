@@ -1,9 +1,22 @@
 # Inner DSL Reference
 
-The inner DSL is the language a library author uses inside each function's
-`run:` field. It updates the accumulated `context`; it **does not execute
-user-script code**. Library authors compose primitives to express "what
-metadata should this match contribute to the final output."
+The inner DSL is the language inside a library function's body — the
+sequence of statements that runs every time the function matches a
+source statement. It combines two concerns into one block:
+
+- **Output** via `write \`...\``, which appends a (possibly
+  interpolated) string to the function's body contribution.
+- **State** via `set` / `append` / `prepend` / `merge` / `delete`,
+  which mutate the accumulated `context` map.
+
+Plus control flow (`if` / `else` / `for` / `loop`) and primitive
+host calls (`env`, `arg`, `read_file`, `os`, `arch`, …). It **does
+not execute user-script code** — library authors compose primitives
+to describe what each match contributes to the final output.
+
+> Legacy form: the inner DSL also lives inside a `run:` block when
+> a library uses the older two-block shape. Both shapes work; new
+> libraries should prefer the unified body.
 
 ## Tokens & expressions
 
@@ -21,6 +34,28 @@ may be:
 - Parenthesized sub-calls: `(regex_match name "^[a-z]+$")`.
 
 ## Statements
+
+### `write <expr>`
+
+Appends EXPR (coerced to string) to the function's output buffer.
+EXPR is most commonly a backtick literal with `${EXPR}` interpolations:
+
+```
+write `Hello, ${name}!
+`
+write `${indent 4 body}`
+write body
+```
+
+Backtick literals are multi-line; the bytes inside (including
+newlines, tabs, leading whitespace) are emitted verbatim. `${EXPR}`
+holes accept any value expression: paths (`name`, `context.foo`,
+`body`), helper calls (`indent 4 body`, `pascalCase name`), or
+literals.
+
+`write` has no effect on context — pair it with `set`/`append`/etc.
+in the same function body when both output and state mutation are
+needed.
 
 ### `set <path> <value>`
 
@@ -70,29 +105,44 @@ Removes a field or list index.
 delete context.scripts[old_name]
 ```
 
-### `if <expr>` … `end`
+### `if <expr>` … (`else` …) `end`
 
-Library-side conditional update. The expression is evaluated; if truthy,
-the body runs.
+Library-side conditional. The expression is evaluated; if truthy,
+the body runs. An optional `else` arm handles the falsy case.
+`else if cond` chains naturally.
 
 ```
 if (regex_match name "^_")
     set context.private true
 end
-```
 
-### `loop <var> in <expr>` … `end`
-
-Iterates a list, binding the variable in each iteration's local scope.
-
-```
-loop tag in tags
-    append context.tags tag
+if optional
+    write `${name}?: any;
+`
+else
+    write `${name}: any;
+`
 end
 ```
 
-Note: this iterates within a single source statement's `run:` snippet. It
-does NOT iterate user-script code — that's what `block:` functions are for.
+### `for <var> in <expr>` … `end`  (alias: `loop`)
+
+Iterates a list, binding the variable in each iteration's local
+scope. `for` and `loop` are synonyms.
+
+```
+for tag in tags
+    append context.tags tag
+end
+
+for imp in context.imports
+    write `import ${imp}
+`
+end
+```
+
+Note: this iterates within a single function body. It does NOT
+iterate user-script code — that's what `block:` functions are for.
 
 ### Plain calls
 
@@ -119,7 +169,7 @@ The only primitive call defined is `error <message>` (abort transpilation).
 | empty map `{}` | no |
 | anything else | yes |
 
-## Captures inside `run:`
+## Captures inside the function body
 
 When you reference a capture by name, you get the **evaluated** value:
 
