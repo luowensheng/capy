@@ -58,74 +58,85 @@ function motion
     append context.motions {target: target, verb: verb}
 end
 
-file_template:
-    <!doctype html>
-    <html lang="en">
-    <head>
-      <meta charset="utf-8" />
-      <title>{{ .context.title | unquote }}</title>
-      <style>
-        body { margin: 0; background: #111; display: grid; place-items: center; min-height: 100vh; font-family: monospace; color: #eee; }
-        canvas { background: #222; border: 1px solid #444; image-rendering: pixelated; }
-        h1 { margin: 0 0 8px; font-size: 14px; }
-      </style>
-    </head>
-    <body>
-      <div>
-        <h1>{{ .context.title | unquote }} — arrow keys</h1>
-        <canvas id="c" width="{{ .context.width }}" height="{{ .context.height }}"></canvas>
-      </div>
-      <script>
-        const canvas = document.getElementById("c");
-        const ctx = canvas.getContext("2d");
-        const W = canvas.width, H = canvas.height;
-        const keys = {};
-        window.addEventListener("keydown", e => keys[e.key] = true);
-        window.addEventListener("keyup",   e => keys[e.key] = false);
+file_template
+    write `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>${unquote context.title}</title>
+  <style>
+    body { margin: 0; background: #111; display: grid; place-items: center; min-height: 100vh; font-family: monospace; color: #eee; }
+    canvas { background: #222; border: 1px solid #444; image-rendering: pixelated; }
+    h1 { margin: 0 0 8px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div>
+    <h1>${unquote context.title} — arrow keys</h1>
+    <canvas id="c" width="${context.width}" height="${context.height}"></canvas>
+  </div>
+  <script>
+    const canvas = document.getElementById("c");
+    const ctx = canvas.getContext("2d");
+    const W = canvas.width, H = canvas.height;
+    const keys = {};
+    window.addEventListener("keydown", e => keys[e.key] = true);
+    window.addEventListener("keyup",   e => keys[e.key] = false);
 
-        const sprites = {
-    {{- range .context.sprites }}
-          {{ .name }}: { x: {{ .x }}, y: {{ .y }}, w: {{ .w }}, h: {{ .h }}, color: {{ .color | toQuoted }}, _vx: 1 },
-    {{- end }}
-        };
+    const sprites = {
+`
+    for s in context.sprites
+        write `      ${s.name}: { x: ${s.x}, y: ${s.y}, w: ${s.w}, h: ${s.h}, color: ${toQuoted s.color}, _vx: 1 },
+`
+    end
+    write `    };
 
-        function update() {
-    {{- range .context.keys }}
-          if (keys[{{ .key | toQuoted }}]) {
-            sprites.{{ .target }}.x += {{ .dx }};
-            sprites.{{ .target }}.y += {{ .dy }};
-          }
-    {{- end }}
-    {{- range .context.motions }}
-          // motion: {{ .verb }} on {{ .target }}
-          {{- if eq .verb "drift_right" }}
-          sprites.{{ .target }}.x += 1;
-          if (sprites.{{ .target }}.x > W - sprites.{{ .target }}.w) sprites.{{ .target }}.x = 0;
-          {{- else if eq .verb "drift_left" }}
-          sprites.{{ .target }}.x -= 1;
-          if (sprites.{{ .target }}.x < 0) sprites.{{ .target }}.x = W - sprites.{{ .target }}.w;
-          {{- else if eq .verb "bounce_horizontal" }}
-          sprites.{{ .target }}.x += sprites.{{ .target }}._vx;
-          if (sprites.{{ .target }}.x < 0 || sprites.{{ .target }}.x > W - sprites.{{ .target }}.w) sprites.{{ .target }}._vx *= -1;
-          {{- else if eq .verb "follow_player" }}
-          if (sprites.player) {
-            sprites.{{ .target }}.x += Math.sign(sprites.player.x - sprites.{{ .target }}.x);
-            sprites.{{ .target }}.y += Math.sign(sprites.player.y - sprites.{{ .target }}.y);
-          }
-          {{- end }}
-    {{- end }}
-        }
+    function update() {
+`
+    for k in context.keys
+        write `      if (keys[${toQuoted k.key}]) {
+        sprites.${k.target}.x += ${k.dx};
+        sprites.${k.target}.y += ${k.dy};
+      }
+`
+    end
+    for mo in context.motions
+        write `      // motion: ${mo.verb} on ${mo.target}
+`
+        if mo.verb == "drift_right"
+            write `      sprites.${mo.target}.x += 1;
+      if (sprites.${mo.target}.x > W - sprites.${mo.target}.w) sprites.${mo.target}.x = 0;
+`
+        else if mo.verb == "drift_left"
+            write `      sprites.${mo.target}.x -= 1;
+      if (sprites.${mo.target}.x < 0) sprites.${mo.target}.x = W - sprites.${mo.target}.w;
+`
+        else if mo.verb == "bounce_horizontal"
+            write `      sprites.${mo.target}.x += sprites.${mo.target}._vx;
+      if (sprites.${mo.target}.x < 0 || sprites.${mo.target}.x > W - sprites.${mo.target}.w) sprites.${mo.target}._vx *= -1;
+`
+        else if mo.verb == "follow_player"
+            write `      if (sprites.player) {
+        sprites.${mo.target}.x += Math.sign(sprites.player.x - sprites.${mo.target}.x);
+        sprites.${mo.target}.y += Math.sign(sprites.player.y - sprites.${mo.target}.y);
+      }
+`
+        end
+    end
+    write `    }
 
-        function draw() {
-          ctx.clearRect(0, 0, W, H);
-          for (const s of Object.values(sprites)) {
-            ctx.fillStyle = s.color;
-            ctx.fillRect(s.x, s.y, s.w, s.h);
-          }
-        }
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      for (const s of Object.values(sprites)) {
+        ctx.fillStyle = s.color;
+        ctx.fillRect(s.x, s.y, s.w, s.h);
+      }
+    }
 
-        function loop() { update(); draw(); requestAnimationFrame(loop); }
-        loop();
-      </script>
-    </body>
-    </html>
+    function loop() { update(); draw(); requestAnimationFrame(loop); }
+    loop();
+  </script>
+</body>
+</html>
+`
+end

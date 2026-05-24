@@ -115,73 +115,83 @@ end
 function end
 end
 
-file_template:
-    <!doctype html>
-    <html lang="en">
-    <head>
-      <meta charset="utf-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1" />
-      <title>{{ .context.title | unquote }}</title>
-      <style>
-        :root {
-          --bg: #0f172a;
-          --fg: #e2e8f0;
-          --muted: #94a3b8;
-          --accent: #4f46e5;
-          --card: #1e293b;
-        }
-        * { box-sizing: border-box; }
-        body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--fg);
-               font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; padding: 0; }
-        .wrap { max-width: 880px; margin: 0 auto; padding: 64px 32px; }
-        .hero { text-align: center; padding: 40px 0 24px; }
-        .hero h1 { font-size: 44px; margin: 0 0 10px; letter-spacing: -0.02em; }
-        .hero p { font-size: 18px; color: var(--muted); margin: 0 0 28px; }
-        .cta { display: inline-block; background: var(--accent); color: white; padding: 12px 28px;
-               border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; }
-        .cta:hover { filter: brightness(1.1); }
-        .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-                    gap: 18px; margin: 48px 0; }
-        .feature { background: var(--card); padding: 22px 24px; border-radius: 12px;
-                   border: 1px solid rgba(255,255,255,0.04); }
-        .feature h3 { margin: 0 0 6px; font-size: 17px; color: var(--accent); }
-        .feature p { margin: 0; font-size: 14px; color: var(--muted); line-height: 1.6; }
-        footer { text-align: center; color: var(--muted); padding: 32px; font-size: 13px; }
-        {{ .context.extra_style }}
-      </style>
-      {{ .context.extra_head }}
-    </head>
-    <body>
-      <div class="wrap">
-        <div class="hero">
-          <h1>{{ .context.title | unquote }}</h1>
-          <p>{{ .context.tagline | unquote }}</p>
-          {{- if .context.cta_text }}
-          <a class="cta" href="{{ .context.cta_link | unquote }}">{{ .context.cta_text | unquote }}</a>
-          {{- end }}
-        </div>
-
-        {{- if .context.features }}
-        <div class="features">
-          {{- range .context.features }}
-          <div class="feature">
-            <h3>{{ .headline | unquote }}</h3>
-            <p>{{ .body | unquote }}</p>
-          </div>
-          {{- end }}
-        </div>
-        {{- end }}
-
-        {{- range .context.extra_sections }}
-        {{ . }}
-        {{- end }}
+file_template
+    write `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>${unquote context.title}</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --fg: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #4f46e5;
+      --card: #1e293b;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--fg);
+           font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; padding: 0; }
+    .wrap { max-width: 880px; margin: 0 auto; padding: 64px 32px; }
+    .hero { text-align: center; padding: 40px 0 24px; }
+    .hero h1 { font-size: 44px; margin: 0 0 10px; letter-spacing: -0.02em; }
+    .hero p { font-size: 18px; color: var(--muted); margin: 0 0 28px; }
+    .cta { display: inline-block; background: var(--accent); color: white; padding: 12px 28px;
+           border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; }
+    .cta:hover { filter: brightness(1.1); }
+    .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+                gap: 18px; margin: 48px 0; }
+    .feature { background: var(--card); padding: 22px 24px; border-radius: 12px;
+               border: 1px solid rgba(255,255,255,0.04); }
+    .feature h3 { margin: 0 0 6px; font-size: 17px; color: var(--accent); }
+    .feature p { margin: 0; font-size: 14px; color: var(--muted); line-height: 1.6; }
+    footer { text-align: center; color: var(--muted); padding: 32px; font-size: 13px; }
+    ${context.extra_style}
+  </style>
+  ${context.extra_head}
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <h1>${unquote context.title}</h1>
+      <p>${unquote context.tagline}</p>
+`
+    if context.cta_text
+        write `      <a class="cta" href="${unquote context.cta_link}">${unquote context.cta_text}</a>
+`
+    end
+    write `    </div>
+`
+    if context.features
+        write `    <div class="features">
+`
+        for f in context.features
+            write `      <div class="feature">
+        <h3>${unquote f.headline}</h3>
+        <p>${unquote f.body}</p>
       </div>
-      <footer>
-        {{- if .context.extra_footer }}
-        {{ .context.extra_footer }}
-        {{- else }}
-        Built with <a href="https://github.com/luowensheng/capy" style="color:var(--accent)">Capy</a>.
-        {{- end }}
-      </footer>
-    </body>
-    </html>
+`
+        end
+        write `    </div>
+`
+    end
+    for s in context.extra_sections
+        write `    ${s}
+`
+    end
+    write `  </div>
+  <footer>
+`
+    if context.extra_footer
+        write `    ${context.extra_footer}
+`
+    else
+        write `    Built with <a href="https://github.com/luowensheng/capy" style="color:var(--accent)">Capy</a>.
+`
+    end
+    write `  </footer>
+</body>
+</html>
+`
+end
