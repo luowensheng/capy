@@ -3,6 +3,7 @@ package orchfeatures
 import (
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/luowensheng/capy/domain"
@@ -145,6 +146,51 @@ func mergeRaw(dst *infra.RawLibrary, src infra.RawLibrary) {
 }
 
 func mapLibrary(r infra.RawLibrary, tokenize func(string) ([]domain.Token, error)) (domain.Library, error) {
+	// Detect the new-shape sentinel that the .capy parser stashes on
+	// FileTemplate / Files entries and translate the body before the
+	// engine sees it. Format: "\x00NEW_SHAPE\x00<inner-dsl source>".
+	const sentinel = "\x00NEW_SHAPE\x00"
+	translateMaybeNew := func(s, label string) (string, error) {
+		if !strings.HasPrefix(s, sentinel) {
+			return s, nil
+		}
+		body := s[len(sentinel):]
+		toks, err := tokenize(body)
+		if err != nil {
+			return "", fmt.Errorf("%s: parsing body: %v", label, err)
+		}
+		ast, err := ParseInner(toks)
+		if err != nil {
+			return "", fmt.Errorf("%s: parsing body: %v", label, err)
+		}
+		tpl, residual, err := translateNewShape(ast)
+		if err != nil {
+			return "", fmt.Errorf("%s: %v", label, err)
+		}
+		if len(residual.Stmts) > 0 {
+			// file_template / file blocks can't mutate state — there
+			// are no per-statement matches happening at this point; the
+			// context is already finalised. Reject pure state mutations.
+			return "", fmt.Errorf("%s: state-mutation statements (set/append/…) aren't allowed here — file blocks only render", label)
+		}
+		return tpl, nil
+	}
+	ft, err := translateMaybeNew(r.FileTemplate, "file_template")
+	if err != nil {
+		return domain.Library{}, err
+	}
+	files := r.Files
+	if len(files) > 0 {
+		newFiles := make(map[string]string, len(files))
+		for path, body := range files {
+			translated, err := translateMaybeNew(body, "file "+strconv.Quote(path))
+			if err != nil {
+				return domain.Library{}, err
+			}
+			newFiles[path] = translated
+		}
+		files = newFiles
+	}
 	lib := domain.Library{
 		Extension:    r.Extension,
 		OutputFile:   r.OutputFile,
@@ -152,8 +198,8 @@ func mapLibrary(r infra.RawLibrary, tokenize func(string) ([]domain.Token, error
 		Functions:    map[string]*domain.FuncDef{},
 		Types:        map[string]domain.TypeDef{},
 		Context:      r.Context,
-		FileTemplate: r.FileTemplate,
-		Files:        r.Files,
+		FileTemplate: ft,
+		Files:        files,
 		Preprocess:   r.Preprocess,
 	}
 	if lib.Files == nil {

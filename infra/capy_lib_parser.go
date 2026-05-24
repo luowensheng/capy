@@ -293,41 +293,77 @@ func (p *capyLibParser) parseTop() (RawLibrary, error) {
 				return lib, p.errf("inside preprocess: expected `include \"@NAME\"` or `end`, got %q", strings.TrimSpace(ln))
 			}
 		case "file":
-			// `file "path":` declares one of many output files.
-			// Multiple `file` blocks may appear.
-			if len(tokens) < 2 || !strings.HasSuffix(tokens[len(tokens)-1], ":") {
-				if len(tokens) == 2 {
-					return lib, p.errf("expected `file \"path\":`, got %q (missing colon?)", strings.TrimSpace(line))
-				}
-			}
+			// Two shapes:
+			//   file "path":          ← legacy raw template body
+			//       (Go-template body, ends at dedent)
+			//   file "path"           ← new shape: inner-DSL body
+			//       <statements>
+			//   end
+			//
+			// Detection: the line has a trailing `:` somewhere → legacy.
+			// Otherwise it's the new shape and we collect a body until `end`.
+			lastTok := tokens[len(tokens)-1]
+			legacy := strings.HasSuffix(lastTok, ":") ||
+				(len(tokens) >= 3 && tokens[2] == ":")
 			path := tokens[1]
-			// Sanity: the last token must be ":" or path-then-":" combined.
-			// Authors write `file "x.html":` so tokens are ["file", "x.html:"]
-			// or ["file", "x.html", ":"]. Normalize.
 			if strings.HasSuffix(path, ":") {
 				path = strings.TrimSuffix(path, ":")
-			} else if len(tokens) >= 3 && tokens[2] == ":" {
-				// ok
-			} else {
-				return lib, p.errf("expected `file \"path\":` got %v", tokens)
 			}
 			p.nextLine()
-			body, err := p.parseFileBlockBody()
-			if err != nil {
-				return lib, err
+			if legacy {
+				body, err := p.parseFileBlockBody()
+				if err != nil {
+					return lib, err
+				}
+				lib.Files[path] = body
+			} else {
+				// New shape: file "X" ... end with an inner-DSL body.
+				// Reuse the function-body collector + translator path.
+				body, err := p.parseFunctionBodyStatements(0)
+				if err != nil {
+					return lib, err
+				}
+				// Consume the closing `end` line.
+				if ln, indent, ok := p.peekLine(); ok && indent == 0 {
+					toks, _ := tokenizeLibLine(ln)
+					if len(toks) == 1 && toks[0] == "end" {
+						p.nextLine()
+					}
+				}
+				// Stash the raw body; the loader translates it just like
+				// it does for new-shape function bodies. We use a sentinel
+				// prefix so the loader knows to translate vs. treat as
+				// a Go template.
+				lib.Files[path] = "\x00NEW_SHAPE\x00" + body
 			}
-			lib.Files[path] = body
 		case "file_template:":
 			p.nextLine()
-			// file_template is always the last top-level item; capture
-			// everything to EOF so authors can put template actions
-			// (e.g. `{{ .body | indent 4 }}`) at column 0 — that's the
-			// standard Go-template idiom for clean nested indentation.
+			// Legacy: file_template is always the last top-level item;
+			// capture everything to EOF as a raw Go template body. New
+			// libraries should prefer the block form `file_template ... end`
+			// (handled in the case below).
 			body, err := p.parseFileTemplateToEOF()
 			if err != nil {
 				return lib, err
 			}
 			lib.FileTemplate = body
+		case "file_template":
+			// New shape: file_template ... end with an inner-DSL body
+			// (sequence of `write`/`for`/`if`/`set` statements). The
+			// loader runs the same translator used for function bodies.
+			p.nextLine()
+			body, err := p.parseFunctionBodyStatements(0)
+			if err != nil {
+				return lib, err
+			}
+			// Consume the closing `end`.
+			if ln, indent, ok := p.peekLine(); ok && indent == 0 {
+				toks, _ := tokenizeLibLine(ln)
+				if len(toks) == 1 && toks[0] == "end" {
+					p.nextLine()
+				}
+			}
+			lib.FileTemplate = "\x00NEW_SHAPE\x00" + body
 		default:
 			return lib, p.errf("unknown top-level directive: %q", tokens[0])
 		}

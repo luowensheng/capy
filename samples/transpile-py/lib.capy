@@ -53,7 +53,10 @@ end
 function end
 end
 
-file_template:
-    {{- range .context.imports }}import {{ . }}
-    {{ end }}
-    {{- .body -}}
+file_template
+    for imp in context.imports
+        write `import ${imp}
+`
+    end
+    write body
+end
