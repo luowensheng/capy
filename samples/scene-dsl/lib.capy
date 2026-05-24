@@ -1,0 +1,22 @@
+# A pure declarative DSL: every line is a function call that emits HTML.
+# No control flow defined here — none is needed for this DSL.
+
+extension html
+
+comments
+    line "#"
+end
+
+function scene.create_sphere
+    arg capture id raw
+    arg capture opts any
+    write `<sphere id=${id} opts=${opts}/>
+`
+end
+
+function scene.create_ring
+    arg capture id raw
+    arg capture opts any
+    write `<ring id=${id} opts=${opts}/>
+`
+end

@@ -1,0 +1,48 @@
+# Test-case DSL → Go test functions.
+extension go
+
+comments
+    line "#"
+end
+
+function package
+    arg literal "package"
+    arg capture name ident
+    write `package ${name}
+
+import "testing"
+`
+end
+
+function test
+    arg literal "test"
+    arg capture name ident
+    block_closer end
+    write `
+func Test_${name}(t *testing.T) {
+${indent 4 body}
+}
+`
+end
+
+function assert_eq
+    arg literal "assert_eq"
+    arg capture a any
+    arg capture b any
+    write `if got, want := ${a}, ${b}; got != want {
+    t.Errorf("got %v want %v", got, want)
+}
+`
+end
+
+function assert_true
+    arg literal "assert_true"
+    arg capture expr any
+    write `if !(${expr}) {
+    t.Errorf("expected true: ${expr}")
+}
+`
+end
+
+function end
+end

@@ -1,0 +1,37 @@
+# Demonstrates library-defined types: pattern (regex) and options (enum).
+
+extension txt
+
+comments
+    line "#"
+end
+
+type Email
+    pattern "^[^@]+@[^@]+\\.[^@]+$"
+end
+
+type Status
+    options "todo" "in-progress" "done"
+end
+
+type Slug
+    pattern "^[a-z][a-z0-9-]*$"
+end
+
+function set_email
+    arg capture e Email
+    write `email = ${e}
+`
+end
+
+function set_status
+    arg capture s Status
+    write `status = ${s}
+`
+end
+
+function set_slug
+    arg capture s Slug
+    write `slug = ${s}
+`
+end
