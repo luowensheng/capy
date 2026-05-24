@@ -106,30 +106,54 @@ func assemble(dl domain.Library, lex features.Lexer) *Library {
 // Run is safe to call repeatedly on the same Library with different
 // sources — each call runs a fresh accumulating context.
 func (l *Library) Run(scriptSrc string) (string, error) {
-	toks, err := l.lex.Tokenize(scriptSrc)
-	if err != nil {
-		return "", err
-	}
-	prog, err := l.parser.Parse(toks, l.lib)
-	if err != nil {
-		return "", err
-	}
-	return l.eval.Run(prog, l.lib)
+	out, _, err := l.RunMulti(scriptSrc)
+	return out, err
 }
 
 // RunMulti is like Run but also returns the rendered multi-file map for
 // libraries that declared `file "path":` blocks. The map is empty for
 // libraries that don't use multi-file output.
+//
+// Source-level metaprogramming is supported: any `define NAME ... end`
+// blocks at the top of the script are extracted and merged into the
+// library before evaluation, exactly as the CLI does. Embedded callers
+// (including the wasm playground) get the same behavior.
 func (l *Library) RunMulti(scriptSrc string) (string, map[string]string, error) {
-	toks, err := l.lex.Tokenize(scriptSrc)
+	// Extract `define ... end` blocks from the script and merge them
+	// into a copy of the library. The CLI does this in
+	// orchestrator.RunMulti; replicate it here so embedding/wasm
+	// callers also support metaprogramming.
+	cleaned, defineLibSrc, err := infra.ExtractDefines(scriptSrc)
 	if err != nil {
 		return "", nil, err
 	}
-	prog, err := l.parser.Parse(toks, l.lib)
+	libToUse := l.lib
+	if defineLibSrc != "" {
+		defineLib, err := orchfeatures.LoadLibraryFromBytes("capy", []byte(defineLibSrc), l.lex.Tokenize)
+		if err != nil {
+			return "", nil, err
+		}
+		// Shallow-copy the library and overlay source-defined functions.
+		// Source defines WIN on conflict (matches CLI behavior).
+		merged := libToUse
+		merged.Functions = make(map[string]*domain.FuncDef, len(libToUse.Functions)+len(defineLib.Functions))
+		for k, v := range libToUse.Functions {
+			merged.Functions[k] = v
+		}
+		for k, v := range defineLib.Functions {
+			merged.Functions[k] = v
+		}
+		libToUse = merged
+	}
+	toks, err := l.lex.Tokenize(cleaned)
 	if err != nil {
 		return "", nil, err
 	}
-	return l.eval.RunMulti(prog, l.lib)
+	prog, err := l.parser.Parse(toks, libToUse)
+	if err != nil {
+		return "", nil, err
+	}
+	return l.eval.RunMulti(prog, libToUse)
 }
 
 // Extension reports the library's declared `extension:` field — useful
