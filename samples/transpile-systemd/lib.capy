@@ -1,0 +1,73 @@
+# Service definition → systemd unit file.
+extension service
+
+comments
+    line "#"
+end
+
+context
+    unit {}
+    service {}
+    install {}
+end
+
+function description
+    arg literal "description"
+    arg capture t any
+    set context.unit.Description t
+end
+
+function after
+    arg literal "after"
+    arg capture t any
+    set context.unit.After t
+end
+
+function exec
+    arg literal "exec"
+    arg capture cmd any
+    set context.service.ExecStart cmd
+end
+
+function restart
+    arg literal "restart"
+    arg capture policy any
+    set context.service.Restart policy
+end
+
+function user
+    arg literal "user"
+    arg capture u ident
+    set context.service.User u
+end
+
+function wanted_by
+    arg literal "wanted_by"
+    arg capture target any
+    set context.install.WantedBy target
+end
+
+file_template
+    write `[Unit]
+`
+    for k, v in context.unit
+        write `${k}=${v}
+`
+    end
+    write `
+[Service]
+`
+    for k, v in context.service
+        write `${k}=${v}
+`
+    end
+    write `
+[Install]
+`
+    for k, v in context.install
+        write `${k}=${v}
+`
+    end
+    write `
+`
+end

@@ -115,9 +115,17 @@ type IfStmt struct {
 	Else *InnerBlock // optional; populated by `else` / `else if` arms
 }
 type LoopStmt struct {
-	Var  string
-	Iter Expr
-	Body InnerBlock
+	// Var is the value variable name. For two-var loops over maps,
+	// this is the value side; for two-var loops over lists, this is
+	// the element side.
+	Var string
+	// KeyVar is the optional key/index variable. Empty for one-var
+	// loops. When set:
+	//   - iterating a list: KeyVar is the integer index
+	//   - iterating a map:  KeyVar is the key
+	KeyVar string
+	Iter   Expr
+	Body   InnerBlock
 }
 type CallStmt struct {
 	Call CallExpr

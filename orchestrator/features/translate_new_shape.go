@@ -87,15 +87,18 @@ func translateStmt(s domain.InnerStmt, tpl *strings.Builder, run *[]domain.Inner
 		}
 		return nil
 	case domain.LoopStmt:
-		// Add the loop variable to the scope before translating the
+		// Add the loop variable(s) to the scope before translating the
 		// body so `${var}` and `${var.field}` interpolations emit
 		// `$var` / `$var.field` (Go-template variable references)
 		// instead of `.var` / `.var.field` (data-tree access).
-		inner := make(map[string]bool, len(scope)+1)
+		inner := make(map[string]bool, len(scope)+2)
 		for k, v := range scope {
 			inner[k] = v
 		}
 		inner[n.Var] = true
+		if n.KeyVar != "" {
+			inner[n.KeyVar] = true
+		}
 		var bodyTpl strings.Builder
 		var bodyRun []domain.InnerStmt
 		for _, child := range n.Body.Stmts {
@@ -104,9 +107,21 @@ func translateStmt(s domain.InnerStmt, tpl *strings.Builder, run *[]domain.Inner
 			}
 		}
 		if bodyTpl.Len() > 0 {
-			tpl.WriteString("{{ range $")
-			tpl.WriteString(n.Var)
-			tpl.WriteString(" := ")
+			tpl.WriteString("{{ range ")
+			if n.KeyVar != "" {
+				// Two-var form: `{{ range $k, $v := EXPR }}`.
+				// Go template's `range` over a map yields key, value;
+				// over a list yields index, value.
+				tpl.WriteString("$")
+				tpl.WriteString(n.KeyVar)
+				tpl.WriteString(", $")
+				tpl.WriteString(n.Var)
+				tpl.WriteString(" := ")
+			} else {
+				tpl.WriteString("$")
+				tpl.WriteString(n.Var)
+				tpl.WriteString(" := ")
+			}
 			tpl.WriteString(exprToTemplateValue(n.Iter, scope))
 			tpl.WriteString(" }}")
 			tpl.WriteString(bodyTpl.String())
@@ -114,9 +129,10 @@ func translateStmt(s domain.InnerStmt, tpl *strings.Builder, run *[]domain.Inner
 		}
 		if len(bodyRun) > 0 {
 			*run = append(*run, domain.LoopStmt{
-				Var:  n.Var,
-				Iter: n.Iter,
-				Body: domain.InnerBlock{Stmts: bodyRun},
+				Var:    n.Var,
+				KeyVar: n.KeyVar,
+				Iter:   n.Iter,
+				Body:   domain.InnerBlock{Stmts: bodyRun},
 			})
 		}
 		return nil
@@ -478,7 +494,11 @@ func renderInnerStmt(s domain.InnerStmt, out *strings.Builder, indent int) {
 		}
 		fmt.Fprintf(out, "%send\n", prefix)
 	case domain.LoopStmt:
-		fmt.Fprintf(out, "%sloop %s in %s\n", prefix, n.Var, renderExpr(n.Iter))
+		if n.KeyVar != "" {
+			fmt.Fprintf(out, "%sloop %s, %s in %s\n", prefix, n.KeyVar, n.Var, renderExpr(n.Iter))
+		} else {
+			fmt.Fprintf(out, "%sloop %s in %s\n", prefix, n.Var, renderExpr(n.Iter))
+		}
 		for _, c := range n.Body.Stmts {
 			renderInnerStmt(c, out, indent+1)
 		}

@@ -1,0 +1,63 @@
+# Workflow DSL → GitHub Actions YAML.
+extension yml
+
+comments
+    line "#"
+end
+
+context
+    workflow_name ""
+    triggers []
+end
+
+function name
+    arg literal "name"
+    arg capture n any
+    set context.workflow_name n
+end
+
+function on
+    arg literal "on"
+    arg capture ev any
+    append context.triggers ev
+end
+
+function job
+    arg literal "job"
+    arg capture jname ident
+    arg capture runs_on any
+    block_closer end
+    write `${jname}:
+  runs-on: ${unquote runs_on}
+  steps:
+${body}
+`
+end
+
+function step
+    arg literal "step"
+    arg capture name any
+    arg capture cmd any
+    write `      - name: ${unquote name}
+        run: ${cmd}
+`
+end
+
+function end
+end
+
+file_template
+    write `name: ${unquote context.workflow_name}
+on: [`
+    for i, t in context.triggers
+        if i > 0
+            write `, `
+        end
+        write `${unquote t}`
+    end
+    write `]
+
+jobs:
+${indent 2 body}
+`
+end

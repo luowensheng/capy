@@ -253,11 +253,25 @@ func (p *innerP) parseIf() (domain.InnerStmt, error) {
 }
 
 func (p *innerP) parseLoop() (domain.InnerStmt, error) {
-	p.Advance() // loop
+	p.Advance() // for / loop
 	if p.Peek().Kind != domain.TokIdent {
 		return nil, fmt.Errorf("line %d: expected loop variable", p.Peek().Line)
 	}
-	v := p.Advance().Text
+	first := p.Advance().Text
+
+	// Two-var form: `for KEY, VAL in EXPR`.
+	// Detected by a `,` punct token right after the first ident.
+	keyVar := ""
+	v := first
+	if p.Peek().Kind == domain.TokPunct && p.Peek().Text == "," {
+		p.Advance()
+		if p.Peek().Kind != domain.TokIdent {
+			return nil, fmt.Errorf("line %d: expected second loop variable after `,`", p.Peek().Line)
+		}
+		keyVar = first
+		v = p.Advance().Text
+	}
+
 	if !p.atKeyword("in") {
 		return nil, fmt.Errorf("line %d: expected `in`", p.Peek().Line)
 	}
@@ -279,7 +293,7 @@ func (p *innerP) parseLoop() (domain.InnerStmt, error) {
 	}
 	p.Advance()
 	p.consumeNewline()
-	return domain.LoopStmt{Var: v, Iter: iter, Body: body}, nil
+	return domain.LoopStmt{Var: v, KeyVar: keyVar, Iter: iter, Body: body}, nil
 }
 
 func (p *innerP) parseBlockBody() (domain.InnerBlock, error) {

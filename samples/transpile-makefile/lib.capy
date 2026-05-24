@@ -1,0 +1,47 @@
+# Declarative tasks → Makefile.
+extension mk
+
+comments
+    line "#"
+end
+
+context
+    default_task ""
+    tasks {}
+end
+
+function task
+    arg literal "task"
+    arg capture name ident
+    arg capture cmd any
+    set context.tasks[name] cmd
+end
+
+function default
+    arg literal "default"
+    arg capture name ident
+    set context.default_task name
+end
+
+file_template
+    write `.PHONY: `
+    for name, cmd in context.tasks
+        write `${name} `
+    end
+    write `
+`
+    if context.default_task
+        write `
+.DEFAULT_GOAL := ${context.default_task}
+
+`
+    end
+    for name, cmd in context.tasks
+        write `
+${name}:
+	${unquote cmd}
+`
+    end
+    write `
+`
+end

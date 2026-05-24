@@ -109,18 +109,48 @@ func (e *InnerEvaluator) execStmt(s domain.InnerStmt, caps map[string]domain.Cap
 		if err != nil {
 			return err
 		}
-		list, ok := v.([]any)
-		if !ok {
-			return fmt.Errorf("loop iterable must be a list")
-		}
-		for _, item := range list {
-			child := copyMap(locals)
-			child[n.Var] = item
-			if err := e.execBlock(n.Body, caps, child); err != nil {
-				return err
+		switch coll := v.(type) {
+		case []any:
+			for i, item := range coll {
+				child := copyMap(locals)
+				child[n.Var] = item
+				if n.KeyVar != "" {
+					child[n.KeyVar] = i
+				}
+				if err := e.execBlock(n.Body, caps, child); err != nil {
+					return err
+				}
 			}
+			return nil
+		case map[string]any:
+			// Map iteration: sort keys for determinism (matches Go
+			// template's `range` over maps, which sorts by key).
+			keys := make([]string, 0, len(coll))
+			for k := range coll {
+				keys = append(keys, k)
+			}
+			// tiny sort.
+			for i := 0; i < len(keys); i++ {
+				for j := i + 1; j < len(keys); j++ {
+					if keys[j] < keys[i] {
+						keys[i], keys[j] = keys[j], keys[i]
+					}
+				}
+			}
+			for _, k := range keys {
+				child := copyMap(locals)
+				child[n.Var] = coll[k]
+				if n.KeyVar != "" {
+					child[n.KeyVar] = k
+				}
+				if err := e.execBlock(n.Body, caps, child); err != nil {
+					return err
+				}
+			}
+			return nil
+		default:
+			return fmt.Errorf("loop iterable must be a list or map")
 		}
-		return nil
 	case domain.CallStmt:
 		return e.runPrimitive(n.Call, caps, locals)
 	case domain.WriteStmt:

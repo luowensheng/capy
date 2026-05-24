@@ -1,0 +1,64 @@
+# Blog DSL → markdown post with YAML front matter.
+extension md
+
+comments
+    line "#"
+end
+
+context
+    meta {}
+    tags []
+end
+
+function title
+    arg literal "title"
+    arg capture t any
+    set context.meta.title t
+end
+
+function date
+    arg literal "date"
+    arg capture d any
+    set context.meta.date d
+end
+
+function author
+    arg literal "author"
+    arg capture a any
+    set context.meta.author a
+end
+
+function tag
+    arg literal "tag"
+    arg capture t any
+    append context.tags t
+end
+
+function para
+    arg literal "para"
+    arg capture text any
+    write `
+${unquote text}
+`
+end
+
+function heading
+    arg literal "h2"
+    arg capture t any
+    write `
+## ${unquote t}
+`
+end
+
+file_template
+    write `---
+`
+    for k, v in context.meta
+        write `${k}: ${v}
+`
+    end
+    write `tags: ${toJSON context.tags}
+---
+${body}
+`
+end
