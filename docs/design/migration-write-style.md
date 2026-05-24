@@ -174,51 +174,48 @@ were single-helper.)
 
 | Status | Count |
 |---|---|
-| Migrated total | 59 / ~107 lib files |
-| Remaining .capy with `{{}}` | ~26 |
-| Remaining YAML (blocked on inner-DSL features) | 7 |
-| `template_engine.go` deletable? | No — still load-bearing |
+| Migrated total | 67 / ~107 lib files |
+| Remaining .capy with `{{}}` (body) | ~15 |
+| Remaining YAML | 2 (interactive-breakout, interactive-snake) |
+| `template_engine.go` deletable? | No — still the rendering backend |
 
-## Inner-DSL gaps the remaining libs need
+## Engine improvements landed this session
 
-The remaining libraries can't be migrated with the current inner DSL.
-Each gap is a small, well-bounded engine change. Listed roughly in
-order of how many libs each unblocks:
+Three gaps from the previous analysis are now closed:
 
-### 1. Two-var `for` (8+ libs)
+1. **Two-var `for`** — `for k, v in MAP` (sorted keys) and
+   `for i, x in LIST` (with index). domain.LoopStmt.KeyVar threads
+   through parser → translator → evaluator.
+2. **Chained / nested helpers in interpolations**:
+   - `${a | upper | toQuoted}` → `toQuoted (upper .a)`
+   - `${toQuoted (upper a)}` → `toQuoted (upper .a)`
+   - Tokeniser keeps parenthesised groups as one atom; pipe form
+     rewritten to nested prefix calls (`splitInterpPipe`).
+3. **`context.X` references the ROOT** even when used inside a
+   range. Translator emits `$.context.X` not `.context.X`.
+   (Previously, nested loops looking up `.context.fields` against
+   the iteration variable silently produced empty output.)
 
-Today: `for x in y` only.
+Plus one related fix:
 
-Needed:
-```
-for k, v in MAP ... end           # iterate map entries
-for i, x in LIST ... end          # iterate with index
-```
+4. **Brace adjacency escape** — a literal `{` that ended up
+   adjacent (after expansion) to a `${...}` interpolation or a
+   `{{`/`}}` escape would produce `{{...` in the output and trip
+   Go template's lexer with "unexpected `{` in command". The
+   translator now looks ahead via `nextEmitStartsWithBrace` and
+   escapes the leading brace via `{{"{"}}` whenever there's a
+   collision. Bug surfaced in transpile-websocket-server's
+   `struct{}{}` patterns inside the Go output.
 
-Blockers:
-- `transpile-blog` — `range $k, $v := .meta`
-- `transpile-systemd` — same
-- `transpile-makefile` — same
-- `transpile-gh-actions` — `range $i, $t :=` for separator-unless-first
-- `transpile-xstate-machine` — nested ranges with index
-- `lib-composition` — index iteration for hashtag join
-- `supercharge-markdown` — same
-- `interactive-breakout`, `interactive-snake` — many nested patterns
+## Inner-DSL gaps still blocking remaining libs
 
-### 2. Chained / nested helper calls in interpolations (10+ libs)
+### ~~1. Two-var `for`~~ — LANDED
 
-Today: `${fn arg1 arg2}` only. `${a | helper}` fails. `${outer (inner x)}`
-fails with `unexpected "(" in operand`.
+Closed this session. See "Engine improvements" above.
 
-Needed: either pipe support (`${x | upper | toQuoted}`) or
-parenthesised nested calls (`${toQuoted (upper x)}`).
+### ~~2. Chained / nested helper calls~~ — LANDED
 
-Blockers:
-- `transpile-flask-app`, `transpile-express-server` — `{{ .method | upper | toQuoted }}`
-- `design-system-components/{react,svelte,vue}` — `{{ .x | unquote | toQuoted }}` and dynamic file paths `{{ ... | pascalCase | unquote }}Page.tsx`
-- `transpile-react-component`
-- `progressive-abstraction`
-- `webapp-trio`, multiple others
+Closed this session. See "Engine improvements" above.
 
 ### 3. Arithmetic in expression positions (3+ libs)
 
