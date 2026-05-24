@@ -19,7 +19,7 @@ press **Download** to grab the result.
         loading="lazy"
         title="Capy playground"></iframe>
 
-If the iframe doesn't load, [open the playground in a new tab](../assets/playground/index.html){:target="_blank"}.
+If the iframe doesn't load, <a href="../assets/playground/index.html" target="_blank">open the playground in a new tab</a>.
 
 ## What you can do here
 
