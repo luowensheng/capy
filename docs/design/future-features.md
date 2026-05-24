@@ -1,546 +1,1790 @@
-# Design — what's next for Capy
+# Future features — comprehensive design
 
-> Status: **proposed, not implemented.** A grab-bag of features to
-> evaluate and prioritise. Each section sketches: what it is, why
-> it would help, a concrete shape, open questions, and a rough
-> effort estimate. Implementation order is up to discussion.
+> Status: **proposed, not implemented.** This doc is the long-form
+> roadmap. Each feature gets: what it is, the user pain it
+> addresses, who benefits, a concrete design with examples, a
+> step-by-step walkthrough, trade-offs, an effort estimate, and a
+> shipping recommendation. A summary table at the end ranks
+> everything by value × effort.
 
-The features cluster into four groups:
+## Reading guide
 
-1. **Distribution** — easier install, including WebAssembly.
-2. **Ergonomics** — shorter invocation, library auto-discovery,
-   shebang-style scripts.
-3. **Compilation** — turn a library + script (or just a library)
-   into a single runnable artifact.
-4. **Ecosystem** — a curated library directory, registry, formatter,
-   LSP, watch mode, language SDKs.
+The features cluster into nine areas. Skip to whichever you care
+about — sections are largely independent, with cross-references
+where one depends on another.
 
----
+| § | Area | Anchor features |
+|---|------|----------------|
+| 1 | **Foundations** | search path, manifest, directory site |
+| 2 | **Multiple implementations of one library** | impl selection, defaults, lockfile |
+| 3 | **Versioning** | library version, impl version, pin/resolve |
+| 4 | **Authoring & publishing** | scaffolding, local libs, git distribution |
+| 5 | **Invocation ergonomics** | file-extension conventions, shebang, short form, compile/run/build subcommands |
+| 6 | **Distribution** | WASM packaging, single-binary compiler |
+| 7 | **Editor / tooling** | LSP, formatter, watch, local playground, sourcemaps |
+| 8 | **SDKs and embedding** | Go, Python, JS, Rust |
+| 9 | **Big ideas** | `capy transform`, provenance, capy-on-capy, bundle |
 
-## 1. Distribution
-
-### 1.1 A curated library directory
-
-**What.** A single page (and machine-readable JSON manifest) listing
-every battle-tested Capy library with: name, one-line description,
-target output, source repo, license, install command. Hosted on the
-project site at `/libraries/` and mirrored in
-`docs/assets/library-index.json` for tools to consume.
-
-**Why.** Today a user opens the playground and sees ~60 sample DSLs
-— great for browsing, useless for "find me a library that outputs
-GitHub Actions YAML." A directory is the entry point.
-
-**Shape.**
-
-```json
-[
-  {
-    "name": "py",
-    "target": "Python 3",
-    "extension": "py",
-    "description": "Tiny imperative DSL → runnable Python.",
-    "source": "https://github.com/luowensheng/capy/tree/main/samples/transpile-py",
-    "install": "capy lib add capy/py",
-    "license": "Source-Available"
-  },
-  ...
-]
-```
-
-The page surfaces the JSON via a searchable / filterable table:
-filter by target language, output type (HTML, JSON, YAML, code,
-shell, asm), domain (web, devops, schemas, games).
-
-**Open questions.**
-- Curated by whom? For pre-1.0 it's just the maintainer. For post-1.0
-  consider a `community/` namespace with light review (no PRs from
-  others today; ask-to-add via issue).
-- Versioning. Until libraries themselves carry versions (see § 4.2),
-  just link to a commit SHA in the source field.
-
-**Effort.** Small. Mostly content — generate the manifest from the
-existing curated playground bundle, write a docs page that loads it.
-
-### 1.2 WebAssembly distribution as an install target
-
-**What.** Make the WASM build first-class: a published `.wasm`
-binary plus a thin loader so a browser app can do
-```js
-const capy = await loadCapy("https://cdn.../capy@0.18.0.wasm");
-const out = capy.run(libSrc, scriptSrc);
-```
-
-**Why.** Today the WASM lives at
-`docs/assets/playground/capy.wasm` and is only used by the
-playground. Anyone else wanting to embed Capy in a static site
-has to copy the file + `wasm_exec.js` + reverse-engineer the JS
-glue. A documented `capy-wasm` package solves that.
-
-**Shape.**
-- `npm i @capylang/capy` — installs the wasm bundle + a small
-  TypeScript loader.
-- `pip install capy-wasm` — same idea via wasmtime-py.
-- `capy install --wasm` CLI flag — downloads the right wasm for
-  the host's Capy CLI version into `~/.capy/wasm/`.
-- The wasm exposes the same `capyRun(libSrc, format, scriptSrc)`
-  / `capyDocs` / `capyVersion` surface the playground already uses.
-
-**Open questions.**
-- Size: today's wasm is ~6.4 MB. TinyGo could shrink it 5×, but
-  TinyGo's reflect support is limited and `text/template` may not
-  fly. Worth a benchmark before committing.
-- Streaming compile: would let the wasm load incrementally over
-  HTTP. Browser support is universal now.
-
-**Effort.** Medium. The hard part is packaging + publishing
-flow, not the engineering.
+A summary recommendation table at the bottom (§ Decisions)
+collects every feature with effort vs. value scores and a
+SHIP / DEFER / SKIP verdict.
 
 ---
 
-## 2. Ergonomics — running Capy like an actual language
+# § 1 Foundations
 
-The current invocation is `capy run lib.capy script.capy`. That's
-explicit, unambiguous, and verbose. Once a user has 10 libraries
-and 100 scripts, the verbosity adds up.
+These three features are infrastructure — nothing else in the doc
+works without them. Ship together, in this order.
 
-### 2.1 Convention-based file extensions
+## 1.1 `CAPY_LIBS` search path
 
-**What.** Allow a script to declare its library via its filename
-extension. Library files use `<lib>.capy`; scripts that consume
-them use `<filename>.<lib>`. Example:
+### What it is
 
-```
-~/proj/
-├── recipe.capy           ← library (extension: lib name)
-└── lemon-cake.recipe     ← script (extension: chosen lib)
-```
-
-Running `capy run lemon-cake.recipe` auto-resolves `recipe.capy`
-in the search path (see § 2.2) and uses it.
-
-**Why.** Short, scannable invocation. The OS file-association story
-also gets cleaner — register `.recipe` with `capy run` and a
-double-click runs it.
-
-**Open questions.**
-- Disambiguating "library name" from "output extension" — today the
-  library declares `extension html`; if the SCRIPT extension is
-  the library name then output extension stays a library-internal
-  concern. Slightly different mental model.
-- Backwards compat: `capy run lib.capy script.capy` keeps working;
-  the new shape is additive.
-- What about libraries called `txt` or `md` (collide with common
-  content extensions)? Lean: the library author chooses; clashes
-  resolve at search-path priority.
-
-**Effort.** Small. The CLI just needs an "auto-detect when one
-positional arg is given" branch.
-
-### 2.2 `CAPY_LIBS` search path
-
-**What.** An environment variable that lists directories where
-`capy run` looks for libraries by name. Mirrors `PATH` / `PYTHONPATH`:
+An environment variable listing directories where `capy` searches
+for libraries by name, mirroring `PATH` / `PYTHONPATH`:
 
 ```sh
-export CAPY_LIBS="$HOME/.capy/libs:/usr/local/share/capy"
-capy run lemon-cake.recipe
+export CAPY_LIBS="$HOME/.capy/libs:/usr/local/share/capy/libs"
+capy run recipe lemon-cake.recipe
 # resolves: $HOME/.capy/libs/recipe.capy
-# then:    /usr/local/share/capy/recipe.capy
+# then:    /usr/local/share/capy/libs/recipe.capy
 # then:    ./recipe.capy
 # then:    error: library "recipe" not found
 ```
 
-**Why.** Once libraries get distribution (see § 1.1), users want
-them installed centrally rather than copied into every project.
+### User pain it addresses
 
-**Shape.**
-- Default: `$XDG_CONFIG_HOME/capy/libs/` on Linux,
-  `~/Library/Application Support/Capy/libs/` on macOS,
-  `%APPDATA%\Capy\libs\` on Windows; falls back to `~/.capy/libs/`.
-- `capy lib add <git-url>` clones into the first writable path.
-- `capy lib list` shows every library and where it resolves.
+Today every script invocation needs a full path to the library:
+`capy run ../shared/recipe.capy lemon-cake.recipe`. As soon as a
+team has three libraries reused across ten projects, paths get
+out of sync, copies drift, and `cp` becomes the dependency manager.
 
-**Open questions.**
-- Resolution precedence. Strict left-to-right (Unix tradition) is
-  predictable.
-- Should subdirectories be allowed (`my-team/python.capy`)?
-  Yes — `capy run app.my-team/python` becomes the explicit form
-  for collision-prone names.
+### Who benefits
 
-**Effort.** Small.
+- **Script writers:** type `capy run recipe …` instead of pasting
+  paths.
+- **Library authors:** ship a library by installing it; consumers
+  don't reorganise their projects to use it.
+- **Teams:** put `/usr/local/share/capy/libs` on every dev box and
+  every CI runner; one source of truth.
 
-### 2.3 Shebang-style scripts
+### Design
 
-**What.** Let a script declare its own library inline via a
-shebang line:
+| Platform | Default path |
+|---|---|
+| Linux | `$XDG_CONFIG_HOME/capy/libs/` (or `~/.config/capy/libs/`) |
+| macOS | `~/Library/Application Support/Capy/libs/` |
+| Windows | `%APPDATA%\Capy\libs\` |
+| Fallback | `~/.capy/libs/` |
+
+`CAPY_LIBS` overrides the default; entries are colon-separated
+(semicolon on Windows). Resolution is left-to-right, first match
+wins.
+
+Subdirectories are part of the name:
+
+```sh
+capy run my-team/python script.my-team/python
+# resolves: $CAPY_LIBS[*]/my-team/python.capy
+```
+
+CLI helpers:
+
+```sh
+capy lib list                              # print all libs found in CAPY_LIBS
+capy lib which recipe                      # show full path of the resolved lib
+capy lib add ./my-recipe                   # copy/symlink into the first writable dir
+capy lib add github.com/user/recipes       # clone into the first writable dir
+capy lib remove recipe
+```
+
+### Walkthrough
+
+```sh
+# One-time setup.
+mkdir -p ~/.capy/libs
+
+# Pull a community library.
+capy lib add github.com/example/recipes
+# → cloned into ~/.capy/libs/recipes-capy/
+
+# Or write your own.
+mkdir ~/.capy/libs/recipe
+cat > ~/.capy/libs/recipe/recipe.capy <<'EOF'
+extension html
+function recipe
+    arg literal "recipe"
+    arg capture title string
+    block_closer end
+    set context.title title
+end
+# … rest of the library
+EOF
+
+# Use it.
+echo 'recipe "Lemon cake"\nserves 8\nend' > cake.recipe
+capy run recipe cake.recipe > cake.html
+```
+
+### Trade-offs
+
+- **Pro:** mirrors decades of POSIX convention; users know how
+  search paths work.
+- **Pro:** "library by name" is the precondition for every
+  short-form invocation in § 5.
+- **Con:** introduces a global resolution step — a script's
+  behaviour now depends on the environment, which is bad for
+  reproducibility unless paired with lockfiles (§ 3).
+
+### Effort
+
+**Small.** ~200 LOC for the resolver, subcommand wiring,
+cross-platform default paths.
+
+### Recommendation
+
+**SHIP — first.** Foundation for everything in § 2, § 4, § 5.
+
+---
+
+## 1.2 Library manifest (`capy.toml`)
+
+### What it is
+
+A small TOML file alongside every library file (or inside its
+directory). Declares metadata the engine doesn't infer from the
+library source:
+
+```toml
+# ~/.capy/libs/recipe/capy.toml
+[library]
+name        = "recipe"
+version     = "1.4.0"
+description = "Recipe DSL → printable HTML card."
+license     = "Source-Available"
+authors     = ["Alice <alice@example.com>"]
+homepage    = "https://github.com/alice/recipe-capy"
+
+# Output classification (helps the library directory filter).
+[output]
+extension = "html"
+kind      = "html"           # html | json | yaml | toml | code:py | shell | asm | … 
+
+# Implementations of this library's interface (see § 2).
+[[impl]]
+name        = "html"          # default
+file        = "recipe.capy"   # path relative to capy.toml
+description = "Printable HTML recipe card."
+
+[[impl]]
+name        = "json"
+file        = "recipe.json.capy"
+description = "Same interface, JSON output for APIs."
+
+[[impl]]
+name        = "markdown"
+file        = "recipe.md.capy"
+description = "Markdown for blogs / READMEs."
+
+# Default impl when none is specified.
+default-impl = "html"
+
+# Dependencies on other libraries (see § 3).
+[deps]
+common-types = { version = "^2.0.0", source = "github:capy/common-types" }
+```
+
+### User pain it addresses
+
+Today every piece of library metadata lives in two places:
+sometimes as a `description "..."` directive at the top of the
+`.capy` file, sometimes implicitly in the file name. To list every
+library on a machine, you'd have to parse every file. To check
+whether two are compatible, you'd have to read both.
+
+### Who benefits
+
+- **Library directory** (§ 1.3) reads manifests to build the index.
+- **`capy lib list`** uses them to print human-readable summaries.
+- **Versioning + lockfiles** (§ 3) need a canonical place to read
+  `version` from.
+- **Multiple-impl support** (§ 2) requires a canonical place to
+  enumerate impls.
+- **LSP** (§ 7.1) uses the manifest to discover where the library
+  file is.
+
+### Design
+
+The manifest is optional for libraries that are just one file with
+no fancy features — the engine still loads bare `.capy` files. But
+once a library wants versioning, multiple impls, or a published
+description, it needs a manifest.
+
+Lookup order when resolving a library by name `X`:
+
+1. `$CAPY_LIBS[i]/X/capy.toml` — directory-style library
+   with a manifest. Read the manifest, find the default impl's
+   file, load it.
+2. `$CAPY_LIBS[i]/X.capy` — bare-file library. No metadata.
+
+### Walkthrough
+
+```sh
+capy lib new recipe        # scaffolds a directory with capy.toml
+cd ~/.capy/libs/recipe
+ls
+# capy.toml  recipe.capy  README.md
+
+cat capy.toml
+# [library]
+# name    = "recipe"
+# version = "0.1.0"
+# …
+```
+
+### Trade-offs
+
+- **Pro:** clean place for metadata that doesn't belong in the
+  library source.
+- **Pro:** extensible — future features add new keys without
+  changing the library source.
+- **Con:** another file to learn. Mitigation: `capy lib new`
+  scaffolds it; bare-`.capy` libraries continue to work for
+  one-off use.
+
+### Effort
+
+**Small.** TOML parser is in the Go standard ecosystem.
+
+### Recommendation
+
+**SHIP — alongside § 1.1.** The manifest IS the unit of
+distribution.
+
+---
+
+## 1.3 Library directory site
+
+### What it is
+
+`/libraries/` on the docs site. A searchable, filterable table of
+every curated library: name, version, description, output target,
+domain, link to source, install command.
+
+Backed by a machine-readable manifest at
+`docs/assets/library-index.json` so other tools (LSP, registry,
+external indexes) can consume it.
+
+### User pain it addresses
+
+A new user opening the playground sees 60 sample DSLs in a
+dropdown — no way to find "the one that outputs Kubernetes
+manifests." The samples are organised for the playground, not for
+discovery.
+
+### Who benefits
+
+- **New users:** "I need to generate X — what library do I want?"
+- **AI agents:** the JSON manifest is the perfect bootstrap
+  prompt — "here are the libraries available; pick one."
+- **Library authors:** visibility for libraries that are otherwise
+  buried in samples/.
+
+### Design
+
+Page layout:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Libraries                                  [Search ____]    │
+│                                                              │
+│  Filter:  [Target ▾] [Kind ▾] [Domain ▾] [License ▾]        │
+│                                                              │
+│  ┌────────────┬───────────────────────────┬─────────────┐   │
+│  │ recipe 1.4 │ Recipe DSL → printable    │ html        │   │
+│  │            │ HTML card                 │ Source-Av.. │   │
+│  ├────────────┼───────────────────────────┼─────────────┤   │
+│  │ py 0.18    │ Tiny imperative DSL →     │ code:py     │   │
+│  │            │ runnable Python           │ Src-Av..    │   │
+│  └────────────┴───────────────────────────┴─────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+Click a row → library detail page with full description, source,
+impl list (§ 2), install command, screenshots / generated-output
+samples.
+
+### Walkthrough
+
+```sh
+# Browser visits luowensheng.github.io/capy/libraries/
+# User searches "kubernetes", filters by Kind: yaml
+# Picks the `k8s-deploy` library, clicks Install:
+capy lib add github.com/example/k8s-deploy
+
+# Now usable.
+capy run k8s-deploy app.k8s-deploy
+```
+
+### Trade-offs
+
+- **Pro:** turns Capy from "a transpiler engine + some samples"
+  into "an ecosystem."
+- **Con:** curation is work. Pre-1.0, the maintainer curates; the
+  doc page renders the manifest, that's it.
+
+### Effort
+
+**Small.** Static page + JSON manifest generated from
+`cmd/playground-bundle` (already enumerates samples).
+
+### Recommendation
+
+**SHIP — alongside § 1.1 / 1.2.** Without it, the search path
+has nothing visible to populate from.
+
+---
+
+# § 2 Multiple implementations of one library
+
+### Motivation (please read this first)
+
+A library declares an *interface*: the function shapes the source
+file expects to use. An *implementation* defines what each
+function emits. Different implementations of the same interface
+produce different outputs from the same source.
+
+The simplest example: a chart DSL.
+
+```
+chart "Quarterly revenue"
+    series "2025" [120 130 145 160]
+    series "2024" [100 110 130 150]
+end
+```
+
+Three impls of the `chart` library:
+
+- **`chart` (mermaid):** emits a Mermaid `xychart-beta` block.
+- **`chart` (d3):** emits an HTML page with D3.js.
+- **`chart` (ascii):** emits an ASCII bar chart for a terminal.
+
+Same source. The user picks the impl per run.
+
+### Current state
+
+Today: a library is one `.capy` file. To get three outputs you
+either write three libraries (`chart-mermaid.capy`,
+`chart-d3.capy`, `chart-ascii.capy`) and the source has to commit
+to one upfront, or you write three sample subdirectories.
+
+That's not great — the source ends up coupled to a specific impl,
+which defeats the "spec-as-source" pitch.
+
+### Who benefits
+
+- **Source authors** stay tool-agnostic. The same `chart` source
+  follows them from Slack-as-ASCII to slides-as-Mermaid to
+  product-dashboards-as-D3.
+- **Library authors** can ship a clean interface library + several
+  impls without forcing consumers to commit upfront.
+- **Multi-target teams** (Web + Mobile + Backend) get parity:
+  declare interface once, ship per-target impls.
+
+## 2.1 Interface + implementation split
+
+### Design
+
+A library directory contains:
+
+```
+~/.capy/libs/chart/
+├── capy.toml               # declares the interface and lists impls
+├── interface.capy          # function shapes only (no `write` calls)
+├── impl/
+│   ├── mermaid.capy        # impl: emits Mermaid
+│   ├── d3.capy             # impl: emits D3 HTML
+│   └── ascii.capy          # impl: emits ASCII art
+└── README.md
+```
+
+`interface.capy` declares the function shapes that scripts will
+match against, but every function body is empty (no `write`, no
+state mutation). Authors of consuming scripts read THIS file to
+know what the library accepts.
+
+```
+# interface.capy
+extension ""   # impl-dependent; left blank here
+
+function chart
+    description "Open a chart with a title."
+    arg literal "chart"
+    arg capture title string  "Chart title shown above the plot."
+    block_closer end
+end
+
+function series
+    description "One data series on the chart."
+    arg literal "series"
+    arg capture name string  "Legend label."
+    arg capture values any   "List of numbers."
+end
+
+function end
+end
+```
+
+Each impl `extends` the interface, re-declaring each function with
+a body:
+
+```
+# impl/mermaid.capy
+extends "chart"            # inherits arg shapes from interface.capy
+
+extension md
+output_file ""
+
+context
+    title ""
+    series []
+end
+
+function chart
+    set context.title title
+    write `\`\`\`mermaid
+xychart-beta
+    title "${unquote context.title}"
+${body}
+\`\`\`
+`
+end
+
+function series
+    append context.series {name: name, values: values}
+    write `    line "${unquote name}" ${values}
+`
+end
+
+function end
+end
+```
+
+The `extends "chart"` directive tells the loader: "use the arg
+shapes from `chart`'s interface file; my function bodies provide
+the rendering."
+
+### Walkthrough
+
+```sh
+# Install the library (contains all impls).
+capy lib add github.com/example/chart
+
+# List impls.
+capy lib impl chart
+# chart 1.4.0
+#   - mermaid (default)
+#   - d3
+#   - ascii
+
+# Pick one at run time.
+capy run --impl mermaid chart revenue.chart > revenue.md
+capy run --impl d3      chart revenue.chart > revenue.html
+capy run --impl ascii   chart revenue.chart  # prints to terminal
+
+# Or set a default for this shell.
+export CAPY_IMPL_CHART=ascii
+capy run chart revenue.chart
+
+# Or pin per project.
+echo '[impl]\nchart = "d3"' >> capy.toml
+```
+
+### Trade-offs
+
+- **Pro:** the same source becomes genuinely portable across
+  output targets.
+- **Pro:** the interface file IS the documentation. `capy docs
+  --interface chart` would describe what the source can express
+  without committing to any output shape.
+- **Con:** new file (`interface.capy`). Mitigation: a single-impl
+  library doesn't need an interface file — just one `.capy` works.
+
+### Effort
+
+**Medium.** Engine learns `extends "X"` directive that loads
+function shapes from another file. Loader merges
+interface-declared `arg` lines with the impl's bodies. CLI grows
+`--impl` flag + impl-selection logic.
+
+### Recommendation
+
+**SHIP — high value.** This is the missing piece that makes
+Capy's "spec-as-source" pitch real for multi-target work.
+
+## 2.2 Impl selection: flag, env, lockfile, default
+
+### Design
+
+Selection precedence (highest wins):
+
+1. **CLI flag**: `--impl <name>`
+2. **Per-project lockfile**: `[impl] chart = "d3"` in `capy.toml`
+   (the project's, not the library's)
+3. **Env var**: `CAPY_IMPL_CHART=d3`
+4. **Generic env var**: `CAPY_IMPL=d3`
+5. **Library's `default-impl`** in its `capy.toml`
+
+If none of the above match, error with the available impl names.
+
+### CLI
+
+```sh
+# Discover.
+capy lib impl chart
+
+# Run with explicit pick.
+capy run --impl mermaid chart script.chart
+
+# See what would be picked.
+capy lib resolve chart
+# chart 1.4.0
+# selected impl: d3 (from project capy.toml)
+# search path:   ~/.capy/libs/chart/
+```
+
+### Per-project pinning
+
+A project at `~/work/dashboards/` can pin every library AND impl
+it uses:
+
+```toml
+# ~/work/dashboards/capy.toml
+[deps]
+chart = { version = "^1.0", source = "github:example/chart" }
+table = { version = "^2.1", source = "github:example/table" }
+
+[impl]
+chart = "d3"
+table = "html"
+```
+
+`capy run script.chart` from anywhere inside `~/work/dashboards/`
+honours the pin.
+
+### Trade-offs
+
+- **Pro:** consistent across projects but overridable per-script,
+  per-shell.
+- **Pro:** the env-var form (`CAPY_IMPL_CHART`) is the obvious
+  knob for shell experimentation; the lockfile form is the
+  obvious knob for CI.
+
+### Effort
+
+**Small** once the impl model exists (§ 2.1).
+
+### Recommendation
+
+**SHIP — with § 2.1.** They're one feature.
+
+---
+
+# § 3 Versioning
+
+### Motivation
+
+Once libraries are real — installed, shared, depended on — they
+need versions. Without versions, "library improvement that changed
+the indentation" silently regenerates everyone's output and
+breaks golden diffs. With versions, upgrades are explicit
+decisions.
+
+## 3.1 Library + implementation versions
+
+### Design
+
+Both libraries and individual impls have semantic versions:
+
+```toml
+# ~/.capy/libs/chart/capy.toml
+[library]
+name    = "chart"
+version = "1.4.0"           # library version (interface stability)
+
+[[impl]]
+name    = "mermaid"
+version = "1.2.3"           # impl version (output stability)
+file    = "impl/mermaid.capy"
+
+[[impl]]
+name    = "d3"
+version = "2.0.0-beta.4"
+file    = "impl/d3.capy"
+```
+
+**Library version** changes when the *interface* changes —
+adding/removing function shapes, changing arg types. SemVer:
+breaking changes bump MAJOR.
+
+**Impl version** changes when the *output* changes —
+indentation tweaks, helper-template fixes, new Mermaid syntax.
+Bump MINOR for visual additions, PATCH for fixes.
+
+A given library version can have multiple compatible impl
+versions: `chart 1.4.0` ships `mermaid 1.2.3`, `d3 2.0.0-beta.4`,
+`ascii 1.1.0`. Upgrading the library bumps the interface; impls
+bump independently.
+
+### CLI
+
+```sh
+capy lib list
+# chart      1.4.0   (mermaid 1.2.3, d3 2.0.0-beta.4, ascii 1.1.0)
+# recipe     2.1.5   (html 2.1.5, json 1.0.0)
+# k8s        0.7.2   (yaml 0.7.2)
+
+capy lib upgrade chart           # latest matching the lockfile constraint
+capy lib upgrade chart --impl d3 # only the d3 impl
+```
+
+### Walkthrough
+
+```sh
+# Add a library at a specific version.
+capy lib add github.com/example/chart@v1.4.0
+
+# Or constrain a range.
+capy lib add github.com/example/chart@^1.4
+
+# See what's installed.
+capy lib list --versions
+
+# Check for available upgrades.
+capy lib outdated
+# chart 1.4.0 → 1.5.2 available
+# recipe 2.1.5 — up to date
+```
+
+### Trade-offs
+
+- **Pro:** the standard SemVer story applies; no Capy-specific
+  surprises.
+- **Pro:** independent impl versions let an impl maintainer ship a
+  fix without re-cutting the entire library.
+- **Con:** the cognitive load of two version axes. Mitigation:
+  most users won't notice — `capy lib upgrade` just does the
+  right thing.
+
+### Effort
+
+**Medium.** Parser for SemVer ranges, resolution algorithm,
+lockfile semantics. The Go ecosystem has battle-tested libraries
+(`golang.org/x/mod/semver`).
+
+### Recommendation
+
+**SHIP — but after § 1, § 2.** Versioning matters once there are
+external libraries to depend on.
+
+## 3.2 Lockfile (`capy.lock`)
+
+### Design
+
+A `capy.lock` next to a project's `capy.toml` records the *exact*
+versions resolved at install time. Commit it; CI re-resolves to
+the same versions.
+
+```toml
+# capy.lock
+generated-by = "capy 0.20.0"
+generated-at = "2026-05-25T12:00:00Z"
+
+[[lib]]
+name    = "chart"
+version = "1.4.0"
+source  = "github:example/chart"
+sha256  = "9c2b5e…a8f7"
+
+[[lib]]
+name    = "chart"
+impl    = "d3"
+version = "2.0.0-beta.4"
+sha256  = "f1b9…0142"
+
+[[lib]]
+name    = "recipe"
+version = "2.1.5"
+source  = "github:example/recipe"
+sha256  = "5e7a…d31c"
+```
+
+### Walkthrough
+
+```sh
+# First add.
+capy lib add github.com/example/chart@^1.4
+# Writes capy.toml AND capy.lock.
+
+# On a fresh checkout.
+capy lib install
+# Reads capy.lock, fetches each entry, verifies sha256.
+
+# Upgrade.
+capy lib upgrade chart
+# Bumps lock to highest matching version; commits diff for review.
+```
+
+### Trade-offs
+
+- **Pro:** reproducible builds.
+- **Pro:** SHAs catch silent upstream tampering.
+- **Con:** more files in the repo. Mitigation: just commit them
+  alongside `capy.toml`; people are used to it.
+
+### Effort
+
+**Small** on top of § 3.1.
+
+### Recommendation
+
+**SHIP — with § 3.1.**
+
+---
+
+# § 4 Authoring & publishing
+
+### Motivation
+
+A user who finds Capy and likes it should be able to write a
+library, install it on their own machine, share it with their team,
+and (eventually) publish it. Each step should feel obvious.
+
+## 4.1 `capy lib new` scaffolding
+
+### Design
+
+```sh
+capy lib new my-recipe
+# Creates ~/.capy/libs/my-recipe/ with:
+#   capy.toml          (filled in with name, version 0.1.0, your git author)
+#   my-recipe.capy     (a minimal "hello world" library)
+#   examples/
+#     hello.my-recipe  (a sample script)
+#   README.md
+#   .gitignore
+```
+
+Flags:
+
+```sh
+capy lib new my-chart --interface             # scaffold an interface + one impl
+capy lib new my-chart --impl mermaid --impl d3
+capy lib new my-recipe --target html
+capy lib new my-recipe --output-file "recipe.html"
+```
+
+### Walkthrough
+
+```sh
+$ capy lib new lemon-recipes
+✓ created ~/.capy/libs/lemon-recipes/
+✓ capy.toml
+✓ lemon-recipes.capy (minimal library)
+✓ examples/hello.lemon-recipes
+✓ README.md
+
+$ cd ~/.capy/libs/lemon-recipes
+$ capy run lemon-recipes examples/hello.lemon-recipes
+Hello from lemon-recipes!
+
+# Now edit lemon-recipes.capy to add real functions.
+# `capy check lemon-recipes` validates as you go.
+```
+
+### Trade-offs
+
+- **Pro:** zero-friction onboarding. The output of `capy lib new`
+  is already a working library.
+- **Pro:** the scaffolded `capy.toml` sets the right defaults
+  (license, author from git config).
+
+### Effort
+
+**Small.** Templated file generation.
+
+### Recommendation
+
+**SHIP — early.** Make first-library experience smooth.
+
+## 4.2 Local path libraries
+
+### What it is
+
+A library that lives in your project tree, not in `CAPY_LIBS`.
+Useful while developing one — no need to install before testing.
+
+### Design
+
+`capy.toml` accepts path-based deps:
+
+```toml
+[deps]
+my-recipe = { path = "./libs/my-recipe" }
+```
+
+Or invoke directly:
+
+```sh
+capy run ./libs/my-recipe/lemon-recipes.capy script.lemon-recipes
+```
+
+### Walkthrough
+
+```sh
+# Start: write a lib in your project.
+mkdir -p my-app/libs/notes
+cat > my-app/libs/notes/notes.capy <<'EOF'
+extension md
+function note
+    arg literal "note"
+    arg capture text string
+    write `> ${unquote text}
+
+`
+end
+EOF
+
+# Use it via path.
+capy run ./libs/notes/notes.capy script.notes
+
+# Or register in project capy.toml.
+cat >> my-app/capy.toml <<'EOF'
+[deps]
+notes = { path = "./libs/notes" }
+EOF
+
+capy run notes script.notes     # path-based dep resolved
+```
+
+### Trade-offs
+
+- **Pro:** zero-install dev loop.
+- **Pro:** library lives in version control alongside the code
+  that consumes it.
+
+### Effort
+
+**Tiny.** Already works via direct paths; just add `path = …`
+support to `capy.toml`.
+
+### Recommendation
+
+**SHIP — with § 4.1.**
+
+## 4.3 Git-based distribution
+
+### Design
+
+`capy lib add <git-url>` clones into the first writable
+`CAPY_LIBS` directory. Standard URL shorthands:
+
+```sh
+capy lib add github.com/example/chart            # → https://github.com/example/chart
+capy lib add gitlab.com/example/chart            # → https://gitlab.com/example/chart
+capy lib add ssh://git@example.com/chart.git
+capy lib add github.com/example/chart@v1.4.0     # specific tag
+capy lib add github.com/example/chart@main       # branch
+```
+
+The clone gets a `version` from the tag (or branch name); the
+SHA goes into the lockfile.
+
+### Walkthrough
+
+```sh
+$ capy lib add github.com/example/chart
+Cloning https://github.com/example/chart → ~/.capy/libs/chart/
+Resolved version 1.4.0
+Resolved impls: mermaid (1.2.3), d3 (2.0.0-beta.4), ascii (1.1.0)
+Updated capy.lock
+
+$ capy run chart my-data.chart > out.md
+```
+
+### Trade-offs
+
+- **Pro:** uses tooling everyone already has (`git`).
+- **Pro:** zero hosting infrastructure on Capy's side.
+- **Con:** less convenient than `npm install x`. Mitigation: most
+  developers are used to git URLs for tooling these days.
+
+### Effort
+
+**Small.** Standard subprocess wrapping; existing libraries
+(`go-git`) for in-process git ops.
+
+### Recommendation
+
+**SHIP — with § 1.1.**
+
+## 4.4 Future: registry
+
+### What it is
+
+`registry.capy.dev` (or similar) — central index of published
+libraries, served as static JSON. `capy lib publish` uploads a
+manifest there.
+
+### When to build
+
+After § 1 through § 4.3 are stable and there's enough community
+demand that "find me a library that does X" needs more than
+`/libraries/`.
+
+### Effort
+
+**Large.** Hosting, moderation, abuse mitigation, semver storage,
+search. Don't build prematurely.
+
+### Recommendation
+
+**DEFER** — until ecosystem demand justifies it.
+
+---
+
+# § 5 Invocation ergonomics
+
+### Motivation
+
+The current invocation `capy run lib.capy script.capy` is
+explicit and unambiguous. Once a user has 10 libraries and 100
+scripts, that explicitness gets tedious. These features layer
+shortcuts on top of the foundation work in § 1.
+
+## 5.1 File-extension convention
+
+### Design
+
+A script whose extension is the name of a library is auto-
+resolved:
+
+```
+~/proj/
+├── recipe.capy             # library (file = lib-name + .capy)
+└── lemon-cake.recipe       # script (extension = lib-name)
+```
+
+```sh
+capy run lemon-cake.recipe
+# auto-resolves: $CAPY_LIBS[*]/recipe/recipe.capy or ./recipe.capy
+```
+
+### Walkthrough
+
+```sh
+$ capy lib new recipe
+$ cat > cake.recipe <<'EOF'
+recipe "Lemon olive oil cake"
+ingredient "Flour" "2 cups"
+end
+EOF
+
+$ capy run cake.recipe          # auto-detects lib from .recipe extension
+# … HTML output …
+```
+
+### Edge cases
+
+- Extension collides with a common format (`.md`, `.json`):
+  resolution still walks `CAPY_LIBS`; if a library named `md`
+  exists, it's used; if not, the CLI errors with a hint.
+- Multiple positional args: first one ending in `.capy` is the
+  library, everything else is script + script args.
+
+### Trade-offs
+
+- **Pro:** lets users register `.recipe` with their OS to
+  double-click → run.
+- **Pro:** scannable: `ls *.recipe` shows everything that uses
+  the recipe DSL.
+
+### Effort
+
+**Small.** Add detection in the CLI's `run` subcommand.
+
+### Recommendation
+
+**SHIP — high value, low cost.**
+
+## 5.2 Shebang scripts
+
+### Design
+
+A `.capy` script declares its library inline via a shebang:
 
 ```
 #!/usr/bin/env capy --lib recipe
 recipe "Lemon olive oil cake"
-serves 8
-…
+ingredient "Flour" "2 cups"
 end
 ```
 
-Make the script executable (`chmod +x lemon-cake.recipe`); double-
-click it or run it directly. The shebang handles the rest.
-
-**Why.** Same goal as § 2.1 — make Capy feel like a real language —
-but works without changing the file extension. Plays well with the
-Unix tradition of script-as-executable.
-
-**Shape.**
-- `capy --lib <name>` flag accepts a library name (resolved via
-  CAPY_LIBS, see § 2.2) and runs the script that follows.
-- The shebang line is stripped before lexing.
-
-**Open questions.**
-- Windows: shebangs require WSL or a registered `.capy` extension.
-  Fine to declare that POSIX-only.
-
-**Effort.** Tiny.
-
-### 2.4 `capy <lib> <script>` short form
-
-**What.** When a libraries-by-name search path exists, allow:
+Make executable; run directly:
 
 ```sh
-capy recipe lemon-cake.recipe
-capy py app.py        # if app.py is the script and py.capy is the lib
+chmod +x cake.recipe
+./cake.recipe
 ```
 
-The first positional arg is treated as a library name (resolved via
-CAPY_LIBS); the second is the script. Even shorter than § 2.1 — no
-extension convention needed.
+### Walkthrough
 
-**Open questions.**
-- Collision with `capy run` / `capy check` / `capy docs`
-  subcommands. Resolve: if the first arg matches a known
-  subcommand, treat it as such; otherwise try library-name resolution.
+```sh
+$ chmod +x cake.recipe
+$ ./cake.recipe
+# … HTML output to stdout …
 
-**Effort.** Tiny.
+$ ./cake.recipe --out cake.html
+# … written to cake.html …
+```
 
-### 2.5 `compile` and `run` as first-class subcommands
+### Trade-offs
 
-**What.** Rename / alias today's `capy run lib.capy script.capy`:
+- **Pro:** the Unix shebang model — works the way scripts work.
+- **Pro:** no extension restrictions — the file can be named
+  anything.
+- **Con:** Windows requires WSL or explicit `.capy` file
+  associations.
 
-| Today                               | Tomorrow                              |
-|-------------------------------------|---------------------------------------|
-| `capy run lib.capy script.capy`     | `capy run lib script.lib`             |
-| `capy check lib.capy`               | `capy check lib`                      |
-| (new)                               | `capy compile lib script.lib -o out`  |
-| (new)                               | `capy build lib`                      |
+### Effort
 
-`capy compile X` runs the library on X and writes the output to
-the library's declared `output_file` (or to `-o out`). `capy run`
-stays for "run and print to stdout."
+**Tiny.** Strip shebang in the source-reader; add `--lib` flag.
 
-**Why.** Make the verb match the operation. `run` for ephemeral
-results; `compile` for "write the artifact." This is the language
-people already use when talking about Capy.
+### Recommendation
 
-**Effort.** Tiny (it's mostly subcommand aliasing).
+**SHIP — alongside § 5.1.**
+
+## 5.3 Library-name short form
+
+### Design
+
+Once libraries can be resolved by name, the CLI's first positional
+arg can be one:
+
+```sh
+capy recipe cake.recipe
+capy chart --impl d3 revenue.chart
+capy py app.py
+```
+
+If the first arg matches a known subcommand (`run`, `check`,
+`docs`, …), treat it as the subcommand. Otherwise treat it as a
+library name and route to `run`.
+
+### Trade-offs
+
+- **Pro:** shortest possible invocation.
+- **Con:** small ambiguity risk if a library name collides with
+  a future subcommand. Mitigation: subcommand names live in a
+  fixed (small) set.
+
+### Effort
+
+**Tiny.**
+
+### Recommendation
+
+**SHIP — alongside § 5.1.**
+
+## 5.4 `compile` / `run` / `build` subcommand split
+
+### Design
+
+Rename verbs to match operations:
+
+| Verb | Operation |
+|------|-----------|
+| `capy run LIB SCRIPT` | Run lib on script, print to stdout |
+| `capy compile LIB SCRIPT -o OUT` | Run, write to OUT (or library's `output_file`) |
+| `capy build LIB -o EXE` | Produce a standalone binary that runs LIB on any script (§ 6.2) |
+| `capy check LIB` | Validate library without running |
+| `capy docs LIB` | Render the auto-generated reference doc |
+
+Old `capy run lib.capy script.capy` keeps working as an alias.
+
+### Walkthrough
+
+```sh
+$ capy run py app.py
+# … Python output to stdout …
+
+$ capy compile py app.py -o app.py.out
+# … wrote app.py.out (412 bytes) …
+
+$ capy build py -o py-tool
+# … built py-tool (5.8 MB) …
+
+$ ./py-tool app.py > app.out      # py-tool is now self-contained
+```
+
+### Trade-offs
+
+- **Pro:** verbs match what users say out loud.
+- **Pro:** `run` ≠ `compile` makes the "writes a file" intent
+  explicit.
+
+### Effort
+
+**Tiny** for the rename + aliases. `build` is § 6.2.
+
+### Recommendation
+
+**SHIP — early.** Verbs cost nothing; clarity pays forever.
 
 ---
 
-## 3. Compilation
+# § 6 Distribution
 
-### 3.1 Library → single-binary compiler
+## 6.1 WASM packaging
 
-**What.** `capy build lib.capy -o lib` produces a standalone
-executable that has the library baked in. Run that executable
-against any script:
+### Design
 
-```sh
-$ capy build recipe.capy -o recipe
-$ ./recipe lemon-cake.recipe
-# generates lemon-cake.html
-```
-
-The binary is self-contained — no Capy CLI on the deployment host
-required.
-
-**Why.** Two big wins:
-
-1. **Distribution.** A team can ship `recipe` (an executable) to
-   end users without telling them what Capy is. They get a tool
-   that turns `.recipe` files into HTML.
-2. **Speed.** No library-load step at every run; the library is
-   pre-compiled into the binary's startup.
-
-**Shape.**
+The wasm bundle (today, `docs/assets/playground/capy.wasm`) gets
+published as proper packages:
 
 ```sh
-capy build lib.capy -o my-tool
-# embeds lib.capy as a Go-string constant in a tiny main.go,
-# uses Go to produce a static binary, runs `go build`.
+# JavaScript / TypeScript.
+npm install @capylang/capy
 ```
 
-For cross-compilation:
+```js
+import { loadCapy } from "@capylang/capy";
+const capy = await loadCapy();
+const out = await capy.run(libSrc, scriptSrc);
+```
 
 ```sh
-GOOS=linux GOARCH=amd64 capy build lib.capy -o my-tool-linux
-GOOS=windows GOARCH=amd64 capy build lib.capy -o my-tool.exe
+# Python via wasmtime.
+pip install capy-wasm
 ```
 
-Or via embedded toolchain:
+```python
+from capy import Capy
+capy = Capy()
+out = capy.run(lib_src, script_src)
+```
 
 ```sh
-capy build lib.capy --target linux/amd64 --target windows/amd64
-# produces my-tool-linux-amd64, my-tool-windows-amd64.exe
+# Browser CDN.
+<script src="https://cdn.jsdelivr.net/npm/@capylang/capy@0.20.0/dist/capy.js"></script>
 ```
 
-**Open questions.**
-- Should compiled binaries support multiple libraries? E.g.
-  `capy build --bundle py.capy --bundle js.capy -o capy-multi`
-  produces a binary that dispatches on `.py` vs `.js` script
-  extensions. Useful for "one Capy install per team" pattern.
-- License — section 2(b) of the current LICENSE forbids
-  redistribution of the binary. Compiling embeds the library
-  AND the engine; treat the compiled artifact as a "redistribution"
-  or carve out a compile-time exception. (Probably exception:
-  the library AUTHOR is allowed to redistribute their compiled
-  tool to their team.)
+### User pain
 
-**Effort.** Medium. The hardest part is the cross-compile UX and
-licensing language.
+Today: embed Capy in a static React app and you have to copy three
+files (`capy.wasm`, `wasm_exec.js`, your own glue) and figure out
+how to load them. The npm package solves all three.
 
-### 3.2 Ahead-of-time library validation as part of compile
+### Walkthrough
 
-**What.** `capy compile` runs every check `capy check` does (type
-resolution, block-closer wiring, default validation) PLUS attempts
-to render `file_template` against a placeholder context. Surface
-template syntax errors at build time, not deploy time.
+```sh
+$ npm create vite@latest my-app -- --template vanilla
+$ cd my-app
+$ npm install @capylang/capy
 
-**Why.** Today a typo in `file_template` like `{{ .context.missing }}`
-only surfaces when a script triggers it. Compile-time validation
-catches more before users see anything.
+# index.js:
+import { loadCapy } from "@capylang/capy";
+const capy = await loadCapy();
+document.body.textContent = await capy.run(libSrc, scriptSrc);
 
-**Effort.** Small. The hooks already exist.
+$ npm run dev    # works
+```
 
-### 3.3 Watch mode
+### Trade-offs
 
-**What.** `capy watch lib.capy script.capy` re-runs whenever either
-file changes. Print the diff against the previous output so
-authors see what their edit changed.
+- **Pro:** instant access from JS / Python / browser without any
+  Capy CLI install.
+- **Con:** WASM is ~6 MB today; with TinyGo could be ~1 MB but
+  text/template support is fragile.
 
-**Why.** The library-author edit loop. Saves a `↑ Enter` cycle and
-makes the impact of each library change immediately visible.
+### Effort
 
-**Shape.**
-- File watcher on `lib.capy` + `script.capy` + any `import`ed paths
-  (transitively).
-- Output diff (red/green) via the existing CLI styling.
-- `--browser` flag opens the result in a browser tab for HTML
-  output, auto-reloading on change.
+**Medium.** Mostly packaging + CI to publish on each release tag.
 
-**Effort.** Small with `fsnotify`.
+### Recommendation
+
+**SHIP — after § 1 / 2 stabilise.** Wasm is how Capy reaches
+non-Go users.
+
+## 6.2 `capy build` — single-binary compiler
+
+### What it is
+
+`capy build LIB -o EXE` produces a standalone executable
+that has LIB baked in. Run it against any script:
+
+```sh
+$ capy build recipe -o recipe-tool
+$ ./recipe-tool cake.recipe
+# … HTML to stdout …
+$ ./recipe-tool cake.recipe -o cake.html
+```
+
+The binary embeds:
+- The Capy engine.
+- The chosen library (and its default impl, or one passed via
+  `--impl`).
+- The selected `output_file` default.
+
+### User pain
+
+Today: share a Capy-based tool with non-developers and you must
+explain "first install Go, then `go install capy`, then download
+my library, then run …". `capy build` collapses to "here's a
+binary, double-click it."
+
+### Walkthrough
+
+```sh
+# Team-internal: build a tool that takes .recipe files.
+$ capy build recipe --impl html -o recipe-renderer
+
+# Ship recipe-renderer to non-developers.
+# They drop a .recipe file on it (or run from terminal) and get HTML.
+
+# Cross-compile for distribution.
+$ capy build recipe --target linux/amd64 --target darwin/arm64 --target windows/amd64
+✓ recipe-linux-amd64    (5.8 MB)
+✓ recipe-darwin-arm64   (6.0 MB)
+✓ recipe.exe            (6.1 MB)
+```
+
+### Multi-library compilation
+
+```sh
+$ capy build --lib recipe --lib chart -o my-tools
+$ ./my-tools recipe cake.recipe > out.html
+$ ./my-tools chart revenue.chart > out.md
+```
+
+The compiled binary dispatches on the first arg.
+
+### Trade-offs
+
+- **Pro:** "ship a tool to your team" becomes one step.
+- **Pro:** removes Capy as a runtime dependency on the deploy
+  host. Useful for CI, scripts, customer hand-offs.
+- **Con:** binary size (~6 MB per target). Acceptable for CLI
+  tooling.
+- **Licensing question:** the current LICENSE forbids
+  redistribution; needs a carve-out for compiled binaries that
+  the library author intends to ship.
+
+### Effort
+
+**Medium.** Code generator emits a tiny Go `main.go` that embeds
+the lib via `//go:embed`, then runs `go build`. Cross-compile via
+GOOS/GOARCH.
+
+### Recommendation
+
+**SHIP — high value.** This is the "make Capy distributable"
+feature.
 
 ---
 
-## 4. Ecosystem
+# § 7 Editor / tooling
 
-### 4.1 LSP server for `.capy` libraries (and downstream scripts)
+## 7.1 LSP server
 
-**What.** `capy-lsp` speaks LSP. Editors get:
+### What it is
 
-- Autocomplete for function names declared in the library.
-- Hover docs (showing the `description` of the function under cursor).
-- Go-to-definition: jump from a `recipe` keyword in a script to
-  the `function recipe` in its library.
-- Diagnostics: arg-type mismatches, unknown literals, etc.
+`capy-lsp` speaks Language Server Protocol. Editors get:
 
-**Why.** Once libraries are real and people are writing scripts
-against them, editor smarts are a big quality-of-life win — and
-they're cheap, because Capy already has all the typed metadata.
+- **Autocomplete** for declared library functions when editing a
+  script.
+- **Hover docs** showing function descriptions and arg types.
+- **Go-to-definition** from a function call in a script to the
+  function declaration in the library.
+- **Diagnostics**: unknown function, arg-type mismatch, unclosed
+  block, etc. Inline, as you type.
+- **Rename** for library functions (and their usages across
+  every script in the workspace).
 
-**Shape.**
-- Two modes: editing a `.capy` library (highlighting + validate)
-  and editing a script that references one (autocomplete the
-  library's keywords).
-- For the script mode, the LSP resolves the library via the same
-  CAPY_LIBS chain.
+### User pain
 
-**Open questions.**
-- How does the LSP know which library to bind a `.capy` or
-  `.<lib>` script to? Either: file extension (§ 2.1), inline
-  `# lib: recipe` magic comment, or workspace setting.
+Editing a `.recipe` script without an LSP means: type `serv` →
+wait for run → see "unknown function" → re-read library → fix.
+With LSP: type `serv` → see "serves" in the dropdown → tab.
 
-**Effort.** Medium. The LSP boilerplate is well-trodden; the
-analysis pieces (autocomplete, hover) are straightforward because
-the library already exposes them via `capy docs`.
+### Walkthrough
 
-### 4.2 Library versioning + lockfile
+```sh
+# Install the LSP.
+go install github.com/luowensheng/capy/cmd/capy-lsp@latest
 
-**What.** Each library can declare `version "1.2.0"` at the top.
-A consumer project pins versions via `capy.lock`:
-
-```
-# capy.lock
-recipe = "https://github.com/x/recipes-capy@v1.2.0"
-py = "https://github.com/y/py-capy@v0.4.1"
+# VS Code: install the Capy extension; it auto-launches capy-lsp.
+# Vim: add to config.
+# Emacs: add to LSP config.
 ```
 
-`capy lib add x/recipes-capy` writes to the lock; `capy lib install`
-fetches every locked library.
+```
+# In a .recipe script:
+recipe "Lemon cake"
+    ing       <─ LSP suggests `ingredient`
+            (capture name: string, capture qty: string)
+```
 
-**Why.** Without versioning, a library improvement that changes
-output silently breaks consumers' golden tests. With versioning,
-upgrades become explicit decisions.
+### Library autodetection
 
-**Effort.** Medium-large. Need a fetcher (start with git URLs), a
-lock format, a cache (`~/.capy/cache/`), and CLI plumbing.
+The LSP needs to know which library a script uses. Resolution
+order:
 
-### 4.3 `capy fmt` formatter
+1. File extension (`.recipe` → library `recipe`).
+2. Inline magic comment: `# capy: lib=recipe`.
+3. Workspace setting in `.capy/lsp.toml`.
+4. Project `capy.toml` declares a default library.
 
-**What.** Canonical formatting for `.capy` library files:
-- Consistent indent (4 spaces).
+### Trade-offs
+
+- **Pro:** library-authors get safe rename across thousands of
+  consumer scripts.
+- **Pro:** "spec-as-source" gets editor smarts that catch bugs
+  before they reach `run`.
+
+### Effort
+
+**Medium.** Standard LSP boilerplate; analysis pieces are easy
+because the library already exposes the data (`capy docs`
+generates everything an LSP needs from a library file).
+
+### Recommendation
+
+**SHIP — high value once ecosystem grows.** Worth it once
+people have ~5+ libraries.
+
+## 7.2 `capy fmt`
+
+### Design
+
+Canonical formatter for `.capy` library files:
+
+- 4-space indents.
 - Argument alignment within functions.
 - Sorted top-level declarations (extension → context → types →
   functions → file_template).
-- Trailing-newline / no-trailing-spaces normalisation.
-
-**Why.** Every language that gets popular ends up needing one. Better
-to ship it before opinions calcify.
-
-**Effort.** Medium. The lexer + parser already exist; the formatter
-walks the parsed RawLibrary back to text.
-
-### 4.4 Language SDKs
-
-**What.** Capy as a library beyond Go:
-- `capy-py` (Python via wasmtime).
-- `capy-js` (Node via wasm — already mostly works for the browser
-  playground; package it for Node).
-- `capy-rs` (Rust via wasmtime).
-
-Each SDK exposes `Library.new(libSrc) → run(scriptSrc)`.
-
-**Why.** Embedding Capy in a Python tool, a JS build pipeline, or
-a Rust CLI shouldn't require shelling out to a binary.
-
-**Effort.** Medium per language. Once the WASM is packaged
-(§ 1.2), each SDK is a thin wrapper.
-
-### 4.5 Sourcemaps for generated output
-
-**What.** Optional: every line of generated output carries a
-metadata pointer back to the source script line that produced it.
-`capy run --sourcemap` emits a `.map.json` alongside the output.
-
-**Why.** When the user runs the generated code (Python / JS /
-shell), errors point at the generated file, not the script. A
-sourcemap lets a tool re-map them to the original DSL line.
-
-**Open questions.**
-- Format: copy V3 source-maps or invent? Copying gets free tooling
-  in browsers.
-
-**Effort.** Medium. The evaluator already knows per-statement
-positions; surfacing them takes some plumbing.
-
-### 4.6 Library bundle / vendor
-
-**What.** `capy bundle lib.capy` walks every `import` (library
-imports + `@import` source imports declared in `preprocess`) and
-produces ONE file with everything inlined. Useful for shipping a
-library that depends on others without dragging the dependency
-tree.
-
-**Why.** A consumer of your library shouldn't have to fetch six
-sub-libraries just to use yours.
-
-**Effort.** Small.
-
-### 4.7 Capy playground served from `capy` CLI
-
-**What.** `capy play [<library>]` opens a local playground on
-`localhost:8080` with the library you specify (or a blank slate).
-Same UI as the hosted playground but using the local CLI's engine
-+ all your locally installed libraries.
-
-**Why.** Lets users prototype against private libraries that can't
-be uploaded to the public playground. Also: works offline.
-
-**Effort.** Medium. The playground's static assets ship in the
-binary via `embed.FS`; the CLI just spins up an HTTP server.
-
-### 4.8 Hot-reload during script development
-
-**What.** Like watch mode (§ 3.3) but bidirectional: edit the
-library, the script re-runs; edit the script, ditto. With
-`--browser` it goes one step further — the browser preview
-hot-reloads.
-
-**Why.** For interactive DSLs (HTML, Mermaid, Markdown) this
-collapses the edit-save-refresh loop to edit-see.
-
-**Effort.** Small (extends § 3.3).
-
----
-
-## 5. Bigger ideas worth considering
-
-### 5.1 Capy as a transformation DSL (`capy transform`)
-
-Today Capy generates text. A natural extension: take an existing
-file, parse it via one library, transform the parsed shape, emit
-via another. Concretely:
+- Trailing-newline / no-trailing-space normalisation.
 
 ```sh
-capy transform --from openapi.capy --to ts-client.capy spec.yaml > client.ts
+capy fmt lib.capy            # rewrite in place
+capy fmt --check lib.capy    # exit 1 if not formatted
+capy fmt --diff lib.capy     # print diff
 ```
 
-Where both libraries operate on a shared in-memory shape. This
-unlocks "modernise this Travis YAML to GitHub Actions" / "convert
-this Express server to a Fastify one" use cases.
+### Walkthrough
 
-**Effort.** Large. Probably needs a v0.20+ feature exploration.
+```sh
+$ cat lib.capy
+extension html
+function   greet
+   arg literal "greet"
+  arg capture name string
+      write `Hello, ${name}!`
+end
 
-### 5.2 Generated-code provenance metadata
+$ capy fmt lib.capy
+$ cat lib.capy
+extension html
 
-Every generated file gets a leading comment with: source script
-path + hash, library path + version, Capy version, generation
-timestamp. CI can spot stale generated code by comparing the
-hash to the current source. Already done ad-hoc by most libraries;
-formalise it via a `capy generate` flag.
+function greet
+    arg literal "greet"
+    arg capture name string
+    write `Hello, ${name}!`
+end
+```
 
-**Effort.** Tiny.
+### Trade-offs
 
-### 5.3 Capy-on-Capy (libraries that GENERATE other Capy libraries)
+- **Pro:** removes a class of code-review nitpicks.
+- **Pro:** plays nice with the LSP — format-on-save just works.
 
-A meta-DSL whose target is `.capy` source. Use case: bootstrap a
-new DSL by describing it at a higher level — "I want CRUD
-endpoints for these models" → a Capy library that generates the
-route DSL + handler templates.
+### Effort
 
-**Effort.** Trivial as a sample; conceptually fascinating.
+**Medium.** Parser already exists; the formatter walks the parsed
+RawLibrary back to text using consistent rules.
+
+### Recommendation
+
+**SHIP — after LSP** (or together; they share the parser
+infrastructure).
+
+## 7.3 Watch mode
+
+### Design
+
+`capy watch LIB SCRIPT` re-runs whenever any input changes. Prints
+the diff between the previous and current output so authors see
+the impact of each edit.
+
+```sh
+$ capy watch recipe cake.recipe
+👀 watching recipe.capy, cake.recipe
+=== 12:01:03 ===
+Hello, world!
+
+# edit recipe.capy …
+
+=== 12:01:14 === diff:
+-Hello, world!
++Welcome!
+```
+
+Flags:
+- `--browser`: open the result in a browser tab and live-reload
+  on each save (great for HTML / Markdown DSLs).
+- `--out FILE`: write to file in addition to printing.
+
+### Walkthrough
+
+```sh
+$ capy watch chart revenue.chart --browser
+# browser opens with current chart.
+# edit revenue.chart, save → chart updates in the browser
+# edit chart.capy, save → chart updates with new styles
+```
+
+### Trade-offs
+
+- **Pro:** the tight inner loop most DSL authors want.
+- **Pro:** discoverable — `capy watch` is the obvious command for
+  "iterate fast."
+
+### Effort
+
+**Small.** `fsnotify` + the existing CLI.
+
+### Recommendation
+
+**SHIP — early polish.** Big quality-of-life win.
+
+## 7.4 Local playground (`capy play`)
+
+### Design
+
+`capy play [LIB]` spins up an HTTP server on `localhost:8080`
+serving the same playground UI used at
+`luowensheng.github.io/capy/playground/`. Difference:
+
+- All libraries from `CAPY_LIBS` are available (not just curated
+  samples).
+- Private / unpublished libraries work.
+- Runs offline.
+
+```sh
+$ capy play recipe
+🚀 serving on http://localhost:8080
+   library: recipe (~/.capy/libs/recipe/)
+   editor:  http://localhost:8080
+```
+
+### Walkthrough
+
+```sh
+$ capy play
+🚀 serving on http://localhost:8080
+   all libraries from CAPY_LIBS
+
+# Browser opens; dropdown lists every installed library.
+# Edit scripts in the browser; instant feedback.
+```
+
+### Trade-offs
+
+- **Pro:** authoring experience that doesn't need network.
+- **Pro:** private libraries can be played without uploading.
+
+### Effort
+
+**Medium.** Static assets ship via `//go:embed`; the CLI just
+spins an HTTP server.
+
+### Recommendation
+
+**SHIP — after the hosted playground stabilises.**
+
+## 7.5 Sourcemaps
+
+### What it is
+
+Optional metadata mapping generated output lines back to source
+script lines.
+
+```sh
+$ capy compile py app.py -o app.py.out --sourcemap app.map.json
+```
+
+`app.map.json` records that line 12 of `app.py.out` came from
+line 3 of `app.py`. Tools (or future Capy CLI flags) can then
+translate Python runtime errors back to the original DSL.
+
+### Trade-offs
+
+- **Pro:** when target runtime errors point at line numbers
+  nobody recognises, the sourcemap rescues them.
+- **Con:** non-trivial to maintain through helper calls and
+  indentation. Mitigation: best-effort, document the limits.
+
+### Effort
+
+**Medium-Large.** Templating engine needs to thread position
+metadata through every `write` call.
+
+### Recommendation
+
+**DEFER — until users hit the pain.** Worth doing then, not
+now.
 
 ---
 
-## Priority order (my opinion)
+# § 8 SDKs
 
-If we ship these one at a time, the order that compounds best:
+## 8.1 Go SDK (current — already shipped)
 
-1. **§ 1.1 Library directory** + **§ 2.2 CAPY_LIBS** — without these,
-   none of the ergonomic shortcuts have anything to resolve to.
-2. **§ 2.1 / 2.3 / 2.4** — short-form invocation. Makes the tool
-   feel like a language.
-3. **§ 3.1 Compilation** — the "ship a tool to your team" story.
-   Probably the highest end-user payoff of anything here.
-4. **§ 1.2 WASM distribution** — opens the door to embedding in
-   non-Go ecosystems without the SDK work.
-5. **§ 4.1 LSP** + **§ 4.3 `capy fmt`** — quality-of-life for
-   library authors and downstream script writers.
-6. **§ 4.2 Versioning** — once enough libraries exist that
-   pinning matters.
-7. **§ 3.3 Watch** + **§ 4.7 `capy play`** + **§ 4.8 Hot-reload** —
-   inner-loop polish, after the outer-loop primitives exist.
-8. **§ 4.4 Language SDKs** — depends on § 1.2.
-9. **§ 4.5 Sourcemaps**, **§ 4.6 Bundle**, **§ 5.1 transform**,
-   **§ 5.2 provenance**, **§ 5.3 capy-on-capy** — refinements and
-   research bets.
+`import "github.com/luowensheng/capy"` works today.
+
+## 8.2 Python SDK
+
+### Design
+
+```python
+from capy import Library
+lib = Library.from_path("~/.capy/libs/recipe")
+out = lib.run(open("cake.recipe").read())
+```
+
+Backed by the WASM bundle (§ 6.1) via `wasmtime-py`.
+
+### Walkthrough
+
+```sh
+$ pip install capy
+```
+
+```python
+from capy import Library
+
+# Embed a library inline.
+lib = Library.from_string("""
+extension html
+function greet
+    arg capture name any
+    write `Hello, ${name}!
+`
+end
+""")
+
+print(lib.run('greet "world"'))
+# Hello, "world"!
+```
+
+### Effort
+
+**Medium per language.** Once § 6.1 lands, each SDK is a thin
+wrapper.
+
+### Recommendation
+
+**SHIP Python first** (largest non-Go developer base).
+JavaScript and Rust follow on demand.
+
+## 8.3 JavaScript SDK
+
+Same as 8.2, packaged for Node + browser. Already half-built
+(the playground's loader).
+
+## 8.4 Rust SDK
+
+`capy = "0.1"` via crates.io. Uses `wasmtime` crate. Useful for
+Rust-based CLIs that want Capy as a config layer.
+
+---
+
+# § 9 Big ideas
+
+## 9.1 `capy transform`
+
+### What it is
+
+Take a file, parse it via one library's interpreter, transform via
+inner-DSL operations, emit via another library:
+
+```sh
+capy transform old.travis.yml --from travis --to gh-actions > .github/workflows/ci.yml
+```
+
+The two libraries share an in-memory representation; the transform
+is a function from one context to another.
+
+### User pain
+
+Migrating from one tool to another (Travis → GH Actions, Express
+→ Fastify, OpenAPI 2 → OpenAPI 3) means hand-editing files. With
+`capy transform`, write one library per side and the transform is
+declarative.
+
+### Effort
+
+**Large.** Probably v0.25+.
+
+### Recommendation
+
+**RESEARCH** — explore as a v0.x sample; commit to engine
+support only once a real use case proves it.
+
+## 9.2 Generated-code provenance
+
+### Design
+
+Every generated file gets a leading comment:
+
+```python
+# Generated by Capy 0.20.0 on 2026-05-25T12:00:00Z
+# library: recipe@1.4.0 (sha256:9c2b…)
+# source:  /Users/x/cake.recipe (sha256:5e7a…)
+# Do not edit; regenerate with: capy compile recipe cake.recipe
+```
+
+CI checks the header against current state and fails if drifted.
+
+### Effort
+
+**Tiny.** A `--provenance` flag adds the header.
+
+### Recommendation
+
+**SHIP — small, high value for teams with generated code in
+git.**
+
+## 9.3 Capy-on-Capy
+
+### What it is
+
+A Capy library whose output is *another* `.capy` library.
+Bootstrap new DSLs by describing them at a higher level:
+
+```
+schema User
+    field email string required
+    field name string
+end
+
+generate-crud User
+```
+
+Output: a `.capy` library with `create_user`, `update_user`,
+`delete_user`, `list_users` functions targeting your preferred
+backend.
+
+### Effort
+
+**Tiny as a sample, conceptually fascinating.** No engine changes
+required — it's just a Capy library.
+
+### Recommendation
+
+**SHIP as a sample** to demonstrate the meta-pattern.
+
+## 9.4 Bundle / vendor
+
+### Design
+
+`capy bundle LIB` walks every dependency (library imports and
+source-side `@import`s) and inlines them into one file. The
+output is hermetic: ship one `.capy`, no other files needed.
+
+### Effort
+
+**Small.**
+
+### Recommendation
+
+**SHIP — useful for distribution.**
+
+---
+
+# § Decisions — summary table
+
+Rough effort × value ranking. **Value** is "users who notice on
+day one." **Effort** is "developer-weeks at one full-time."
+
+| Feature | Effort | Value | Verdict | Priority |
+|---|---|---|---|---|
+| § 1.1 `CAPY_LIBS` search path | S | ⭐⭐⭐⭐⭐ | **SHIP** | 1 |
+| § 1.2 Library manifest | S | ⭐⭐⭐⭐⭐ | **SHIP** | 1 |
+| § 1.3 Library directory site | S | ⭐⭐⭐⭐ | **SHIP** | 1 |
+| § 2.1 Multiple impls | M | ⭐⭐⭐⭐⭐ | **SHIP** | 2 |
+| § 2.2 Impl selection | S | ⭐⭐⭐⭐ | **SHIP** (with 2.1) | 2 |
+| § 3.1 Versioning | M | ⭐⭐⭐⭐ | **SHIP** | 3 |
+| § 3.2 Lockfile | S | ⭐⭐⭐⭐ | **SHIP** (with 3.1) | 3 |
+| § 4.1 `lib new` scaffolding | S | ⭐⭐⭐⭐ | **SHIP** | 2 |
+| § 4.2 Local path libs | XS | ⭐⭐⭐ | **SHIP** | 2 |
+| § 4.3 Git distribution | S | ⭐⭐⭐⭐ | **SHIP** | 3 |
+| § 4.4 Registry | L | ⭐⭐ | **DEFER** | — |
+| § 5.1 File-ext convention | S | ⭐⭐⭐⭐ | **SHIP** | 4 |
+| § 5.2 Shebang scripts | XS | ⭐⭐⭐ | **SHIP** | 4 |
+| § 5.3 Short form | XS | ⭐⭐⭐ | **SHIP** | 4 |
+| § 5.4 compile/run/build verbs | XS | ⭐⭐⭐ | **SHIP** | 4 |
+| § 6.1 WASM packaging | M | ⭐⭐⭐⭐ | **SHIP** | 5 |
+| § 6.2 Single-binary compiler | M | ⭐⭐⭐⭐⭐ | **SHIP** | 5 |
+| § 7.1 LSP | M | ⭐⭐⭐⭐ | **SHIP** | 6 |
+| § 7.2 `capy fmt` | M | ⭐⭐⭐ | **SHIP** | 6 |
+| § 7.3 Watch mode | S | ⭐⭐⭐⭐ | **SHIP** | 5 |
+| § 7.4 `capy play` | M | ⭐⭐⭐ | **SHIP** | 7 |
+| § 7.5 Sourcemaps | M | ⭐⭐ | **DEFER** | — |
+| § 8.2 Python SDK | M | ⭐⭐⭐⭐ | **SHIP** (after 6.1) | 6 |
+| § 8.3 JS SDK | S | ⭐⭐⭐⭐ | **SHIP** (after 6.1) | 6 |
+| § 8.4 Rust SDK | M | ⭐⭐⭐ | **SHIP** (after 6.1) | 8 |
+| § 9.1 `capy transform` | L | ⭐⭐ | **RESEARCH** | — |
+| § 9.2 Provenance metadata | XS | ⭐⭐⭐⭐ | **SHIP** | 5 |
+| § 9.3 Capy-on-Capy | XS | ⭐⭐ | **SHIP as sample** | 4 |
+| § 9.4 Bundle/vendor | S | ⭐⭐⭐ | **SHIP** | 7 |
+
+## Recommended release plan
+
+**v0.19** — Foundations (Priority 1–2)
+- `CAPY_LIBS` + manifest + library directory site (§ 1).
+- `capy lib new` + local path libs (§ 4.1, 4.2).
+- Multiple impls + selection (§ 2).
+- Capy-on-Capy as a sample (§ 9.3).
+
+**v0.20** — Versioning + distribution (Priority 3)
+- Library/impl versions + lockfile (§ 3).
+- Git-based `capy lib add` (§ 4.3).
+- Bundle/vendor (§ 9.4).
+
+**v0.21** — Ergonomics (Priority 4)
+- File-extension convention (§ 5.1).
+- Shebang + short form (§ 5.2, 5.3).
+- compile/run/build subcommand split (§ 5.4).
+
+**v0.22** — Distribution & polish (Priority 5)
+- Single-binary compiler (§ 6.2).
+- WASM packaging (§ 6.1).
+- Watch mode (§ 7.3).
+- Provenance metadata (§ 9.2).
+
+**v0.23** — Tooling (Priority 6)
+- LSP (§ 7.1).
+- `capy fmt` (§ 7.2).
+- Python + JS SDKs (§ 8.2, 8.3).
+
+**v0.24** — Inner-loop polish (Priority 7)
+- Local `capy play` (§ 7.4).
+
+**v0.25+** — Out of the way bets (Priority 8 / research)
+- Rust SDK (§ 8.4).
+- Sourcemaps (§ 7.5).
+- `capy transform` research (§ 9.1).
 
 ## Out of scope (intentionally)
 
@@ -548,8 +1792,5 @@ If we ship these one at a time, the order that compounds best:
   transpiler engine and stays one. No new control structures
   inside templates beyond `for` / `if`. No expression DSL beyond
   helper calls.
-- A built-in package manager with central registry. Distribute
-  libraries via git URLs; if someone wants a registry, they can
-  build one on top.
-- Cloud hosting / SaaS. Capy ships as binaries and source; running
-  it is the user's job.
+- Centralised cloud hosting / SaaS. Distribute via git URLs.
+- A registry until § 1–4 are stable and demand is real.
