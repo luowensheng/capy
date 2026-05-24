@@ -64,6 +64,39 @@
     .pane-head select { background: var(--bg-active); color: var(--text); border: 1px solid var(--border);
       border-radius: 4px; padding: 2px 8px; font-size: 11px; font-family: inherit; }
 
+    /* Tab strip at the top of the LEFT pane — swaps between SCRIPT and LIBRARY editors. */
+    .left-tabs { display: flex; gap: 0; flex: 1; }
+    .left-tab {
+      background: transparent;
+      border: 0;
+      color: var(--muted);
+      padding: 0;
+      font: inherit;
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      cursor: pointer;
+      margin-right: 22px;
+      border-bottom: 2px solid transparent;
+      padding-bottom: 4px;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .left-tab em {
+      font-style: normal;
+      color: var(--muted);
+      opacity: 0.6;
+      margin-left: 6px;
+      letter-spacing: 0;
+      text-transform: none;
+      font-size: 10px;
+    }
+    .left-tab.active {
+      color: var(--accent-2);
+      border-bottom-color: var(--accent);
+    }
+    .left-tab.active em { color: var(--accent-2); opacity: 0.85; }
+    .left-tab:hover:not(.active) { color: var(--text); }
+
     .editor-wrap { flex: 1; position: relative; min-height: 0; display: flex; }
     .editor {
       flex: 1; background: var(--bg-pane); color: var(--text);
@@ -126,9 +159,18 @@
 
   <div class="layout">
     <section class="pane">
-      <div class="pane-head"><span class="label">YOUR SOURCE</span><span class="right">script.capy</span></div>
-      <div class="editor-wrap">
+      <div class="pane-head">
+        <div class="left-tabs" id="left-tabs">
+          <button class="left-tab active" data-target="script">YOUR SOURCE <em>script.capy</em></button>
+          <button class="left-tab" data-target="library">LIBRARY <em>lib.capy</em></button>
+        </div>
+      </div>
+      <div class="editor-wrap" id="script-wrap">
         <textarea id="script-editor" class="editor" spellcheck="false" placeholder="Loading sample…"></textarea>
+      </div>
+      <div class="editor-wrap" id="library-wrap" style="display: none;">
+        <textarea id="library-editor" class="editor" spellcheck="false"
+                  placeholder="Loading library…"></textarea>
       </div>
     </section>
     <section class="pane">
@@ -144,18 +186,6 @@
       </div>
     </section>
   </div>
-
-  <details style="background: var(--bg-pane); border-top: 1px solid var(--border);">
-    <summary style="padding: 8px 16px; cursor: pointer; color: var(--muted); font-size: 12px;">
-      View the library (advanced — edit to change what gets generated)
-    </summary>
-    <div class="pane">
-      <div class="pane-head"><span class="label">LIBRARY</span><span class="right">lib.capy</span></div>
-      <div class="editor-wrap" style="height: 320px;">
-        <textarea id="library-editor" class="editor" spellcheck="false"></textarea>
-      </div>
-    </div>
-  </details>
 
   <script src="wasm_exec.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
@@ -375,6 +405,20 @@
     document.addEventListener("keydown", (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); run(); }
     });
+
+    // Tab toggle for the left pane (Script vs Library).
+    for (const btn of document.querySelectorAll(".left-tab")) {
+      btn.addEventListener("click", () => {
+        const target = btn.dataset.target; // "script" | "library"
+        for (const b of document.querySelectorAll(".left-tab")) {
+          b.classList.toggle("active", b === btn);
+        }
+        $("script-wrap").style.display = target === "script" ? "" : "none";
+        $("library-wrap").style.display = target === "library" ? "" : "none";
+        // Focus the visible textarea so the user can start typing immediately.
+        ($(target + "-editor")).focus();
+      });
+    }
 
     (async function bootstrap() {
       const [_, ok] = await Promise.all([loadSamples(), initWasm()]);
