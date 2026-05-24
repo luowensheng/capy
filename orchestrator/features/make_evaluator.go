@@ -24,12 +24,24 @@ import (
 // Once the program block is fully rendered, the orchestrator (RunScript)
 // renders `file_template:` with .body=(top-level body) and .context=(final).
 func MakeEvaluator(tpl features.TemplateRenderer) features.Evaluator {
+	return MakeEvaluatorWithHost(tpl, domain.NoOpHost{})
+}
+
+// MakeEvaluatorWithHost is like MakeEvaluator but accepts a host providing
+// env / arg / read_file capabilities. The CLI uses infra.OSHost; embedded
+// callers and the wasm playground default to NoOpHost so library
+// `env`/`read_file` primitives return empty values instead of touching the
+// embedder's process state.
+func MakeEvaluatorWithHost(tpl features.TemplateRenderer, host domain.Host) features.Evaluator {
+	if host == nil {
+		host = domain.NoOpHost{}
+	}
 	runMulti := func(program domain.Block, lib domain.Library) (string, map[string]string, error) {
 		ctx := deepCopyMap(lib.Context)
 		ev := &outerEval{
 			lib:   lib,
 			tpl:   tpl,
-			inner: &InnerEvaluator{Context: ctx},
+			inner: &InnerEvaluator{Context: ctx, Host: host},
 		}
 		body, err := ev.renderBlock(program)
 		if err != nil {

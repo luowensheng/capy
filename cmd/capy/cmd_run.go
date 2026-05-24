@@ -29,21 +29,26 @@ func cmdRun(args []string) error {
 
 	pos := fs.Args()
 	var libPath, scriptPath string
+	var userArgs []string
 	switch {
-	case *legacyLib != "" && len(pos) == 1:
+	case *legacyLib != "" && len(pos) >= 1:
 		libPath = *legacyLib
 		scriptPath = pos[0]
-	case len(pos) == 2:
+		userArgs = pos[1:]
+	case len(pos) >= 2:
 		libPath = pos[0]
 		scriptPath = pos[1]
+		// Anything beyond <library> <script> is a positional arg for
+		// the library to consume via the inner `arg N` primitive.
+		userArgs = pos[2:]
 	default:
-		return fmt.Errorf("usage: capy run [--out-dir DIR | --zip ARCHIVE.zip] <library> <script.capy>")
+		return fmt.Errorf("usage: capy run [--out-dir DIR | --zip ARCHIVE.zip] <library> <script.capy> [args...]")
 	}
 
 	// Read source for nice error formatting.
 	src, _ := os.ReadFile(scriptPath)
 
-	output, files, err := orchestrator.RunMulti(libPath, scriptPath)
+	output, files, err := orchestrator.RunMultiWithArgs(libPath, scriptPath, userArgs)
 	if err != nil {
 		return fmt.Errorf("%s", domain.FormatWithSource(err, string(src)))
 	}

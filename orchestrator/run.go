@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/luowensheng/capy/domain"
 	"github.com/luowensheng/capy/infra"
 	orchfeatures "github.com/luowensheng/capy/orchestrator/features"
 )
@@ -21,10 +22,20 @@ func Run(libraryPath, scriptPath string) (string, error) {
 // libraries that declared `file "path":` blocks. The map is empty for
 // libraries that don't use multi-file output.
 func RunMulti(libraryPath, scriptPath string) (string, map[string]string, error) {
+	return RunMultiWithArgs(libraryPath, scriptPath, nil)
+}
+
+// RunMultiWithArgs is like RunMulti but also passes positional CLI args
+// through to the inner `arg`/`args`/`arg_count` host primitives. The CLI
+// uses this so `capy run lib.capy script.capy a b c` makes "a", "b",
+// "c" visible to `arg 0`, `arg 1`, `arg 2`.
+func RunMultiWithArgs(libraryPath, scriptPath string, userArgs []string) (string, map[string]string, error) {
 	src, err := os.ReadFile(scriptPath)
 	if err != nil {
 		return "", nil, err
 	}
+	host := infra.OSHost{UserArgs: userArgs, BaseDir: filepath.Dir(scriptPath)}
+	_ = domain.Host(host) // compile-time interface check
 	// Expand any @import / @include preprocessor directives. Path
 	// resolution is relative to the script's directory.
 	expanded, err := infra.Preprocess(string(src), filepath.Dir(scriptPath))
@@ -46,7 +57,7 @@ func RunMulti(libraryPath, scriptPath string) (string, map[string]string, error)
 	lex := orchfeatures.MakeLexer()
 	parser := orchfeatures.MakeParser()
 	tpl := orchfeatures.MakeTemplateRenderer(tplE)
-	eval := orchfeatures.MakeEvaluator(tpl)
+	eval := orchfeatures.MakeEvaluatorWithHost(tpl, host)
 
 	libLoader := orchfeatures.MakeLibraryLoader(yp, lex.Tokenize)
 	lib, err := libLoader.Load(libraryPath)

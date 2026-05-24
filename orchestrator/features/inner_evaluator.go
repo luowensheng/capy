@@ -13,10 +13,22 @@ import (
 //   - captures: the bindings the outer match produced (read-only).
 //   - context:  the live accumulator (mutated by set/append/...).
 //   - locals:   the inner scope (loop variables; library-private bindings).
+//   - host:     the embedder-provided host capability surface (env/arg/read_file).
 //
 // It does NOT execute user-script code. It only updates `context`.
 type InnerEvaluator struct {
 	Context map[string]any
+	Host    domain.Host
+}
+
+// host returns a non-nil Host. The zero value of InnerEvaluator gets a
+// NoOpHost so test-style construction without explicit wiring keeps
+// working — every host primitive just returns the empty zero value.
+func (e *InnerEvaluator) host() domain.Host {
+	if e.Host == nil {
+		return domain.NoOpHost{}
+	}
+	return e.Host
 }
 
 func (e *InnerEvaluator) Exec(prog domain.InnerBlock, captures map[string]domain.CaptureValue) error {
@@ -291,6 +303,64 @@ func (e *InnerEvaluator) eval(x domain.Expr, caps map[string]domain.CaptureValue
 				return nil, err
 			}
 			return rx.MatchString(toString(s)), nil
+		case "env":
+			// env "NAME" → string. Returns the OS env var, or "" if unset.
+			// Lets libraries weave deployment-time values (DATABASE_URL,
+			// PORT, FEATURE_FLAGS) into the accumulating context.
+			if len(n.Args) != 1 {
+				return nil, fmt.Errorf("env expects 1 arg: env \"NAME\"")
+			}
+			name, err := e.eval(n.Args[0], caps, locals)
+			if err != nil {
+				return nil, err
+			}
+			return e.host().Env(toString(name)), nil
+		case "arg":
+			// arg N → string. Returns the N-th positional CLI arg (zero-
+			// indexed) AFTER the library+script paths, or "" if missing.
+			if len(n.Args) != 1 {
+				return nil, fmt.Errorf("arg expects 1 arg: arg INDEX")
+			}
+			idxV, err := e.eval(n.Args[0], caps, locals)
+			if err != nil {
+				return nil, err
+			}
+			idx, ok := toInt(idxV)
+			if !ok {
+				return nil, fmt.Errorf("arg: index must be a number, got %T", idxV)
+			}
+			return e.host().Arg(idx), nil
+		case "arg_count":
+			if len(n.Args) != 0 {
+				return nil, fmt.Errorf("arg_count takes no args")
+			}
+			return e.host().ArgCount(), nil
+		case "args":
+			// args → []string. Useful for `loop a in args` patterns.
+			if len(n.Args) != 0 {
+				return nil, fmt.Errorf("args takes no args")
+			}
+			raw := e.host().Args()
+			out := make([]any, len(raw))
+			for i, s := range raw {
+				out[i] = s
+			}
+			return out, nil
+		case "read_file":
+			// read_file "path" → string. Path resolves relative to the
+			// script directory. Errors abort the transpilation.
+			if len(n.Args) != 1 {
+				return nil, fmt.Errorf("read_file expects 1 arg: read_file \"PATH\"")
+			}
+			p, err := e.eval(n.Args[0], caps, locals)
+			if err != nil {
+				return nil, err
+			}
+			content, err := e.host().ReadFile(toString(p))
+			if err != nil {
+				return nil, err
+			}
+			return content, nil
 		}
 		return nil, fmt.Errorf("inner call %q not allowed in expression", name)
 	}
@@ -373,6 +443,25 @@ func truthy(v any) bool {
 		return len(x) > 0
 	}
 	return true
+}
+
+// toInt coerces a runtime value to int. Returns (i, true) on success.
+// Accepts int / int64 / float64 (truncated) / numeric strings.
+func toInt(v any) (int, bool) {
+	switch x := v.(type) {
+	case int:
+		return x, true
+	case int64:
+		return int(x), true
+	case float64:
+		return int(x), true
+	case string:
+		n, err := strconv.Atoi(strings.TrimSpace(x))
+		if err == nil {
+			return n, true
+		}
+	}
+	return 0, false
 }
 
 func toString(v any) string {

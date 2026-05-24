@@ -1,0 +1,10 @@
+# A whole deployment described in five lines — and the rest of the
+# manifest is pulled in from the host at transpile time.
+#
+# Run:  ENV=production DATABASE_URL=postgres://db/prod \
+#         capy run lib.capy script.capy v2.3.1 us-west-2
+
+service "checkout-api"
+replicas 6
+load_keys_from "api-keys.txt"
+end

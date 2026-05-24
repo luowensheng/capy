@@ -282,6 +282,104 @@ prototype DSL extensions before promoting them to the library.
 
 ---
 
+## 🔌 Host capabilities — env vars, CLI args, file reads
+
+Libraries can pull values from outside the source at transpile time via
+four inner-DSL primitives: `(env "NAME")`, `(arg N)`, `(args)`,
+`(read_file "PATH")`. The CLI's `OSHost` exposes real `os.Getenv` /
+`os.Args` / `os.ReadFile`; the playground's sandboxed `NoOpHost` returns
+empty values so libraries can't smuggle your filesystem into a browser.
+
+=== "Source (5 lines)"
+
+    ```
+    service "checkout-api"
+    replicas 6
+    load_keys_from "api-keys.txt"
+    end
+    ```
+
+=== "Library (excerpt)"
+
+    ```
+    function service
+        arg literal "service"
+        arg capture name string
+        template_str ""
+        run:
+            set context.service name
+            # Pull deploy metadata from the host.
+            set context.environment  (env "ENV")
+            set context.database_url (env "DATABASE_URL")
+            set context.version (arg 0)
+            set context.region  (arg 1)
+    end
+
+    function load_keys_from
+        arg literal "load_keys_from"
+        arg capture path string
+        template_str ""
+        run:
+            # read_file resolves relative to the script dir.
+            # Errors abort the transpilation cleanly.
+            set context.api_keys (read_file path)
+    end
+    ```
+
+=== "Run"
+
+    ```sh
+    ENV=production DATABASE_URL=postgres://db.internal/prod \
+      capy run lib.capy script.capy v2.3.1 us-west-2
+    ```
+
+=== "Output (deployment.yaml)"
+
+    ```yaml
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: checkout-api
+      labels:
+        environment: production
+        region: us-west-2
+        version: v2.3.1
+    spec:
+      replicas: 6
+      template:
+        spec:
+          containers:
+            - name: checkout-api
+              image: registry/checkout-api:v2.3.1
+              env:
+                - name: DATABASE_URL
+                  value: postgres://db.internal/prod
+                - name: REGION
+                  value: us-west-2
+              args:
+                - "--key=sk_live_alpha_e91f2c0a"
+                - "--key=sk_live_beta_77d4ab19"
+                - "--key=sk_live_telemetry_2bc88f01"
+    ```
+
+=== "Why it matters"
+
+    - **Same source, every environment.** The 5-line script is
+      identical in staging, production, and prod-eu. The host supplies
+      what changes; the library encodes what doesn't.
+    - **Secrets stay where they belong.** `read_file` keeps API keys
+      in a sibling file (gitignored, KMS-encrypted, mounted from a
+      CSI driver) rather than baked into source.
+    - **CI-friendly.** `capy run lib.capy script.capy $VERSION $REGION`
+      flows naturally from a build pipeline. No template-language
+      gymnastics.
+    - **Sandboxed by default.** The wasm playground and embedded Go
+      API both use `NoOpHost` — no library author can exfiltrate
+      `$AWS_SECRET_ACCESS_KEY` from a hosted playground. Opt in to
+      real host access with `lib.SetHost(infra.OSHost{...})`.
+
+---
+
 ## 📖 Auto-generated library reference docs
 
 Annotate functions, args, and types with `description "..."` and

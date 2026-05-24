@@ -8,6 +8,45 @@ may break between minor versions** (see `CONTRIBUTING.md`).
 
 ## [Unreleased]
 
+## [0.14.0] — 2026-05-24
+
+Host capabilities. Libraries can pull values from outside the source at
+transpile time — environment variables, positional CLI args, and sibling
+files — via four inner-DSL primitives. Sandboxed by default; the CLI
+opts in to real OS access automatically.
+
+### Added
+
+- **Inner-DSL primitives** (use inside `run:` blocks):
+  - `(env "NAME")` → OS env var (string, `""` if unset)
+  - `(arg N)` → Nth positional CLI arg (string)
+  - `(arg_count)` → number of positional args
+  - `(args)` → full args list
+  - `(read_file "PATH")` → file contents; relative paths resolved
+    against the script's directory; errors abort the transpilation
+- **`domain.Host` interface** + two implementations:
+  - `infra.OSHost` — real `os.Getenv` / `os.Args` / `os.ReadFile`,
+    used by the CLI
+  - `domain.NoOpHost` — sandboxed default for embedded callers and
+    the wasm playground; every primitive returns the empty zero value
+    and `read_file` errors with a clear message
+- **`capy.Library.SetHost(h)`** — opt-in API for embedded Go programs
+  that want libraries to see their env/files
+- **CLI positional args** — `capy run lib.capy script.capy a b c` now
+  makes `"a"`, `"b"`, `"c"` visible to `(arg 0)`, `(arg 1)`, `(arg 2)`
+- **`samples/host-capabilities/`** — generates a Kubernetes Deployment
+  from env vars, CLI args, and a sibling `api-keys.txt`
+- **Template helpers** `split` and `nonEmpty` for iterating over
+  `read_file` output
+- **`docs/host-capabilities.md`** — full pattern doc with the Host
+  abstraction, CLI/embedded/playground semantics, and when NOT to
+  reach for these primitives
+
+### Changed
+
+- `orchestrator.RunMulti` gains a sibling `RunMultiWithArgs` that
+  threads positional CLI args through to the inner host
+
 ## [0.13.0] — 2026-05-24
 
 Auto-generated library reference documentation. Library authors can

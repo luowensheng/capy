@@ -151,6 +151,24 @@ var funcs = template.FuncMap{
 		}
 		return strings.Join(parts, sep)
 	},
+	// split breaks a string into a list at each occurrence of SEP.
+	// Argument order matches strings.Split (string first, separator
+	// second) so it reads naturally inline: `range (split .text "\n")`.
+	"split": func(s any, sep string) []string {
+		return strings.Split(toStringAny(s), sep)
+	},
+	// nonEmpty filters a string list down to entries that aren't blank
+	// after trimming whitespace. Handy when iterating over `read_file`
+	// output without producing trailing empty rows.
+	"nonEmpty": func(items []string) []string {
+		out := make([]string, 0, len(items))
+		for _, s := range items {
+			if strings.TrimSpace(s) != "" {
+				out = append(out, s)
+			}
+		}
+		return out
+	},
 	// toQuoted wraps a string in JSON-style double quotes (good for Python too).
 	"toQuoted": func(s any) string {
 		b, _ := json.Marshal(toStringAny(s))

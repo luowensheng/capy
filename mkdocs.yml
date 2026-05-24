@@ -81,6 +81,7 @@ nav:
     - Templates: templates.md
     - Types: types.md
     - Inner DSL (run blocks): inner-dsl.md
+    - "Host capabilities (env / args / read_file)": host-capabilities.md
     - Block functions: block-functions.md
     - Multi-file output & imports: multi-file-and-imports.md
     - Errors & debugging: errors-and-debugging.md

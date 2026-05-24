@@ -235,6 +235,7 @@ artifact.</p>
 | **"Power users want to extend the DSL without forking"** | `define NAME ... end` in the source declares new functions [inline → see metaprogramming](metaprogramming.md). Library stays untouched. |
 | **"High-level tools trap you when you need more control"** | Libraries can expose [progressive abstraction](progressive-abstraction.md) — one-shot, block-style, AND escape hatches in the same library. Drop a level, never switch tools. |
 | **"Library docs go stale the moment they're written"** | `capy docs lib.capy` regenerates [reference Markdown](library-documentation.md) from `description` annotations in the same library file. Commit it; CI catches drift. |
+| **"Same config, twelve environments"** | Libraries can pull env vars, CLI args, and sibling files at transpile time via `(env ...)`, `(arg N)`, `(read_file ...)` — see [host capabilities](host-capabilities.md). One 5-line source generates per-env Kubernetes/Terraform/.env outputs. Sandboxed by default in the playground. |
 
 ---
 

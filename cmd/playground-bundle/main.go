@@ -161,6 +161,9 @@ var CURATED = []struct {
 	{"metaprogramming", "Schemas", "🧬 Metaprogramming",
 		"Source declares its own DSL primitives via `define ... end` — the library doesn't need them.",
 		"Add a new `define ...` block at the top and use it below — your source extends the grammar.", ""},
+	{"host-capabilities", "Schemas", "🔌 Host capabilities (env / args / read_file)",
+		"Generates a Kubernetes deployment from env vars, CLI args, and a sibling secrets file. The CLI's OSHost exposes real values; the playground's sandboxed NoOpHost returns empty strings (read the description in the output for context).",
+		"In the CLI: ENV=production capy run lib.capy script.capy v2.3.1 us-west-2. In the playground: see how the same library degrades cleanly when env/args are empty.", ""},
 
 	// ─── Progressive abstraction (3 levels of the SAME library) ────
 	{"progressive-abstraction", "Patterns", "🎚️ Abstraction · Level 1 (one-shot)",

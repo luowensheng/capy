@@ -50,6 +50,8 @@ type Library struct {
 	lex    features.Lexer
 	parser features.Parser
 	eval   features.Evaluator
+	tpl    features.TemplateRenderer
+	host   domain.Host
 }
 
 // NewLibrary compiles a library written in Capy's native syntax (`.capy`
@@ -96,7 +98,25 @@ func assemble(dl domain.Library, lex features.Lexer) *Library {
 		lex:    lex,
 		parser: orchfeatures.MakeParser(),
 		eval:   orchfeatures.MakeEvaluator(tpl),
+		tpl:    tpl,
+		host:   domain.NoOpHost{},
 	}
+}
+
+// SetHost installs a domain.Host that the library's `env` / `arg` /
+// `read_file` inner-DSL primitives will read from. The default after
+// NewLibrary is domain.NoOpHost — every primitive returns the empty
+// zero value and read_file errors out. Pass infra.OSHost{...} to opt
+// in to real os.Getenv / os.Args / os.ReadFile (only do this when the
+// library source is trusted).
+//
+// Safe to call repeatedly; each call replaces the previous host.
+func (l *Library) SetHost(h domain.Host) {
+	if h == nil {
+		h = domain.NoOpHost{}
+	}
+	l.host = h
+	l.eval = orchfeatures.MakeEvaluatorWithHost(l.tpl, h)
 }
 
 // Run transpiles a single source script through this library and returns
