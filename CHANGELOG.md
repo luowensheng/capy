@@ -8,6 +8,75 @@ may break between minor versions** (see `CONTRIBUTING.md`).
 
 ## [Unreleased]
 
+## [0.10.0] — 2026-05-24
+
+Three new framings get first-class samples and documentation:
+design systems across React + Vue + Svelte, backend code with
+auto-wired tests, and the umbrella idea — Capy as an idea language
+where libraries are implementers.
+
+### Added — engine
+
+- **`file "..."` paths are now Go templates.** Authors can name
+  outputs dynamically:
+  `file "{{ .context.page_title | pascalCase | unquote }}Page.tsx":`
+  Each path is rendered against the same context+body as the file's
+  template body.
+
+### Added — samples
+
+- **`samples/design-system-components/`** — one 8-line component
+  composition compiles to React TSX, Vue 3 SFC, AND Svelte. The
+  three libraries share the same Tailwind variant + size tables, so
+  visual semantics are identical across frameworks. Each component
+  file is named via `pascalCase(page_title)` so adding a new page
+  declaration auto-names the output.
+
+- **`samples/backend-with-tests/`** — every `handler` declaration
+  produces a Go stub AND a matching smoke test. The team's
+  directory layout (`internal/handlers/`), the "every handler has
+  a test" rule, the stub-returns-501 contract, and a
+  route-catalog README are all encoded in the library. Generated
+  Go compiles; `go test ./...` against the output **passes**.
+
+### Added — docs
+
+- **`docs/design-systems.md`** — pattern doc for "house style as
+  library." Walks through the React/Vue/Svelte demo and explains
+  what the library is enforcing (variant tables, layout
+  primitives, sizing scales).
+
+- **`docs/backend-codegen.md`** — pattern doc for "conventions as
+  library." Walks through the handler+test demo, explains the
+  contract between code-gen and the developer (stub returns 501;
+  test asserts 501; implement → test fails → replace with real
+  assertions).
+
+- **`docs/idea-language.md`** — the most ambitious framing: Capy
+  as a language for describing ideas, libraries as implementers.
+  Lays out the "rewrite libraries, not ideas" thesis with
+  references to multi-language-demo, ios-app/android-app, and the
+  design-system samples as concrete evidence.
+
+### Changed
+
+- **Homepage**: three new feature cards (design systems / backend
+  codegen / idea language) above the project-scaffolding card.
+- **Showcase**: three new tabbed sections opening with the
+  design-system → React/Vue/Svelte demo, the backend handler+test
+  demo, and the idea-language framing. Existing project-scaffolding
+  section follows.
+- **MkDocs nav**: exposes all three new pattern docs.
+
+### Tests
+
+- `cmd/capy/multitarget_test.go` adds the design-system sample
+  (per-framework diff) and the backend-with-tests sample to the
+  existing multi-target diff harness.
+- The `expected/` tree for `samples/backend-with-tests/` gets a
+  `go.mod` so it doesn't accidentally become part of the main
+  module's package graph during `go test ./...`.
+
 ## [0.9.0] — 2026-05-24
 
 The Capy compiler now runs in the browser via WebAssembly. The

@@ -111,6 +111,29 @@ in about thirty minutes.
     a `file:line:col` location editors can jump to.
     [Errors guide →](errors-and-debugging.md)
 
+- :material-palette-swatch: **Design systems across React + Vue + Svelte**
+
+    Encode your house style (Tailwind tokens, button variants, card
+    layouts) in a library. One component declaration compiles to all
+    three frameworks with **identical visual semantics**. Add a
+    fourth target (Lit, Solid, SwiftUI) by writing a 40-line library.
+    [Design systems →](design-systems.md)
+
+- :material-test-tube: **Backend code with auto-wired tests**
+
+    Every `handler` declaration generates the Go stub AND the smoke
+    test. Team conventions (directory layout, "every handler has a
+    test", router placement) live in the library — new contributors
+    can't deviate. The generated tests **actually pass**.
+    [Backend codegen →](backend-codegen.md)
+
+- :material-lightbulb-on-outline: **Capy as an idea language**
+
+    Capy is for describing *ideas*; libraries are *implementers*.
+    When the Go server needs to become Rust, you swap libraries —
+    not rewrite the idea. Continually improve the implementation
+    without ever rewriting the contract. [Idea language →](idea-language.md)
+
 - :material-file-tree: **Generate a whole project from one source**
 
     A single `script.capy` can scaffold a complete web app

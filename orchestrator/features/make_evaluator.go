@@ -43,11 +43,18 @@ func MakeEvaluator(tpl features.TemplateRenderer) features.Evaluator {
 		}
 		files := map[string]string{}
 		for path, t := range lib.Files {
+			// File PATHS are themselves Go templates rendered against
+			// the same context+body — so libraries can name outputs
+			// dynamically (e.g. `file "{{ .context.name | pascalCase }}.tsx":`).
+			renderedPath, err := tpl.Render(path, data)
+			if err != nil {
+				return "", nil, fmt.Errorf("file path %q: %v", path, err)
+			}
 			rendered, err := tpl.Render(t, data)
 			if err != nil {
-				return "", nil, fmt.Errorf("file %q: %v", path, err)
+				return "", nil, fmt.Errorf("file %q: %v", renderedPath, err)
 			}
-			files[path] = rendered
+			files[renderedPath] = rendered
 		}
 		return out, files, nil
 	}

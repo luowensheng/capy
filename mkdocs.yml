@@ -52,6 +52,9 @@ nav:
   - Live demos: showcase.md
   - Use cases: use-cases.md
   - Grammar as contract: grammar-as-contract.md
+  - Idea language: idea-language.md
+  - Design systems & components: design-systems.md
+  - Backend code-gen with tests: backend-codegen.md
   - Supercharge existing syntax: extending-existing-syntax.md
   - Multi-file output & imports: multi-file-and-imports.md
   - One source → many files: one-source-many-files.md

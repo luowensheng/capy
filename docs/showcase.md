@@ -273,6 +273,207 @@ absolute path. `@include` is a synonym of `@import`.
 
 ---
 
+## 🎨 Design systems — one component, three frameworks
+
+Encode your house style in a library; generate React, Vue, and
+Svelte with **identical** visual semantics. Same composition,
+three frameworks, zero drift.
+
+=== "Source (8 lines)"
+
+    ```
+    page "Settings"
+        button "Save changes"      variant primary  size lg
+        button "Discard"            variant ghost    size lg
+        card title "Profile"
+            field email     "alice@example.com"
+            field display   "Alice Chen"
+            field timezone  "America/Los_Angeles"
+        end
+        card title "Danger zone"
+            button "Delete account" variant danger   size md
+        end
+    end
+    ```
+
+=== "→ React TSX"
+
+    ```tsx
+    const BUTTON_VARIANT = {
+      primary: "bg-indigo-600 hover:bg-indigo-700 text-white",
+      ghost:   "bg-transparent hover:bg-slate-100 text-slate-700 border border-slate-200",
+      danger:  "bg-red-600 hover:bg-red-700 text-white",
+    } as const;
+    // Button / Card / Field defined identically across frameworks
+
+    export default function SettingsPage() {
+      return (
+        <main className="max-w-2xl mx-auto p-8 space-y-3">
+          <h1 className="text-3xl font-bold text-slate-900">Settings</h1>
+          <Button variant="primary" size="lg">Save changes</Button>
+          <Button variant="ghost" size="lg">Discard</Button>
+          <Card title="Profile">
+            <Field label="email" value="alice@example.com" />
+            <Field label="display" value="Alice Chen" />
+          </Card>
+          <Card title="Danger zone">
+            <Button variant="danger" size="md">Delete account</Button>
+          </Card>
+        </main>
+      );
+    }
+    ```
+
+=== "→ Vue 3 SFC"
+
+    ```html
+    <template>
+      <main class="max-w-2xl mx-auto p-8 space-y-3">
+        <h1 class="text-3xl font-bold text-slate-900">Settings</h1>
+        <Button variant="primary" size="lg">Save changes</Button>
+        <Card title="Profile">
+          <Field label="email" value="alice@example.com" />
+          ...
+        </Card>
+      </main>
+    </template>
+    ```
+
+=== "→ Svelte"
+
+    ```html
+    <script lang="ts">
+      import Button from "./Button.svelte";
+      import Card from "./Card.svelte";
+      import Field from "./Field.svelte";
+    </script>
+
+    <main class="max-w-2xl mx-auto p-8 space-y-3">
+      <h1 class="text-3xl font-bold text-slate-900">Settings</h1>
+      <Button variant="primary" size="lg">Save changes</Button>
+      <Card title="Profile">
+        <Field label="email" value="alice@example.com" />
+        ...
+      </Card>
+    </main>
+    ```
+
+**Identical Tailwind classes across all three.** Change a token in
+the library; every framework regenerates. Add a 4th target (Lit,
+Solid, Astro, SwiftUI) by writing a 40-line library.
+
+[Full sample → `samples/design-system-components/`](https://github.com/luowensheng/capy/tree/main/samples/design-system-components) ·
+[Pattern → `docs/design-systems.md`](design-systems.md)
+
+---
+
+## 🧪 Backend code with auto-wired tests
+
+Every `handler` declaration produces a Go stub AND a smoke test.
+Directory layout and the "every handler has a test" rule live in
+the library — new contributors can't deviate.
+
+=== "Source (4 lines)"
+
+    ```
+    handler ListUsers   method GET     path "/users"        returns "[]User"
+    handler GetUser     method GET     path "/users/{id}"   returns "User"
+    handler CreateUser  method POST    path "/users"        accepts "UserCreateRequest"  returns "User"
+    handler DeleteUser  method DELETE  path "/users/{id}"   returns "void"
+    ```
+
+=== "→ handlers.go"
+
+    ```go
+    package handlers
+
+    import "net/http"
+
+    func Mount(mux *http.ServeMux) {
+        mux.HandleFunc("GET /users", ListUsers)
+        mux.HandleFunc("GET /users/{id}", GetUser)
+        mux.HandleFunc("POST /users", CreateUser)
+        mux.HandleFunc("DELETE /users/{id}", DeleteUser)
+    }
+
+    // GET /users — returns []User
+    func ListUsers(w http.ResponseWriter, r *http.Request) {
+        http.Error(w, "ListUsers not implemented", http.StatusNotImplemented)
+    }
+    // ... three more stubs ...
+    ```
+
+=== "→ handlers_test.go (auto-generated!)"
+
+    ```go
+    package handlers
+
+    import (
+        "net/http"
+        "net/http/httptest"
+        "testing"
+    )
+
+    func Test_ListUsers_RouteRegistered(t *testing.T) {
+        mux := http.NewServeMux()
+        Mount(mux)
+        req := httptest.NewRequest("GET", "/users", nil)
+        rr := httptest.NewRecorder()
+        mux.ServeHTTP(rr, req)
+        if rr.Code != http.StatusNotImplemented {
+            t.Errorf("expected 501, got %d", rr.Code)
+        }
+    }
+    // ... one test per declared handler ...
+    ```
+
+    `go test ./...` on the generated output **passes** — verified.
+    As the developer implements each handler, the stub stops
+    returning 501 → the test fails → they replace it with real
+    assertions.
+
+**There's no way to declare a handler without its matching test.**
+
+[Full sample → `samples/backend-with-tests/`](https://github.com/luowensheng/capy/tree/main/samples/backend-with-tests) ·
+[Pattern → `docs/backend-codegen.md`](backend-codegen.md)
+
+---
+
+## 💡 Capy as an idea language
+
+The most ambitious framing: Capy lets you describe **ideas**;
+libraries are **implementers**. When the Go server isn't fast
+enough and you want Rust, you swap libraries — not rewrite the
+code.
+
+The [multi-language-demo](https://github.com/luowensheng/capy/tree/main/samples/multi-language-demo)
+ships this concretely: the same 10-line source compiles to
+**Python, JavaScript, Go, Rust, AND C**. Identical semantics,
+five idiomatic implementations.
+
+```
+script.capy (the idea)
+       │
+   ┌───┼───┬───┬───┐
+   ▼   ▼   ▼   ▼   ▼
+  .py .js .go .rs .c
+   └───┴───┴───┴───┘
+   every output verified to print 12 when run
+```
+
+Mobile apps follow the same pattern: `samples/android-app/` and
+`samples/ios-app/` accept the **same source shape** and emit
+Kotlin or SwiftUI. The "habit tracker" idea is platform-agnostic;
+which native stack to ship is a library decision.
+
+**The implication:** outgrowing an implementation no longer means
+rewriting the system. Add a new target library; run benchmarks;
+switch over a service at a time. The contract stays stable.
+
+[Pattern → `docs/idea-language.md`](idea-language.md)
+
+---
+
 ## 🛠️ Generate a whole project — web app, Android, iOS, libtorch
 
 The same multi-file mechanism scaffolds **real projects** across

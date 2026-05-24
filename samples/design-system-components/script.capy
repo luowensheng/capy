@@ -1,0 +1,12 @@
+page "Settings"
+    button "Save changes"      variant primary  size lg
+    button "Discard"            variant ghost    size lg
+    card title "Profile"
+        field email     "alice@example.com"
+        field display   "Alice Chen"
+        field timezone  "America/Los_Angeles"
+    end
+    card title "Danger zone"
+        button "Delete account" variant danger   size md
+    end
+end

@@ -1,0 +1,4 @@
+handler ListUsers   method GET     path "/users"        returns "[]User"
+handler GetUser     method GET     path "/users/{id}"   returns "User"
+handler CreateUser  method POST    path "/users"        accepts "UserCreateRequest"  returns "User"
+handler DeleteUser  method DELETE  path "/users/{id}"   returns "void"

@@ -13,7 +13,7 @@ import (
 // diffs against the committed expected/ tree.
 func TestMultiTargetSamples(t *testing.T) {
 	root := findSamplesRoot(t)
-	cases := []string{"webapp-trio", "android-app", "ios-app", "libtorch-train"}
+	cases := []string{"webapp-trio", "android-app", "ios-app", "libtorch-train", "backend-with-tests"}
 	for _, name := range cases {
 		name := name
 		t.Run(name, func(t *testing.T) {
@@ -33,6 +33,35 @@ func TestMultiTargetSamples(t *testing.T) {
 				}
 				if string(want) != got {
 					t.Errorf("%s/%s drift", name, rel)
+				}
+			}
+		})
+	}
+}
+
+// TestDesignSystem runs each of the three framework libraries against the
+// same source and diffs against expected-<framework>/.
+func TestDesignSystem(t *testing.T) {
+	root := findSamplesRoot(t)
+	dir := filepath.Join(root, "design-system-components")
+	script := filepath.Join(dir, "script.capy")
+	for _, fw := range []string{"react", "vue", "svelte"} {
+		fw := fw
+		t.Run(fw, func(t *testing.T) {
+			lib := filepath.Join(dir, "lib_"+fw+".capy")
+			_, files, err := orchestrator.RunMulti(lib, script)
+			if err != nil {
+				t.Fatalf("run: %v", err)
+			}
+			for rel, got := range files {
+				expectedPath := filepath.Join(dir, "expected-"+fw, rel)
+				want, err := os.ReadFile(expectedPath)
+				if err != nil {
+					t.Errorf("missing expected %s: %v", rel, err)
+					continue
+				}
+				if string(want) != got {
+					t.Errorf("%s/%s drift", fw, rel)
 				}
 			}
 		})
