@@ -282,6 +282,219 @@ prototype DSL extensions before promoting them to the library.
 
 ---
 
+## 📦 Cross-platform installer — one source, three shells
+
+Declare install steps once; emit `install.sh`, `install.ps1`, AND
+`install.bat` from the same 9-line source via multi-file output.
+Every platform stays in lock-step because they're regenerated from
+one declaration.
+
+=== "Source (9 lines)"
+
+    ```
+    app "capy-agent"
+    install "jq"
+    install "curl"
+    install "ripgrep"
+    mkdir "/var/log/capy-agent"
+    setenv "CAPY_AGENT_PORT" "8080"
+    service "capy-agent"
+    end
+    ```
+
+=== "→ install.sh (POSIX)"
+
+    ```bash
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if command -v apt-get >/dev/null 2>&1; then
+      PM="sudo apt-get install -y"
+    elif command -v brew >/dev/null 2>&1; then
+      PM="brew install"
+    fi
+    $PM jq
+    $PM curl
+    $PM ripgrep
+    mkdir -p /var/log/capy-agent
+    export CAPY_AGENT_PORT=8080
+    # systemd unit emitted here
+    sudo systemctl enable --now capy-agent
+    ```
+
+=== "→ install.ps1 (PowerShell)"
+
+    ```powershell
+    $ErrorActionPreference = "Stop"
+    choco install -y jq
+    choco install -y curl
+    choco install -y ripgrep
+    New-Item -ItemType Directory -Force -Path "/var/log/capy-agent"
+    [Environment]::SetEnvironmentVariable("CAPY_AGENT_PORT", "8080", "Machine")
+    sc.exe create capy-agent binPath= "..." start= auto
+    sc.exe start capy-agent
+    ```
+
+=== "→ install.bat (cmd.exe)"
+
+    ```batch
+    @echo off
+    choco install -y jq
+    choco install -y curl
+    choco install -y ripgrep
+    if not exist "/var/log/capy-agent" mkdir "/var/log/capy-agent"
+    setx CAPY_AGENT_PORT "8080" /M
+    sc create capy-agent binPath= "..." start= auto
+    sc start capy-agent
+    ```
+
+=== "Why it matters"
+
+    - **No drift.** Add `install "tmux"` once → all three scripts get it.
+    - **No bash-in-PowerShell horror.** Each target speaks its native
+      syntax; the library handles translation.
+    - **CI-friendly.** Generate all three in one step, ship them all,
+      let the installer pick the right one at runtime.
+
+---
+
+## 🔌 WebSocket server — 9 lines → 80 lines of Go
+
+A chat-server DSL declares routes + typed messages + handler bodies.
+The library emits the entire ws stack: upgrader, JSON envelope
+plumbing, per-type dispatch, broadcast hub.
+
+=== "Source (9 lines)"
+
+    ```
+    server "8080"
+    route "/chat"
+
+    message chat "user:string,text:string"
+    message join "user:string"
+
+    on chat "hub.Broadcast(\"chat\", m)"
+    on join "log.Printf(\"%s joined\", m.User); hub.Broadcast(\"join\", m)"
+    end
+    ```
+
+=== "→ Go (excerpt)"
+
+    ```go
+    type ChatMsg struct {
+        User string `json:"user"`
+        Text string `json:"text"`
+    }
+    type JoinMsg struct {
+        User string `json:"user"`
+    }
+
+    func wsHandler(hub *Hub) http.HandlerFunc {
+        return func(w http.ResponseWriter, r *http.Request) {
+            conn, _ := upgrader.Upgrade(w, r, nil)
+            hub.Add(conn); defer hub.Remove(conn); defer conn.Close()
+            for {
+                _, raw, err := conn.ReadMessage()
+                if err != nil { return }
+                var env Envelope
+                json.Unmarshal(raw, &env)
+                switch env.Type {
+                case "chat":
+                    var m ChatMsg; json.Unmarshal(env.Data, &m)
+                    handleChat(hub, conn, m)
+                case "join":
+                    var m JoinMsg; json.Unmarshal(env.Data, &m)
+                    handleJoin(hub, conn, m)
+                }
+            }
+        }
+    }
+    ```
+
+=== "Why it matters"
+
+    - **Network plumbing is library territory.** Upgrade headers,
+      JSON envelope, dispatch — write it once in the library, never
+      again at every service.
+    - **Source = contract.** The 9-line source IS the protocol spec.
+      Generate the server, a TypeScript client, and OpenAPI docs
+      from the same declaration.
+
+---
+
+## 🌐 Same WebSocket DSL → Go AND Node AND Python
+
+The exact same 7-line source produces a runnable echo server in three
+target languages by swapping just the library file. Spec lives in
+the source; implementation choice lives in the library.
+
+=== "Source (identical across all three)"
+
+    ```
+    server "8080"
+    route "/echo"
+
+    handler ping   reply
+    handler shout  uppercase
+    handler bye    close
+    end
+    ```
+
+=== "→ Go (gorilla/websocket)"
+
+    ```go
+    case strings.HasPrefix(text, "ping "):
+        payload := strings.TrimPrefix(text, "ping ")
+        _ = conn.WriteMessage(websocket.TextMessage,
+            []byte("pong "+payload))
+    case strings.HasPrefix(text, "shout "):
+        payload := strings.TrimPrefix(text, "shout ")
+        _ = conn.WriteMessage(websocket.TextMessage,
+            []byte(strings.ToUpper(payload)))
+    case strings.HasPrefix(text, "bye "):
+        return
+    ```
+
+=== "→ Node (`ws` package)"
+
+    ```js
+    if (text.startsWith("ping ")) {
+      ws.send("pong " + text.slice(5));
+      return;
+    }
+    if (text.startsWith("shout ")) {
+      ws.send(text.slice(6).toUpperCase());
+      return;
+    }
+    if (text.startsWith("bye ")) {
+      ws.close();
+      return;
+    }
+    ```
+
+=== "→ Python (asyncio + websockets)"
+
+    ```python
+    if text.startswith("ping "):
+        await websocket.send("pong " + text[5:])
+        continue
+    if text.startswith("shout "):
+        await websocket.send(text[6:].upper())
+        continue
+    if text.startswith("bye "):
+        await websocket.close(); return
+    ```
+
+=== "Why it matters"
+
+    - **Source survives target changes.** Same source still parses
+      if you rewrite the library to emit Rust or Elixir tomorrow.
+    - **No translation drift.** The dispatcher logic is encoded once
+      per library and applies uniformly to every handler.
+    - **Test once, ship N times.** The behaviour contract is one source;
+      pick the runtime per deployment.
+
+---
+
 ## 🔌 Host capabilities — env vars, CLI args, file reads
 
 Libraries can pull values from outside the source at transpile time via

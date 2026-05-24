@@ -29,6 +29,10 @@ playground stays safe.
 | `(arg_count)`         | how many positional args were supplied | `len(os.Args[2:])` |
 | `(args)`              | full positional args list        | `os.Args[2:]`        |
 | `(read_file "PATH")`  | file contents (errors abort)     | `os.ReadFile`        |
+| `(os)`                | host OS identifier ("linux", "darwin", "windows", …) | `runtime.GOOS` |
+| `(arch)`              | host arch ("amd64", "arm64", …)  | `runtime.GOARCH`     |
+| `(cwd)`               | current working directory        | `os.Getwd`           |
+| `(home_dir)`          | user's home directory            | `os.UserHomeDir`     |
 
 Use them in any `run:` block:
 

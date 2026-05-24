@@ -1,0 +1,16 @@
+# ONE source. THREE libraries (Go, Node, Python). Same routes,
+# same semantics, three runnable echo servers.
+#
+# Run any of:
+#   capy run lib-go.capy     script.capy > server.go
+#   capy run lib-node.capy   script.capy > server.js
+#   capy run lib-python.capy script.capy > server.py
+
+server "8080"
+route "/echo"
+
+handler ping   reply
+handler shout  uppercase
+handler bye    close
+
+end

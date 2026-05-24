@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/luowensheng/capy/domain"
 )
@@ -42,6 +43,12 @@ func (h OSHost) Args() []string {
 	copy(out, h.UserArgs)
 	return out
 }
+
+func (h OSHost) OS() string   { return runtime.GOOS }
+func (h OSHost) Arch() string { return runtime.GOARCH }
+
+func (h OSHost) Cwd() (string, error)     { return os.Getwd() }
+func (h OSHost) HomeDir() (string, error) { return os.UserHomeDir() }
 
 func (h OSHost) ReadFile(path string) (string, error) {
 	resolved := path

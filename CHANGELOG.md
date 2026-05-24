@@ -8,6 +8,35 @@ may break between minor versions** (see `CONTRIBUTING.md`).
 
 ## [Unreleased]
 
+## [0.15.0] — 2026-05-24
+
+OS/arch host introspection and three network/cross-platform samples.
+Libraries can now branch on `(os)` / `(arch)`, and samples show the
+spec-as-source pattern applied to non-trivial network code.
+
+### Added
+
+- **Inner-DSL primitives**: `(os)`, `(arch)`, `(cwd)`, `(home_dir)`.
+  Backed by `runtime.GOOS` / `runtime.GOARCH` / `os.Getwd` /
+  `os.UserHomeDir` via `infra.OSHost`. `NoOpHost` returns "".
+- **Sample: `samples/cross-platform-installer/`** — one 9-line source
+  emits `install.sh` (POSIX), `install.ps1` (PowerShell), AND
+  `install.bat` (cmd.exe) via multi-file output. Cross-platform
+  installers without bash-in-PowerShell horror.
+- **Sample: `samples/transpile-websocket-server/`** — 9-line ws DSL →
+  ~80-line Go WebSocket server with typed JSON envelope, dispatch,
+  hub, and broadcast helper.
+- **Sample: `samples/multi-target-ws-server/`** — one source, three
+  libraries: `lib-go.capy` / `lib-node.capy` / `lib-python.capy`.
+  Same 7-line source → runnable echo server in Go (gorilla),
+  Node (`ws`), or Python (asyncio + `websockets`). Library choice
+  picks the runtime; source survives.
+- **`LibraryFile` field on playground-bundle's curated entries** so
+  multi-library samples (like multi-target-ws-server) can expose
+  each variant as its own dropdown entry.
+- All four new samples linked in showcase with tabbed source/output
+  views.
+
 ## [0.14.0] — 2026-05-24
 
 Host capabilities. Libraries can pull values from outside the source at

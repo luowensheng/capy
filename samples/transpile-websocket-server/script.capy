@@ -1,0 +1,14 @@
+# A complete chat server in 9 declarative lines.
+# The library generates ~80 lines of Go (envelope plumbing, dispatch,
+# hub, broadcast) from this. You write intent; Capy writes plumbing.
+
+server "8080"
+route "/chat"
+
+message chat "user:string,text:string"
+message join "user:string"
+
+on chat "hub.Broadcast(\"chat\", m)"
+on join "log.Printf(\"%s joined\", m.User); hub.Broadcast(\"join\", m)"
+
+end

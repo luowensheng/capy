@@ -1,0 +1,18 @@
+# Same install steps every platform. The library handles the
+# syntactic shape; you describe the intent.
+
+app "capy-agent"
+
+install "jq"
+install "curl"
+install "ripgrep"
+
+mkdir "/var/log/capy-agent"
+mkdir "/etc/capy-agent"
+
+setenv "CAPY_AGENT_HOME" "/var/lib/capy-agent"
+setenv "CAPY_AGENT_PORT" "8080"
+
+service "capy-agent"
+
+end

@@ -346,6 +346,37 @@ func (e *InnerEvaluator) eval(x domain.Expr, caps map[string]domain.CaptureValue
 				out[i] = s
 			}
 			return out, nil
+		case "os":
+			// os → string (e.g. "linux", "darwin", "windows"). Matches
+			// runtime.GOOS so libraries can branch their output by host.
+			if len(n.Args) != 0 {
+				return nil, fmt.Errorf("os takes no args")
+			}
+			return e.host().OS(), nil
+		case "arch":
+			// arch → string (e.g. "amd64", "arm64"). Matches runtime.GOARCH.
+			if len(n.Args) != 0 {
+				return nil, fmt.Errorf("arch takes no args")
+			}
+			return e.host().Arch(), nil
+		case "cwd":
+			if len(n.Args) != 0 {
+				return nil, fmt.Errorf("cwd takes no args")
+			}
+			v, err := e.host().Cwd()
+			if err != nil {
+				return nil, err
+			}
+			return v, nil
+		case "home_dir":
+			if len(n.Args) != 0 {
+				return nil, fmt.Errorf("home_dir takes no args")
+			}
+			v, err := e.host().HomeDir()
+			if err != nil {
+				return nil, err
+			}
+			return v, nil
 		case "read_file":
 			// read_file "path" → string. Path resolves relative to the
 			// script directory. Errors abort the transpilation.

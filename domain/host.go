@@ -38,6 +38,23 @@ type Host interface {
 	// are resolved by the implementation (usually against the script's
 	// directory). An error aborts the transpilation with a clear message.
 	ReadFile(path string) (string, error)
+
+	// OS returns the lowercase host operating-system identifier:
+	// "linux", "darwin", "windows", "freebsd", "js" (wasm), etc.
+	// Matches Go's runtime.GOOS so libraries can branch on it.
+	OS() string
+
+	// Arch returns the lowercase host architecture: "amd64", "arm64",
+	// "wasm", etc. Matches Go's runtime.GOARCH.
+	Arch() string
+
+	// Cwd returns the host's current working directory at the time
+	// transpilation started.
+	Cwd() (string, error)
+
+	// HomeDir returns the host user's home directory ($HOME on POSIX,
+	// %USERPROFILE% on Windows).
+	HomeDir() (string, error)
 }
 
 // NoOpHost satisfies Host with empty/zero results everywhere. It's the
@@ -53,3 +70,7 @@ func (NoOpHost) Args() []string                     { return nil }
 func (NoOpHost) ReadFile(path string) (string, error) {
 	return "", &CapyError{Msg: "read_file: host has no filesystem access", Hint: "this Capy build runs in a sandbox; pass --allow-fs on the CLI or supply an OSHost when embedding"}
 }
+func (NoOpHost) OS() string                 { return "" }
+func (NoOpHost) Arch() string               { return "" }
+func (NoOpHost) Cwd() (string, error)       { return "", nil }
+func (NoOpHost) HomeDir() (string, error)   { return "", nil }
