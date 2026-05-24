@@ -637,6 +637,11 @@ func interpolateGeneric(s string, resolve func(path []string) (any, error)) (str
 			b.WriteString(toString(v))
 			i = j + 1
 		} else if s[i] == '\\' && i+1 < len(s) {
+			// One layer of `\X` → X. Library authors use this to embed
+			// literal quotes (`\"`) and dollar signs (`\$`) in interpolated
+			// strings. To pass a target-language escape sequence through
+			// to the generated output (assembler `\n`, regex `\d`, etc.)
+			// double the backslash in source: `\\n` → `\n`.
 			b.WriteByte(s[i+1])
 			i += 2
 		} else {

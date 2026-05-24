@@ -179,6 +179,15 @@ var CURATED = []struct {
 	{"multi-target-ws-server", "Code", "🌐 WS server · Python",
 		"Same 7-line ws DSL → Python (websockets + asyncio).",
 		"Compare with the Go and Node variants. The source is identical.", "", "lib-python.capy"},
+	{"custom-asm", "Code", "⚙️ Assembly · x86_64",
+		"Architecture-neutral assembly DSL (data / func / write / exit) → GNU as syntax for x86_64 Linux (System V). 5-line source → runnable hello-world.",
+		"Switch to the arm64 or riscv64 variant; identical source, different syscall ABI.", "", "lib-x86_64-linux.capy"},
+	{"custom-asm", "Code", "⚙️ Assembly · arm64",
+		"Same source → AArch64 (ARM64) Linux assembly. Syscall number in x8, args in x0-x5, svc #0.",
+		"Compare with the x86_64 and riscv64 variants.", "", "lib-arm64-linux.capy"},
+	{"custom-asm", "Code", "⚙️ Assembly · riscv64",
+		"Same source → RISC-V 64 (RV64I) Linux assembly. Syscall number in a7, args in a0-a5, ecall.",
+		"Compare with the x86_64 and arm64 variants. Add new architectures by writing a new library.", "", "lib-riscv64-linux.capy"},
 
 	// ─── Progressive abstraction (3 levels of the SAME library) ────
 	{"progressive-abstraction", "Patterns", "🎚️ Abstraction · Level 1 (one-shot)",

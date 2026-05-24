@@ -8,6 +8,38 @@ may break between minor versions** (see `CONTRIBUTING.md`).
 
 ## [Unreleased]
 
+## [0.16.0] — 2026-05-24
+
+Custom assembly DSL targeting multiple ISAs. A 5-op
+architecture-neutral assembly DSL produces runnable hello-world on
+x86_64, AArch64, AND RISC-V64 from one source — swap the library to
+retarget. New ISA = new library; the source doesn't change.
+
+### Added
+
+- **Sample: `samples/custom-asm/`** — five ops (`data`, `func`,
+  `write`, `exit`, `end`) + three libraries:
+  - `lib-x86_64-linux.capy` — System V AMD64, `syscall` trap
+  - `lib-arm64-linux.capy` — AArch64, `svc #0` trap
+  - `lib-riscv64-linux.capy` — RV64I, `ecall` trap
+
+  Each library encodes its ISA's syscall ABI: argument registers,
+  syscall numbers, trap instruction. All three emit assembly that
+  builds with the native GNU toolchain and prints "Hello, world".
+- **`unescape` template helper** — reverses Go's string-quoting so
+  templates can produce literal escape sequences (`\n`, `\t`) when
+  the target language wants them as escapes rather than raw bytes.
+- All three assembly variants surface as separate dropdown entries
+  in the playground (`⚙️ Assembly · x86_64 / arm64 / riscv64`).
+- Showcase tab with side-by-side x86_64 / AArch64 / RV64 outputs.
+
+### Fixed
+
+- `interpolateGeneric` documentation clarified: `\X` consumes one
+  backslash, so library authors who want a target-language escape
+  sequence to survive into the output must double-escape in source
+  (e.g. `"hello\\n"` to emit `\n` for an assembler `.ascii` line).
+
 ## [0.15.0] — 2026-05-24
 
 OS/arch host introspection and three network/cross-platform samples.

@@ -1,0 +1,18 @@
+# Architecture-neutral assembly DSL. Five ops: data, func, write,
+# exit, end. The library picks the target: x86_64, arm64, riscv64.
+# Same source → bootable hello-world on any of them.
+#
+# Run:
+#   capy run lib-x86_64-linux.capy  script.capy > hello.s
+#   capy run lib-arm64-linux.capy   script.capy > hello.s
+#   capy run lib-riscv64-linux.capy script.capy > hello.s
+#
+#   # Then on the matching host:
+#   gcc -nostdlib -static hello.s -o hello && ./hello
+
+data hello "Hello, world\\n"
+
+func _start
+    write 1 hello 13
+    exit 0
+end

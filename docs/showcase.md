@@ -495,6 +495,97 @@ the source; implementation choice lives in the library.
 
 ---
 
+## ⚙️ Custom assembly — one source, many ISAs
+
+A 5-op assembly DSL (`data`, `func`, `write`, `exit`, `end`) +
+three libraries = runnable hello-world on x86_64, ARM64, AND RISC-V64.
+New architecture? Add a library; the source survives.
+
+=== "Source (5 lines)"
+
+    ```
+    data hello "Hello, world\\n"
+
+    func _start
+        write 1 hello 13
+        exit 0
+    end
+    ```
+
+=== "→ x86_64 Linux (System V)"
+
+    ```asm
+    .data
+    hello:
+        .ascii "Hello, world\n"
+    .text
+    .global _start
+    _start:
+        mov $1, %rax              # syscall: write
+        mov $1, %rdi              # arg0: fd
+        lea hello(%rip), %rsi     # arg1: buffer
+        mov $13, %rdx             # arg2: count
+        syscall
+        mov $60, %rax             # syscall: exit
+        mov $0, %rdi
+        syscall
+    ```
+
+=== "→ AArch64 Linux"
+
+    ```asm
+    .data
+    hello:
+        .ascii "Hello, world\n"
+    .text
+    .global _start
+    _start:
+        mov x8, #64               // syscall: write
+        mov x0, #1                // arg0: fd
+        adr x1, hello             // arg1: buffer
+        mov x2, #13               // arg2: count
+        svc #0
+        mov x8, #93               // syscall: exit
+        mov x0, #0
+        svc #0
+    ```
+
+=== "→ RV64I Linux"
+
+    ```asm
+    .data
+    hello:
+        .ascii "Hello, world\n"
+    .text
+    .global _start
+    _start:
+        li a7, 64                 # syscall: write
+        li a0, 1                  # arg0: fd
+        la a1, hello              # arg1: buffer
+        li a2, 13                 # arg2: count
+        ecall
+        li a7, 93                 # syscall: exit
+        li a0, 0
+        ecall
+    ```
+
+=== "Why it matters"
+
+    - **Source survives ISA changes.** The 5-line DSL doesn't mention
+      registers, syscall numbers, or trap instructions. The library
+      owns everything platform-specific.
+    - **Adding a target = adding a library.** Want POWER, MIPS,
+      s390x, or FreeBSD-on-x86_64 (different syscall numbers)?
+      Write a new `lib-<arch>-<os>.capy`. The source doesn't change.
+    - **`(os)` and `(arch)` host primitives** let one smart library
+      detect the host at transpile time and emit code for IT — useful
+      for cross-platform install scripts that vary their own asm.
+    - **Pedagogical.** Students write one program, see it materialise
+      in three ISAs side by side. Differences become visible at the
+      instruction level instead of buried in compiler internals.
+
+---
+
 ## 🔌 Host capabilities — env vars, CLI args, file reads
 
 Libraries can pull values from outside the source at transpile time via

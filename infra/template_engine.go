@@ -133,6 +133,23 @@ var funcs = template.FuncMap{
 		}
 		return text
 	},
+	// unescape reverses Go string escaping. Capy preserves the source's
+	// backslash sequences verbatim through the lexer and re-quotes via
+	// strconv.Quote, so a captured "Hello\n" surfaces in templates as
+	// `"Hello\\n"`. Use unescape when the TARGET wants the actual escape
+	// sequence (e.g. assembler .ascii / .asciz directives, C string
+	// literals, JSON-on-the-wire). Wraps in quotes first if missing.
+	"unescape": func(s any) string {
+		text := toStringAny(s)
+		if len(text) < 2 || text[0] != '"' || text[len(text)-1] != '"' {
+			text = "\"" + text + "\""
+		}
+		v, err := strconv.Unquote(text)
+		if err != nil {
+			return toStringAny(s)
+		}
+		return v
+	},
 	// trimSuffix removes a trailing string if present. Useful for joining
 	// generators that emit comma-suffixed lines: drop the dangling comma
 	// at the end of a list with `{{ .body | trimSuffix ",\n" }}\n`.
