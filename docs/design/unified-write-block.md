@@ -41,122 +41,170 @@ contribute Y to the body AND maybe update state Z" is conceptually
 one thing. Splitting it across two blocks is an implementation
 artefact, not a design choice the author asked for.
 
-## Proposal — one `write:` block
+## Proposal — function body IS Capy code; `write` is a statement
+
+The earlier draft of this proposal kept template-internal control
+flow (`${for x in xs}` … `${end}`) and a separate "statement
+interpolation" form. That was a half-measure — a hangover from Go
+`text/template`'s "the template is its own world" model.
+
+The cleaner shape: a function declaration has a **header**
+(`arg literal` / `arg capture` / `block_closer`) followed by a
+**body** of plain Capy statements from the inner DSL. `write` is
+just one of those statements; control flow uses Capy's existing
+`for` and `if`. There is no template language — only string
+literals with `${name}` interpolation.
 
 ```
 function import
     arg literal "import"
     arg capture name ident
-    write `
-        ${append context.imports name}
-    `
+    append context.imports name
+    # no `write` call → contributes nothing to body
 end
 
 function greet
     arg capture name any
-    write `
-        Hello, ${name}!
-    `
+    write `Hello, ${name}!
+`
 end
-```
 
-Inside the backticks:
-
-- **Literal text** is emitted verbatim into the body.
-- **`${...}`** is the only escape. Two flavours, distinguished by the
-  syntactic shape of what's inside:
-  - **Value interpolation** — a path or pure expression
-    (`${name}`, `${context.title}`, `${pascalCase name}`,
-    `${indent 4 body}`). Result is spliced into the output.
-  - **Statement interpolation** — starts with a reserved
-    statement keyword (`set`, `append`, `prepend`, `merge`,
-    `delete`, `if`, `for`, `loop`, `error`, `emit`). Runs as a
-    side effect; produces no visible output.
-
-Reserved keywords are the same finite set the current inner DSL
-already uses; nothing new for an existing library author to learn.
-
-### Why this works as ONE block
-
-The objection to a unified block was: "how do you express 'do
-something stateful, emit nothing' without ambiguity?" Answer:
-wrap it in `${…}`. Side effects look like interpolations.
-
-| Need                              | How                                                |
-|-----------------------------------|----------------------------------------------------|
-| Emit literal text                 | Type it inside the backticks                       |
-| Interpolate a value               | `${name}` / `${context.title}` / `${pascalCase x}` |
-| Update context                    | `${append context.imports name}` (no visible output) |
-| Loop                              | `${for x in xs}` … `${end}`                        |
-| Conditional                       | `${if cond}` … `${else}` … `${end}`                |
-| Call a template helper            | `${pascalCase name}` / `${indent 4 body}`          |
-| The inner block's rendered body   | `${body}`                                          |
-
-No "which lines are statements, which are output?" rule. *Every*
-non-literal is `${…}`. That's the whole clarity claim.
-
-### Control flow
-
-```
 function loop
     arg literal "loop"
     arg capture v ident
     arg literal "in"
     arg capture i any
     block_closer end
-    write `
-        for ${v} in ${i}:
-            ${body}
-    `
+    write `for ${v} in ${i}:
+`
+    write `    ${body}`
 end
 
-file_template `
-    ${for imp in context.imports}
-    import ${imp}
-    ${end}
-    ${body}
+file_template
+    for imp in context.imports
+        write `import ${imp}
 `
+    end
+    write body
+end
 ```
 
-`${for X in Y}` … `${end}` and `${if cond}` … `${else}` … `${end}`
-are block-form statement interpolations. Same `${…}` sigil; nothing
-else is special.
+### The whole spec in one paragraph
 
-`${body}` is a reserved name meaning "the inner block's rendered
-body" (in function `write:`) or "the concatenated top-level body"
-(in `file_template`).
+A function body is a sequence of inner-DSL statements. `write EXPR`
+appends EXPR (coerced to string) to the function's body
+contribution. Backtick strings span multiple lines and accept
+`${EXPR}` interpolation, where EXPR is any inner-DSL value
+expression (paths, function calls, literals). The function's body
+contribution is rendered FIRST (so `body`, the inner block's
+rendered text, is available in scope); the function body executes
+top-down, mixing `write` calls with `set` / `append` / `for` / `if`
+freely.
 
-### Whitespace
+That's it. No `{{- -}}` whitespace dance, no `${for}` block-form
+interpolation, no pipeline syntax, no `define` / `template`
+machinery — control flow IS the host language.
 
-`${…}` consumes nothing. `${-` strips trailing whitespace from the
-preceding literal; `-}` strips leading whitespace from the
-following literal. (Same idea as Go's `{{- -}}`, applied to the
-new sigil.)
+### Why this is better than the half-measure
 
+| Pain in v0 draft                          | Fix in this version                      |
+|-------------------------------------------|------------------------------------------|
+| `${for x in xs}` inside a template        | `for x in xs` outside it (plain Capy)    |
+| Statement vs. value interpolation rule    | Gone. `${…}` is value-only               |
+| `${- -}` whitespace control               | Gone. Author controls whitespace by where `write` is called |
+| "Which is the template language?"         | There isn't one. There's just Capy + interpolated strings |
+| Helpers as `${pascalCase name}`           | Same, but now they're regular inner-DSL functions called from anywhere |
+| Two engines living side by side           | One: the inner-DSL evaluator with an `out` buffer attached |
+
+### How common patterns look
+
+**Conditional output**
 ```
-${- for imp in context.imports }
-import ${imp}
-${- end }
+function field
+    arg literal "field"
+    arg capture name ident
+    arg capture optional bool
+    if optional
+        write `${name}?: any;
+`
+    end
+    if not optional
+        write `${name}: any;
+`
+    end
+end
 ```
 
-…produces no blank lines between iterations.
-
-### Template helpers
-
-Existing template helpers (`indent`, `pascalCase`, `camelCase`,
-`snakeCase`, `dasherize`, `unquote`, `toQuoted`, `toPyLit`,
-`toJSON`, `toJSONIndent`, `join`, `split`, `nonEmpty`, `lower`,
-`upper`, `trimSuffix`, `trimPrefix`, `unescape`, `add`, `sub`,
-`mul`, `percent`, `stars`) become callable from inside `${…}`
-exactly like inner-DSL functions:
-
+**Loop over a list**
 ```
-${indent 4 body}
-${join ", " context.tags}
-${pascalCase name}
+file_template
+    for imp in context.imports
+        write `import ${imp}
+`
+    end
+    write body
+end
 ```
 
-One vocabulary across templates and state code.
+**Mixed state + output (e.g. emit a section header AND record it for a TOC)**
+```
+function section
+    arg literal "section"
+    arg capture title string
+    block_closer end
+    append context.toc title
+    write `## ${title}
+
+${body}
+`
+end
+```
+
+The decision "do I update state or emit output?" disappears. You
+write what should happen, top-down.
+
+### Interpolation rules
+
+Inside a backtick string:
+- `${EXPR}` evaluates EXPR (any inner-DSL value expression: path,
+  literal, function call, parenthesised sub-expression) and splices
+  the result.
+- `\$` escapes a literal `$` (rare; only needed for shell scripts).
+- Newlines, tabs, indentation are literal. No magic trimming. You
+  put exactly the bytes you want.
+- Backticks are escaped as `\\\`` inside the body, or use a
+  triple-backtick form for strings that contain unescaped backticks
+  (Markdown templates, fenced-code generators).
+
+### Template helpers become inner-DSL functions
+
+Current template helpers (`indent`, `pascalCase`, `snakeCase`,
+`unquote`, `toQuoted`, `toJSON`, `join`, `split`, etc.) move into
+the inner DSL as ordinary callable functions. The function library
+is the same; only the call syntax changes:
+
+| Today                                  | Tomorrow                       |
+|----------------------------------------|--------------------------------|
+| `{{ .name \| pascalCase }}`            | `${pascalCase name}`           |
+| `{{ .name \| upper \| trimSuffix "X" }}` | `${trimSuffix "X" (upper name)}` |
+| `{{ indent 4 .body }}`                 | `${indent 4 body}`             |
+| `{{ join ", " .tags }}`                | `${join ", " context.tags}`    |
+
+Pipeline syntax is lost (nested calls instead). That's a small
+ergonomic regression and a big consistency win.
+
+### `body` is just a value
+
+In the original design `${body}` was a magic interpolation token.
+In this design `body` is a regular value available in scope inside
+a function with a `block_closer` (or `block_open`/`block_close`).
+It's the rendered text of the inner block. You can `write body`,
+`write indent 4 body`, pass it to a helper — anything you'd do
+with any other value.
+
+Outside a block-opening function, `body` is undefined and reading
+it errors at load time. Inside `file_template`, `body` is the
+concatenated top-level rendered output.
 
 ### Errors
 
@@ -172,69 +220,95 @@ indent, join, … (helper)
 
 ## What this replaces
 
-| Today                          | Tomorrow                                |
-|--------------------------------|-----------------------------------------|
-| `template:` (Go text/template) | `write:` (Capy template engine)         |
-| `template_str "…"`             | `write \`…\`` (single-line form)        |
-| `run:`                         | merged into `write:` via `${stmt}`      |
-| `file_template:`               | `file_template \`…\``                   |
-| `{{ .name }}`                  | `${name}`                               |
-| `{{ .name \| pascalCase }}`    | `${pascalCase name}`                    |
-| `{{- range .xs }}` … `{{ end }}` | `${- for x in xs}` … `${end}`         |
-| `{{ if .cond }}` … `{{ end }}` | `${if cond}` … `${end}`                 |
-| `{{ template "x" . }}`         | `${include "x"}` (sub-templates)        |
-| `{{ define "x" }}`             | `template "x" \`…\`` block at top level  |
+| Today                              | Tomorrow                                          |
+|------------------------------------|---------------------------------------------------|
+| `template:` (Go text/template)     | `write \`...\`` calls in the function body        |
+| `template_str "..."`               | `write "..."`                                     |
+| `run:`                             | gone — its statements are now just function-body statements |
+| `file_template:`                   | `file_template ... end` block; body is Capy code  |
+| `{{ .name }}`                      | `${name}`                                         |
+| `{{ .name \| pascalCase }}`        | `${pascalCase name}`                              |
+| `{{- range .xs }}` … `{{ end }}`   | `for x in xs ... end` (around the `write` calls)  |
+| `{{ if .cond }}` … `{{ end }}`     | `if cond ... end`                                 |
+| `{{ template "x" . }}`             | `call x` (any library function is reusable as a sub-routine) |
+| `{{ define "x" }}`                 | `function x ... end` at the library top level    |
 
 ## Anti-goals (we are NOT doing these)
 
-- **No new control structures.** Just `for` / `if` / `else`. No
+- **No template language at all.** The single language is Capy's
+  inner DSL plus interpolated string literals. There is no
+  control-flow syntax that is "template-only" — every loop and
+  conditional is regular Capy code that wraps `write` calls.
+- **No `{{- -}}` whitespace control.** Author controls whitespace
+  by where `write` is called and what bytes the backtick string
+  contains. If you don't want a trailing newline, don't put one in.
+- **No pipeline syntax** (`x | upper | trim`). Use nested calls
+  (`${trim (upper x)}`) or bind to a local first
+  (`set s (upper x); set s (trim s); write s`).
+- **No `${stmt}` side-effecting interpolation.** Side effects are
+  plain statements outside the backtick, not inside it. `${...}`
+  is value-only.
+- **No new control structures.** Just `for` / `if` (with optional
+  `else` arm — TBD; today's inner DSL doesn't have one). No
   `while`, no `switch`, no `try`. Anything more is the host
-  language's job, not the template's.
+  language's job.
 - **No expression DSL beyond what the inner DSL already has.**
   `${a + b}` does NOT become valid; arithmetic stays inside helper
-  calls (`${add a b}`). Templates describe shape, not computation.
-- **No partial-template inheritance / overrides.** `${include "x"}`
-  is a function call by name; no `extends` / `block` machinery.
+  calls (`${add a b}`).
+- **No partial-template inheritance / overrides.** Reuse via plain
+  function calls; no `extends` / `block` machinery.
 - **No "raw" Go template escape hatch.** If a library needs
   something the unified engine can't express, that's a bug in the
   engine, not a feature flag.
 
 ## Open questions
 
-1. **Backtick string literals across `.capy`?** Today `.capy` uses
-   double-quoted strings only. `write` blocks introduce a new
-   string form. Decide: backticks only inside `write` / `template`
-   / `file_template` headers, or globally? (Lean: locally — a
-   library-author surface, not user-facing.)
+1. **Backtick strings as a global Capy feature?** Today `.capy`
+   uses double-quoted strings only. Backtick literals are needed
+   for multi-line `write` arguments. Decide: backticks globally
+   (so any string can be a backtick literal — useful in `context`
+   defaults, `description "..."`, etc.) or only as a `write`
+   argument? Lean: globally. Same string form everywhere is the
+   consistency win.
 
-2. **Indentation handling inside backticks.** The current `template:`
-   block strips the deepest common leading indent so authors can
-   write naturally-indented templates. Backticks should do the
-   same. Spec it explicitly.
+2. **Indentation stripping inside backticks.** The current
+   `template:` block strips the deepest common leading indent so
+   authors can write naturally-indented templates. Backticks
+   should do the same. Spec it explicitly: the lexer remembers
+   the indent of the opening backtick's line, strips that much
+   from every subsequent line.
 
-3. **Closing-backtick ambiguity.** If a template emits a literal
-   backtick (a Markdown sample, a shell snippet, an asm directive),
-   you need an escape. Options: `\\\`` inside the body, or use
-   triple-backtick fencing for templates that need backticks.
-   (Lean: triple-backtick variant.)
+3. **Closing-backtick escape.** If a `write` literal emits a real
+   backtick (Markdown fence, shell command-substitution, etc.),
+   you need an escape. Options: `` \` `` inside the body, or a
+   triple-backtick variant for strings that contain unescaped
+   backticks. Lean: support both. `` \` `` covers the common case;
+   triple-backtick handles Markdown templates with fenced blocks.
 
-4. **`${include "x"}` semantics.** Compile-time inlining, or
-   render-time call with the current `context` + `body` scope?
-   Render-time is more flexible but slower; inlining matches what
-   Go's `define` / `template` does. (Lean: render-time; perf hasn't
-   been a bottleneck.)
+4. **`else` arm.** Today's inner DSL `if` has no `else`. The
+   workaround is two `if` blocks (one with `not`). Adding `else`
+   is straightforward and badly missed; do it in the same swing.
 
-5. **What happens to the inner DSL's `regex_match`?** Inside
-   `${if regex_match name "^x"}` works fine as a statement
-   interpolation; inside a value position `${regex_match name "^x"}`
-   should evaluate as bool and splice "true"/"false". Specify this
-   coercion explicitly.
+5. **`set` followed by `write` for computed values.** Some
+   templates need an intermediate computation, e.g.:
+   ```
+   set qualified (concat module "." name)
+   write `${qualified}
+`
+   ```
+   Local variables in a function body already work (the inner DSL
+   has `loop x in y` exposing `x` and `set` writes to locals when
+   the path root isn't `context`). Spec this explicitly so it's
+   clear `write` can use freshly-computed locals.
 
-6. **Locals.** Inner DSL has `loop x in y` exposing `x`; `${for x
-   in y}` does the same. But what about user-introduced locals
-   inside the template — `${let total add a b}`? Lean: don't add
-   it. Helpers compose well enough; the temptation to compute in
-   templates is what makes them ugly.
+6. **Sub-routine calls (`call f a b`).** Reusing one library
+   function from inside another's body is the new `define` /
+   `template` replacement. The inner DSL doesn't have it today.
+   Add it: `call FNAME ARGS...` runs another function as if it
+   matched source, appending its body output to the caller's.
+   Captures map to args by position. (Open: how to pass the
+   *block body* when calling a block-opener function? Probably
+   `call FNAME ARGS... with body`.)
 
 ## Migration
 
