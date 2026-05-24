@@ -1,0 +1,14 @@
+# Same source, target 1: SQL INSERT statements.
+extension sql
+
+comments
+    line "#"
+end
+
+function user
+    arg capture name ident
+    arg capture age int
+    arg capture status ident
+    write `INSERT INTO users (name, age, status) VALUES ('${name}', ${age}, '${status}');
+`
+end

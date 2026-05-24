@@ -1,0 +1,21 @@
+# Same source, target 3: Markdown table.
+extension md
+
+comments
+    line "#"
+end
+
+function user
+    arg capture name ident
+    arg capture age int
+    arg capture status ident
+    write `| ${name} | ${age} | ${status} |
+`
+end
+
+file_template
+    write `| Name | Age | Status |
+|------|-----|--------|
+${body}
+`
+end

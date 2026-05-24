@@ -1,0 +1,63 @@
+# State DSL → XState v5 machine definition in TypeScript.
+extension ts
+
+comments
+    line "#"
+end
+
+context
+    machine_name ""
+    initial_state ""
+    states []
+    transitions []
+end
+
+function machine
+    arg literal "machine"
+    arg capture name ident
+    arg capture initial ident
+    set context.machine_name name
+    set context.initial_state initial
+end
+
+function state
+    arg literal "state"
+    arg capture name ident
+    append context.states name
+end
+
+function on
+    arg literal "on"
+    arg capture from ident
+    arg capture event any
+    arg literal "->"
+    arg capture to ident
+    append context.transitions {from: from, event: event, to: to}
+end
+
+file_template
+    write `import { createMachine } from "xstate";
+
+export const ${context.machine_name} = createMachine({
+  id: "${context.machine_name}",
+  initial: "${context.initial_state}",
+  states: {
+`
+    for st in context.states
+        write `    ${st}: {
+      on: {
+`
+        for tr in context.transitions
+            if tr.from == st
+                write `        ${unquote tr.event}: "${tr.to}",
+`
+            end
+        end
+        write `      },
+    },
+`
+    end
+    write `  },
+});
+`
+end

@@ -200,7 +200,15 @@ func mapLibrary(r infra.RawLibrary, tokenize func(string) ([]domain.Token, error
 			if err != nil {
 				return domain.Library{}, err
 			}
-			newFiles[path] = translated
+			// File PATHS may contain write-style `${...}` interpolations
+			// for dynamic naming (e.g. `file "${context.name | pascalCase}Page.tsx"`).
+			// Translate them to Go-template syntax up-front so the
+			// evaluator's path renderer doesn't need a special path.
+			translatedPath, err := translatePathInterpolations(path)
+			if err != nil {
+				return domain.Library{}, fmt.Errorf("file path %q: %v", path, err)
+			}
+			newFiles[translatedPath] = translated
 		}
 		files = newFiles
 	}

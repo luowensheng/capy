@@ -170,6 +170,52 @@ func translateWriteStmt(w domain.WriteStmt, tpl *strings.Builder, scope map[stri
 	}
 }
 
+// translatePathInterpolations rewrites write-style `${...}`
+// interpolations in a file path string into Go-template `{{ ... }}`
+// form, so the evaluator's existing path renderer (which uses the
+// template engine) can resolve them. Paths don't have a surrounding
+// backtick body, so `${` is the only interpolation cue.
+func translatePathInterpolations(path string) (string, error) {
+	if !strings.Contains(path, "${") {
+		return path, nil
+	}
+	var out strings.Builder
+	scope := map[string]bool{}
+	i := 0
+	for i < len(path) {
+		if i+1 < len(path) && path[i] == '$' && path[i+1] == '{' {
+			depth := 1
+			j := i + 2
+			for j < len(path) && depth > 0 {
+				switch path[j] {
+				case '{':
+					depth++
+				case '}':
+					depth--
+					if depth == 0 {
+						break
+					}
+				}
+				if depth > 0 {
+					j++
+				}
+			}
+			if j >= len(path) {
+				return "", fmt.Errorf("unterminated ${...} in file path")
+			}
+			expr := strings.TrimSpace(path[i+2 : j])
+			out.WriteString("{{ ")
+			out.WriteString(interpolationToTemplate(expr, scope))
+			out.WriteString(" }}")
+			i = j + 1
+			continue
+		}
+		out.WriteByte(path[i])
+		i++
+	}
+	return out.String(), nil
+}
+
 // nextEmitStartsWithBrace reports whether the next emission of
 // translateInterpolatedString at position i would start with a `{`
 // character. Used to disambiguate adjacent literal/escaped braces.
