@@ -12,12 +12,14 @@ compiler** — no server round-trip — on six curated sample DSLs
 you can edit live. Press **Run** (or ⌘/Ctrl + Enter) to regenerate;
 press **Download** to grab the result.
 
-<iframe src="assets/playground/index.html"
+<iframe src="../assets/playground/index.html"
         width="100%"
         height="720"
         style="border: 1px solid #30363d; border-radius: 8px; background: #0d1117;"
         loading="lazy"
         title="Capy playground"></iframe>
+
+If the iframe doesn't load, [open the playground in a new tab](../assets/playground/index.html){:target="_blank"}.
 
 ## What you can do here
 
