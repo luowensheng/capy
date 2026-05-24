@@ -8,23 +8,21 @@ import (
 	"github.com/luowensheng/capy/domain"
 )
 
-// translateNewShape walks an inner-DSL block written in the
-// proposed unified shape (write calls intermixed with state-mutation
-// statements) and splits it into:
-//   - a Go text/template string that the existing template renderer
-//     can consume (built from the WriteStmt values and the
-//     write-only control-flow that wraps them)
+// translateNewShape walks an inner-DSL block (write calls intermixed
+// with state-mutation statements) and splits it into:
+//   - a render-side projection (writes + control flow that contains
+//     writes) — historically a Go text/template string; today the
+//     parsed AST is stored separately and the engine walks it
+//     directly via InnerEvaluator.RenderAST. The string return value
+//     is kept for parser tests + debug printing only.
 //   - a residual InnerBlock containing only state-mutation
-//     statements that the inner evaluator runs after the template
-//     renders
+//     statements that the inner evaluator runs after rendering.
 //
-// The split lets the unified shape ride on top of the existing
-// engine without inventing a new template runtime. Control flow
-// (for / if) that contains a mix of writes AND state mutations is
-// duplicated: one copy goes into the template (for the writes,
-// state stripped), one copy goes into the run block (for the
-// mutations, writes stripped). That guarantees both phases see
-// the same iteration / branching shape.
+// Control flow (for / if) that contains a mix of writes AND state
+// mutations is duplicated: one copy goes into the render side (for
+// the writes, state stripped), one copy goes into the run block
+// (for the mutations, writes stripped). That guarantees both phases
+// see the same iteration / branching shape.
 func translateNewShape(b domain.InnerBlock) (template string, run domain.InnerBlock, err error) {
 	var tpl strings.Builder
 	var runStmts []domain.InnerStmt

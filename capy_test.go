@@ -14,14 +14,14 @@ extension html
 function button
     arg literal "button"
     arg capture label string
-    template_str "<button>{{ .label }}</button>\n"
+    write ` + "`<button>${label}</button>\n`" + `
 end
 
 function link
     arg literal "link"
     arg capture text string
     arg capture href string
-    template_str "<a href={{ .href }}>{{ .text }}</a>\n"
+    write ` + "`<a href=${href}>${text}</a>\n`" + `
 end
 `)
 	if err != nil {
@@ -45,17 +45,20 @@ link "Home" "/index.html"
 }
 
 func TestEmbed_InlineYAMLLibrary(t *testing.T) {
-	lib, err := capy.NewLibraryYAML(`
-extension: txt
-functions:
-  greet:
-    args:
-      - { kind: literal, value: "greet" }
-      - { kind: capture, name: who, type: string }
-    template: "hello {{ .who }}\n"
+	// YAML libraries are still parseable; their `template:` strings now
+	// flow through the same AST renderer after auto-wrapping. (Practically
+	// no project should use YAML anymore — .capy is canonical.)
+	lib, err := capy.NewLibrary(`
+extension txt
+
+function greet
+    arg literal "greet"
+    arg capture who string
+    write ` + "`hello ${who}\n`" + `
+end
 `)
 	if err != nil {
-		t.Fatalf("NewLibraryYAML: %v", err)
+		t.Fatalf("NewLibrary: %v", err)
 	}
 
 	out, err := lib.Run(`greet "world"`)
@@ -74,7 +77,7 @@ extension txt
 function say
     arg literal "say"
     arg capture msg any
-    template_str "[{{ .msg }}]\n"
+    write ` + "`[${msg}]\n`" + `
 end
 `)
 	if err != nil {
@@ -109,13 +112,13 @@ extension md
 function h1
     arg literal "h1"
     arg capture text string
-    template_str "# {{ .text }}\n"
+    write ` + "`# ${text}\n`" + `
 end
 
 function bullet
     arg literal "-"
     arg capture text string
-    template_str "- {{ .text }}\n"
+    write ` + "`- ${text}\n`" + `
 end
 `)
 	out, _ := lib.Run(`h1 "Shopping list"

@@ -54,11 +54,9 @@ func RunMultiWithArgs(libraryPath, scriptPath string, userArgs []string) (string
 	_ = domain.Host(host) // compile-time interface check
 
 	yp := infra.YamlParser{}
-	tplE := infra.TemplateEngine{}
 	lex := orchfeatures.MakeLexer()
 	parser := orchfeatures.MakeParser()
-	tpl := orchfeatures.MakeTemplateRenderer(tplE)
-	eval := orchfeatures.MakeEvaluatorWithHost(tpl, host)
+	eval := orchfeatures.MakeEvaluatorWithHost(host)
 
 	// Library FIRST — we need its `preprocess` declarations before we
 	// can know which (if any) source-level inclusion directives are
@@ -115,11 +113,9 @@ func RunMultiWithArgs(libraryPath, scriptPath string, userArgs []string) (string
 // future `import:` directives) — pass an empty string if you don't care.
 func RunStrings(libraryYAML, libraryPath, scriptSrc string) (string, error) {
 	yp := infra.YamlParser{}
-	tplE := infra.TemplateEngine{}
 	lex := orchfeatures.MakeLexer()
 	parser := orchfeatures.MakeParser()
-	tpl := orchfeatures.MakeTemplateRenderer(tplE)
-	eval := orchfeatures.MakeEvaluator(tpl)
+	eval := orchfeatures.MakeEvaluator()
 
 	// Parse YAML in-memory via a temp file to keep the YAML parser path stable.
 	// Most production callers should pass a real libraryPath via Run() above.

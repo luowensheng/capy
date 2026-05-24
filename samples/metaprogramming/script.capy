@@ -7,28 +7,32 @@
 define heading
     arg literal "heading"
     arg capture text string
-    template:
-        # {{ .text | unquote }}
-
+    write `# ${unquote text}
+`
 end
 
 define quote
     arg literal "quote"
     arg capture text string
     arg capture who string
-    template:
-        > {{ .text | unquote }}
-        >
-        > — *{{ .who | unquote }}*
-
+    write `> ${unquote text}
+>
+> — *${unquote who}*
+`
 end
 
 define checklist_item
     arg literal "todo"
     arg capture done ident
     arg capture text string
-    template:
-        - [{{ if eq .done "yes" }}x{{ else }} {{ end }}] {{ .text | unquote }}
+    write `- [`
+    if done == "yes"
+        write `x`
+    else
+        write ` `
+    end
+    write `] ${unquote text}
+`
 end
 
 # ─── Use them ────────────────────────────────────────────────

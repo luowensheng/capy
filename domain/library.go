@@ -17,7 +17,11 @@ type Library struct {
 	Functions    map[string]*FuncDef
 	Types        map[string]TypeDef
 	Context      map[string]any // initial context values (lists, maps, scalars)
-	FileTemplate string
+	FileTemplate string         // legacy template-string form (kept for parser tests / debug printing)
+	// FileTemplateAST is the parsed write-style body. The renderer
+	// walks this directly — no Go-template detour. nil when the
+	// library has no file_template (renderer uses `body` verbatim).
+	FileTemplateAST *InnerBlock
 
 	// Files is a multi-output declaration: each entry is a relative path
 	// (may include slashes for subdirs) → a Go template rendered with
@@ -33,6 +37,10 @@ type Library struct {
 	//   file "{{ .context.name | pascalCase }}.tsx":
 	//       …
 	Files map[string]string
+	// FilesAST is the per-file write-style AST. Keyed by the SAME
+	// (post-interpolation-translation) path key as Files. Renderer
+	// uses these directly.
+	FilesAST map[string]*InnerBlock
 
 	// Commands declared in the library's manifest. Each maps a verb
 	// name (e.g. "build", "serve", "new") to a CommandDef. The CLI
@@ -111,7 +119,10 @@ type FuncDef struct {
 	Description string // free-form, surfaced by `capy docs`
 	Args        []ArgEntry
 	Elements    []PatternElement // compiled from Args
-	Template    string
+	Template    string           // legacy template-string form (kept for parser tests / debug printing)
+	// TemplateAST is the parsed write-style body. The renderer
+	// walks this directly — no Go-template detour.
+	TemplateAST *InnerBlock
 	Block       *BlockSpec
 	Run         string
 	RunAST      *InnerBlock

@@ -1,31 +1,18 @@
+// Code-generator helpers — small, target-language-aware string-manipulation
+// functions called from the inner-DSL renderer (see RenderAST and
+// interpolateRender). The helper table used to live behind a Go text/template
+// FuncMap; that engine is gone now and the helpers are plain map-of-funcs
+// dispatched by name through ApplyHelper.
 package infra
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
-	"text/template"
 )
 
-// TemplateEngine renders Go text/templates with a small set of code-generator
-// helpers exposed as template functions.
-type TemplateEngine struct{}
-
-func (TemplateEngine) Render(tpl string, data map[string]any) (string, error) {
-	t, err := template.New("capy").Funcs(funcs).Parse(tpl)
-	if err != nil {
-		return "", err
-	}
-	var buf bytes.Buffer
-	if err := t.Execute(&buf, data); err != nil {
-		return "", err
-	}
-	return buf.String(), nil
-}
-
-var funcs = template.FuncMap{
+var funcs = map[string]any{
 	// indent N: indent every line of s by N spaces. Useful for `body`.
 	"indent": func(n int, s string) string {
 		pad := strings.Repeat(" ", n)

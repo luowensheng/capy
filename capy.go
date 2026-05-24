@@ -50,7 +50,6 @@ type Library struct {
 	lex    features.Lexer
 	parser features.Parser
 	eval   features.Evaluator
-	tpl    features.TemplateRenderer
 	host   domain.Host
 }
 
@@ -92,13 +91,11 @@ func newFromBytes(format string, src []byte) (*Library, error) {
 }
 
 func assemble(dl domain.Library, lex features.Lexer) *Library {
-	tpl := orchfeatures.MakeTemplateRenderer(infra.TemplateEngine{})
 	return &Library{
 		lib:    dl,
 		lex:    lex,
 		parser: orchfeatures.MakeParser(),
-		eval:   orchfeatures.MakeEvaluator(tpl),
-		tpl:    tpl,
+		eval:   orchfeatures.MakeEvaluator(),
 		host:   domain.NoOpHost{},
 	}
 }
@@ -116,7 +113,7 @@ func (l *Library) SetHost(h domain.Host) {
 		h = domain.NoOpHost{}
 	}
 	l.host = h
-	l.eval = orchfeatures.MakeEvaluatorWithHost(l.tpl, h)
+	l.eval = orchfeatures.MakeEvaluatorWithHost(h)
 }
 
 // Run transpiles a single source script through this library and returns

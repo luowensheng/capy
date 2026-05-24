@@ -15,16 +15,20 @@ import (
 //
 //  1. Validate captured args against their declared types.
 //  2. If the function opens a block, recursively render the body block first
-//     so the rendered string is available as `.body` in the function template.
-//  3. Render the function's `template:` (with captures + body + read-only
-//     context) and append the result to the parent block's body string.
-//  4. Run the function's `run:` snippet (mutates context only).
+//     so the rendered string is available as `body` in the function's
+//     write-style template.
+//  3. Render the function's TemplateAST and append to the parent block's
+//     body string.
+//  4. Run the function's run snippet (mutates context only).
 //  5. After the body completes, render+run the closer FuncCall the same way.
 //
 // Once the program block is fully rendered, the orchestrator (RunScript)
-// renders `file_template:` with .body=(top-level body) and .context=(final).
-func MakeEvaluator(tpl features.TemplateRenderer) features.Evaluator {
-	return MakeEvaluatorWithHost(tpl, domain.NoOpHost{})
+// renders FileTemplateAST with `body`=(top-level body) and `context`=(final).
+//
+// Rendering walks the inner-DSL AST directly via InnerEvaluator.RenderAST —
+// no Go-template detour. Templates and inner-DSL share one grammar.
+func MakeEvaluator() features.Evaluator {
+	return MakeEvaluatorWithHost(domain.NoOpHost{})
 }
 
 // MakeEvaluatorWithHost is like MakeEvaluator but accepts a host providing
@@ -32,7 +36,7 @@ func MakeEvaluator(tpl features.TemplateRenderer) features.Evaluator {
 // callers and the wasm playground default to NoOpHost so library
 // `env`/`read_file` primitives return empty values instead of touching the
 // embedder's process state.
-func MakeEvaluatorWithHost(tpl features.TemplateRenderer, host domain.Host) features.Evaluator {
+func MakeEvaluatorWithHost(host domain.Host) features.Evaluator {
 	if host == nil {
 		host = domain.NoOpHost{}
 	}
@@ -40,29 +44,30 @@ func MakeEvaluatorWithHost(tpl features.TemplateRenderer, host domain.Host) feat
 		ctx := deepCopyMap(lib.Context)
 		ev := &outerEval{
 			lib:   lib,
-			tpl:   tpl,
 			inner: &InnerEvaluator{Context: ctx, Host: host},
 		}
 		body, err := ev.renderBlock(program)
 		if err != nil {
 			return "", nil, err
 		}
-		data := map[string]any{"body": body, "context": ctx}
-
-		out, err := tpl.Render(lib.FileTemplate, data)
-		if err != nil {
-			return "", nil, fmt.Errorf("file_template: %v", err)
+		// Render the top-level file_template via the AST walker.
+		// Libraries with no file_template emit `body` verbatim.
+		var out string
+		if lib.FileTemplateAST != nil {
+			out, err = ev.inner.RenderAST(*lib.FileTemplateAST, map[string]any{"body": body})
+			if err != nil {
+				return "", nil, fmt.Errorf("file_template: %v", err)
+			}
+		} else {
+			out = body
 		}
 		files := map[string]string{}
-		for path, t := range lib.Files {
-			// File PATHS are themselves Go templates rendered against
-			// the same context+body — so libraries can name outputs
-			// dynamically (e.g. `file "{{ .context.name | pascalCase }}.tsx":`).
-			renderedPath, err := tpl.Render(path, data)
+		for path, ast := range lib.FilesAST {
+			renderedPath, err := ev.inner.RenderPath(path, map[string]any{"body": body})
 			if err != nil {
 				return "", nil, fmt.Errorf("file path %q: %v", path, err)
 			}
-			rendered, err := tpl.Render(t, data)
+			rendered, err := ev.inner.RenderAST(*ast, map[string]any{"body": body})
 			if err != nil {
 				return "", nil, fmt.Errorf("file %q: %v", renderedPath, err)
 			}
@@ -81,7 +86,6 @@ func MakeEvaluatorWithHost(tpl features.TemplateRenderer, host domain.Host) feat
 
 type outerEval struct {
 	lib   domain.Library
-	tpl   features.TemplateRenderer
 	inner *InnerEvaluator
 }
 
@@ -129,19 +133,17 @@ func (e *outerEval) renderFuncCall(c domain.FuncCall) (string, error) {
 }
 
 func (e *outerEval) renderTemplate(c domain.FuncCall, body string) (string, error) {
-	if c.Func.Template == "" {
+	if c.Func.TemplateAST == nil {
 		return "", nil
 	}
-	data := map[string]any{
-		"body":    body,
-		"context": e.inner.Context,
-	}
+	locals := map[string]any{"body": body}
 	for k, v := range c.Captures {
-		// Templates always see the source-text form of a capture. This is
-		// the transpiler model: what the user wrote appears in the target.
-		data[k] = v.Text
+		// Templates always see the source-text form of a capture.
+		// This is the transpiler model: what the user wrote appears
+		// in the target unless a helper transforms it.
+		locals[k] = v.Text
 	}
-	return e.tpl.Render(c.Func.Template, data)
+	return e.inner.RenderAST(*c.Func.TemplateAST, locals)
 }
 
 // validateArgs walks the function's args and validates each capture against

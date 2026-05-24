@@ -339,6 +339,559 @@ func (e *InnerEvaluator) applyOp(parent any, step domain.PathStep, value any, ca
 	return nil
 }
 
+// RenderAST walks a write-style AST and emits the output text. It
+// replaces the older "transpile to Go template syntax then run it"
+// flow — the engine no longer needs text/template.
+//
+// Render-scope: `locals` carries the iteration variable for the
+// current `for`, the special `body` value, and any captures the
+// caller pre-stuffed in. `context` resolves to e.Context. Captures
+// from a function call appear in `locals` as their source-text
+// form (matching the previous template-render behaviour: what the
+// user wrote appears verbatim in the output unless a helper
+// transforms it).
+//
+// State-mutation statements (set / append / prepend / merge /
+// delete / let / call) are intentionally treated as no-ops here —
+// state changes happen on a separate pass via Exec().
+func (e *InnerEvaluator) RenderAST(b domain.InnerBlock, locals map[string]any) (string, error) {
+	var out strings.Builder
+	if err := e.renderBlock(b, locals, &out); err != nil {
+		return "", err
+	}
+	return out.String(), nil
+}
+
+func (e *InnerEvaluator) renderBlock(b domain.InnerBlock, locals map[string]any, out *strings.Builder) error {
+	for _, s := range b.Stmts {
+		if err := e.renderStmt(s, locals, out); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (e *InnerEvaluator) renderStmt(s domain.InnerStmt, locals map[string]any, out *strings.Builder) error {
+	switch n := s.(type) {
+	case domain.WriteStmt:
+		v, err := e.evalRender(n.Value, locals)
+		if err != nil {
+			return err
+		}
+		out.WriteString(toString(v))
+		return nil
+	case domain.IfStmt:
+		v, err := e.evalRender(n.Cond, locals)
+		if err != nil {
+			return err
+		}
+		if truthy(v) {
+			return e.renderBlock(n.Body, locals, out)
+		}
+		if n.Else != nil {
+			return e.renderBlock(*n.Else, locals, out)
+		}
+		return nil
+	case domain.LoopStmt:
+		v, err := e.evalRender(n.Iter, locals)
+		if err != nil {
+			return err
+		}
+		switch coll := v.(type) {
+		case []any:
+			for i, item := range coll {
+				child := copyMap(locals)
+				child[n.Var] = item
+				if n.KeyVar != "" {
+					child[n.KeyVar] = i
+				}
+				if err := e.renderBlock(n.Body, child, out); err != nil {
+					return err
+				}
+			}
+		case []string:
+			// Host primitives like `args` return []string. Treat it
+			// like []any for iteration purposes.
+			for i, item := range coll {
+				child := copyMap(locals)
+				child[n.Var] = item
+				if n.KeyVar != "" {
+					child[n.KeyVar] = i
+				}
+				if err := e.renderBlock(n.Body, child, out); err != nil {
+					return err
+				}
+			}
+		case map[string]any:
+			keys := make([]string, 0, len(coll))
+			for k := range coll {
+				keys = append(keys, k)
+			}
+			for i := 0; i < len(keys); i++ {
+				for j := i + 1; j < len(keys); j++ {
+					if keys[j] < keys[i] {
+						keys[i], keys[j] = keys[j], keys[i]
+					}
+				}
+			}
+			for _, k := range keys {
+				child := copyMap(locals)
+				child[n.Var] = coll[k]
+				if n.KeyVar != "" {
+					child[n.KeyVar] = k
+				}
+				if err := e.renderBlock(n.Body, child, out); err != nil {
+					return err
+				}
+			}
+		case nil:
+			// no-op iteration
+		default:
+			return fmt.Errorf("render: loop iterable must be a list or map, got %T", v)
+		}
+		return nil
+	}
+	// Set/Append/Prepend/Merge/Delete/Call/etc. — render-side no-op.
+	// State mutations are handled by Exec() on a separate pass.
+	return nil
+}
+
+// evalRender evaluates an expression in the render scope. Slightly
+// different from eval(): VarRef paths that resolve to nothing return
+// an empty string (matching template engine behaviour) instead of
+// erroring; CallExpr first tries the helper table (so `${unquote x}`
+// works).
+func (e *InnerEvaluator) evalRender(x domain.Expr, locals map[string]any) (any, error) {
+	switch n := x.(type) {
+	case domain.NumberLit:
+		if n.IsInt {
+			return n.I, nil
+		}
+		return n.F, nil
+	case domain.StringLit:
+		// Render-mode interpolation: `${expr}` may be a path, helper
+		// call, or pipe chain — not just a path lookup. Delegate to a
+		// dedicated walker that parses the inner expression on demand.
+		return e.interpolateRender(n.Value, locals)
+	case domain.BoolLit:
+		return n.Value, nil
+	case domain.NullLit:
+		return nil, nil
+	case domain.VarRef:
+		v, err := e.resolveRender(n.Path, locals)
+		if err != nil {
+			// Templates tolerate missing paths — emit empty.
+			return "", nil
+		}
+		return v, nil
+	case domain.NotExpr:
+		v, err := e.evalRender(n.X, locals)
+		if err != nil {
+			return nil, err
+		}
+		return !truthy(v), nil
+	case domain.CompareExpr:
+		l, err := e.evalRender(n.Left, locals)
+		if err != nil {
+			return nil, err
+		}
+		r, err := e.evalRender(n.Right, locals)
+		if err != nil {
+			return nil, err
+		}
+		return cmp(n.Op, l, r)
+	case domain.CallExpr:
+		name := strings.Join(n.Name, ".")
+		argVals := make([]any, len(n.Args))
+		for i, a := range n.Args {
+			v, err := e.evalRender(a, locals)
+			if err != nil {
+				return nil, err
+			}
+			argVals[i] = v
+		}
+		// Try the template-helper table first (add/upper/unquote/…).
+		if v, ok, err := infra.ApplyHelper(name, argVals); ok {
+			return v, err
+		}
+		// `len` is a builtin in templates but not in ApplyHelper.
+		if name == "len" && len(argVals) == 1 {
+			switch v := argVals[0].(type) {
+			case []any:
+				return int64(len(v)), nil
+			case map[string]any:
+				return int64(len(v)), nil
+			case string:
+				return int64(len(v)), nil
+			}
+			return int64(0), nil
+		}
+		// Fall through to the inner evaluator's CallExpr (regex_match, env, …).
+		return e.eval(x, map[string]domain.CaptureValue{}, locals)
+	}
+	return nil, fmt.Errorf("render: unsupported expression %T", x)
+}
+
+// RenderPath resolves a file-path string with write-style `${...}`
+// interpolations. Same engine as interpolateRender, exposed for the
+// outer evaluator to call on file PATHS (bare strings, not part of
+// a backtick body).
+func (e *InnerEvaluator) RenderPath(path string, locals map[string]any) (string, error) {
+	return e.interpolateRender(path, locals)
+}
+
+// interpolateRender walks a backtick string body and resolves
+// `${expr}` markers in render scope. Unlike interpolateGeneric
+// (which only handles dotted paths), this evaluates the full
+// inner-expression grammar: helper calls (`unquote name`), pipes
+// (`x | upper | toQuoted`), and nested calls (`toQuoted (upper x)`).
+//
+// Mirrors the parsing behaviour the old translateInterpolatedString
+// embedded in the Go-template transpilation path — kept identical
+// so all migrated samples render byte-for-byte the same.
+func (e *InnerEvaluator) interpolateRender(s string, locals map[string]any) (string, error) {
+	var b strings.Builder
+	i := 0
+	for i < len(s) {
+		if i+1 < len(s) && s[i] == '$' && s[i+1] == '{' {
+			j := i + 2
+			depth := 1
+			for j < len(s) && depth > 0 {
+				if s[j] == '{' {
+					depth++
+				} else if s[j] == '}' {
+					depth--
+					if depth == 0 {
+						break
+					}
+				}
+				j++
+			}
+			if j >= len(s) {
+				return "", fmt.Errorf("unterminated ${...}")
+			}
+			expr := strings.TrimSpace(s[i+2 : j])
+			v, err := e.evalInterp(expr, locals)
+			if err != nil {
+				return "", err
+			}
+			b.WriteString(toString(v))
+			i = j + 1
+		} else if s[i] == '\\' && i+1 < len(s) {
+			// Go-style escape: \n / \t / \r / \` / \\, and \X
+			// (literal X) for other characters — matches the
+			// backtick body unescape in translate_new_shape.go so
+			// AST-rendered output is byte-identical.
+			switch s[i+1] {
+			case 'n':
+				b.WriteByte('\n')
+			case 't':
+				b.WriteByte('\t')
+			case 'r':
+				b.WriteByte('\r')
+			case '`':
+				b.WriteByte('`')
+			case '\\':
+				b.WriteByte('\\')
+			default:
+				b.WriteByte(s[i+1])
+			}
+			i += 2
+		} else {
+			b.WriteByte(s[i])
+			i++
+		}
+	}
+	return b.String(), nil
+}
+
+// evalInterp parses + evaluates the body of a single `${...}`.
+// Grammar mirrors what the legacy template-transpilation path
+// accepted:
+//
+//	atom         := IDENT (. IDENT | [ EXPR ])*    -- path lookup
+//	              | NUMBER | STRING                 -- literal
+//	              | ( EXPR )                        -- parens
+//	stage        := atom+                           -- call: head=fn, rest=args
+//	expr         := stage ( | stage )*              -- pipe chain
+//
+// Pipes flow left to right with each stage receiving the running
+// value as its FINAL argument (matches the Go template `|` form).
+func (e *InnerEvaluator) evalInterp(expr string, locals map[string]any) (any, error) {
+	stages := splitInterpPipeRuntime(expr)
+	var running any
+	for idx, stage := range stages {
+		atoms := tokeniseInterpRuntime(strings.TrimSpace(stage))
+		if len(atoms) == 0 {
+			continue
+		}
+		if idx > 0 {
+			// Pipe stage: previous value becomes the last argument.
+			atoms = append(atoms, "")
+		}
+		argVals := make([]any, 0, len(atoms))
+		head := atoms[0]
+		for ai, a := range atoms[1:] {
+			if idx > 0 && ai == len(atoms[1:])-1 {
+				// last slot is the piped value
+				argVals = append(argVals, running)
+				continue
+			}
+			v, err := e.evalInterpAtom(a, locals)
+			if err != nil {
+				return nil, err
+			}
+			argVals = append(argVals, v)
+		}
+		if len(atoms) == 1 {
+			// Single atom: it's a value (path or literal), not a call.
+			v, err := e.evalInterpAtom(head, locals)
+			if err != nil {
+				return nil, err
+			}
+			running = v
+			continue
+		}
+		// Multi-atom: call head with argVals as a helper / builtin.
+		if v, ok, err := infra.ApplyHelper(head, argVals); ok {
+			if err != nil {
+				return nil, err
+			}
+			running = v
+			continue
+		}
+		// `len` builtin (templates have it but ApplyHelper doesn't).
+		if head == "len" && len(argVals) == 1 {
+			switch v := argVals[0].(type) {
+			case []any:
+				running = int64(len(v))
+			case map[string]any:
+				running = int64(len(v))
+			case string:
+				running = int64(len(v))
+			default:
+				running = int64(0)
+			}
+			continue
+		}
+		return nil, fmt.Errorf("interp: unknown helper %q", head)
+	}
+	return running, nil
+}
+
+// evalInterpAtom resolves a single token inside `${...}`. Numbers
+// and quoted strings pass through; parenthesised groups recurse;
+// everything else is a path lookup.
+func (e *InnerEvaluator) evalInterpAtom(s string, locals map[string]any) (any, error) {
+	if s == "" {
+		return "", nil
+	}
+	if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
+		// Quoted string literal. The lexer preserved every backslash
+		// sequence verbatim from the backtick body, so we need TWO
+		// unescape passes to match what the previous Go-template
+		// path did (backtick body unescape + Go template string
+		// literal unescape). Concretely: source `\\n` (3 chars)
+		// → after pass 1: `\n` (2 chars: backslash + n)
+		// → after pass 2: real newline (1 char)
+		// This is what helpers like `trimSuffix ",\\n" body` need —
+		// the body has REAL newlines and we want the suffix to match.
+		inner := unescapeStringLitInner(unescapeStringLitInner(s[1 : len(s)-1]))
+		return inner, nil
+	}
+	if v, err := strconv.ParseInt(s, 10, 64); err == nil {
+		return v, nil
+	}
+	if v, err := strconv.ParseFloat(s, 64); err == nil {
+		return v, nil
+	}
+	if len(s) >= 2 && s[0] == '(' && s[len(s)-1] == ')' {
+		return e.evalInterp(s[1:len(s)-1], locals)
+	}
+	// Path lookup: split on `.` and resolve.
+	path := strings.Split(s, ".")
+	v, err := e.resolveRender(path, locals)
+	if err != nil {
+		// Missing paths render empty — matches Go template tolerance.
+		return "", nil
+	}
+	return v, nil
+}
+
+// unescapeStringLitInner does one pass of Go-style escape decoding
+// over the unquoted inner of a string literal:
+//
+//	\n → newline   \t → tab   \r → CR
+//	\" → "         \\ → \
+//	\X → X (for any other X)
+//
+// Run twice to mirror the previous chain (backtick-body unescape
+// followed by template string-literal unescape).
+func unescapeStringLitInner(s string) string {
+	var b strings.Builder
+	for i := 0; i < len(s); i++ {
+		if s[i] == '\\' && i+1 < len(s) {
+			switch s[i+1] {
+			case 'n':
+				b.WriteByte('\n')
+			case 't':
+				b.WriteByte('\t')
+			case 'r':
+				b.WriteByte('\r')
+			case '"':
+				b.WriteByte('"')
+			case '\\':
+				b.WriteByte('\\')
+			default:
+				b.WriteByte(s[i+1])
+			}
+			i++
+			continue
+		}
+		b.WriteByte(s[i])
+	}
+	return b.String()
+}
+
+// splitInterpPipeRuntime splits on top-level `|`. Same logic as the
+// translator's splitInterpPipe, kept separate so the runtime doesn't
+// import from translate_new_shape.go and stays self-contained.
+func splitInterpPipeRuntime(s string) []string {
+	var out []string
+	var cur strings.Builder
+	depth := 0
+	inStr := false
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if inStr {
+			cur.WriteByte(c)
+			if c == '\\' && i+1 < len(s) {
+				cur.WriteByte(s[i+1])
+				i++
+				continue
+			}
+			if c == '"' {
+				inStr = false
+			}
+			continue
+		}
+		switch c {
+		case '"':
+			inStr = true
+			cur.WriteByte(c)
+		case '(':
+			depth++
+			cur.WriteByte(c)
+		case ')':
+			depth--
+			cur.WriteByte(c)
+		case '|':
+			if depth == 0 {
+				out = append(out, cur.String())
+				cur.Reset()
+				continue
+			}
+			cur.WriteByte(c)
+		default:
+			cur.WriteByte(c)
+		}
+	}
+	if cur.Len() > 0 {
+		out = append(out, cur.String())
+	}
+	return out
+}
+
+// tokeniseInterpRuntime tokenises a single pipe stage. Parens stay
+// together as one token; quoted strings stay together; whitespace
+// separates atoms. Mirrors the translator's tokeniseInterp.
+func tokeniseInterpRuntime(s string) []string {
+	var out []string
+	var cur strings.Builder
+	inStr := false
+	depth := 0
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if inStr {
+			cur.WriteByte(c)
+			if c == '\\' && i+1 < len(s) {
+				cur.WriteByte(s[i+1])
+				i++
+				continue
+			}
+			if c == '"' {
+				inStr = false
+				if depth == 0 {
+					out = append(out, cur.String())
+					cur.Reset()
+				}
+			}
+			continue
+		}
+		if c == '"' {
+			inStr = true
+			cur.WriteByte(c)
+			continue
+		}
+		if c == '(' {
+			depth++
+			cur.WriteByte(c)
+			continue
+		}
+		if c == ')' {
+			depth--
+			cur.WriteByte(c)
+			if depth == 0 {
+				out = append(out, cur.String())
+				cur.Reset()
+			}
+			continue
+		}
+		if depth > 0 {
+			cur.WriteByte(c)
+			continue
+		}
+		if c == ' ' || c == '\t' {
+			if cur.Len() > 0 {
+				out = append(out, cur.String())
+				cur.Reset()
+			}
+			continue
+		}
+		cur.WriteByte(c)
+	}
+	if cur.Len() > 0 {
+		out = append(out, cur.String())
+	}
+	return out
+}
+
+// resolveRender looks up a path in render scope: locals → context.
+// VarRef paths support map indexing (a.b.c) all the way down.
+func (e *InnerEvaluator) resolveRender(path []string, locals map[string]any) (any, error) {
+	root := path[0]
+	rest := path[1:]
+	var cur any
+	if v, ok := locals[root]; ok {
+		cur = v
+	} else if root == "context" {
+		cur = e.Context
+	} else {
+		return nil, fmt.Errorf("undefined %q", root)
+	}
+	for _, step := range rest {
+		switch m := cur.(type) {
+		case map[string]any:
+			cur = m[step]
+		case nil:
+			return nil, nil
+		default:
+			return nil, fmt.Errorf("cannot access %q on non-map (%T)", step, cur)
+		}
+	}
+	return cur, nil
+}
+
 // --- expression evaluator (independent of outer scope) ---
 
 func (e *InnerEvaluator) eval(x domain.Expr, caps map[string]domain.CaptureValue, locals map[string]any) (any, error) {
