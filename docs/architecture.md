@@ -1,8 +1,8 @@
 # Architecture
 
-Capy follows **VHCO** — Vertical Hierarchy with Closed-world Operations. This
-doc describes how the engine is laid out internally. For library authors,
-this isn't required reading; for contributors, it is.
+This doc describes how the engine is laid out internally. For library
+authors, this isn't required reading — it's here for anyone curious
+about the internals.
 
 ## Top-level layout
 

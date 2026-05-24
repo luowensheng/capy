@@ -1,24 +1,14 @@
-<!-- Thanks for sending a PR. Please fill out the sections below. -->
+## ⛔ This repository does not accept pull requests
 
-### What
+Capy is currently developed by a single author and is **not accepting
+external contributions** — no PRs, no patches, no design PRs. Per
+section 3 of the [license](../LICENSE), unsolicited contributions
+convey no rights to the contributor and we may close or delete them
+without review.
 
-<!-- One-paragraph description of the change. -->
+**Please close this PR.** If you found a bug, open an
+[issue](https://github.com/luowensheng/capy/issues/new/choose) instead
+— bug reports are welcome.
 
-### Why
-
-<!-- Link to the issue (if any) and motivate the change. -->
-
-Closes #
-
-### How
-
-<!-- Brief implementation notes if the diff isn't obvious. -->
-
-### Checklist
-
-- [ ] `go test ./...` passes locally
-- [ ] `golangci-lint run` is clean
-- [ ] New behavior has tests
-- [ ] Docs updated (`docs/` and/or `README.md`)
-- [ ] If a sample was added, `expected.txt` was generated via `go test ./... -update`
-- [ ] If the YAML schema changed, `CHANGELOG.md` notes it under `## [Unreleased]`
+If this changes in the future, [CONTRIBUTING.md](../CONTRIBUTING.md)
+will be updated.

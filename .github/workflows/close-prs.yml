@@ -1,0 +1,52 @@
+name: close-external-prs
+
+# Auto-close any pull request opened by someone who isn't the repo
+# owner or an explicit collaborator. Capy isn't accepting external
+# contributions right now (see LICENSE section 3 and CONTRIBUTING.md).
+#
+# The PR author still sees the close comment so they know why.
+
+on:
+  pull_request_target:
+    types: [opened, reopened]
+
+permissions:
+  pull-requests: write
+  issues: write
+
+jobs:
+  close:
+    runs-on: ubuntu-latest
+    # COLLABORATOR / MEMBER / OWNER stay open; everyone else gets closed.
+    # (author_association values: OWNER, MEMBER, COLLABORATOR, CONTRIBUTOR,
+    # FIRST_TIMER, FIRST_TIME_CONTRIBUTOR, NONE.)
+    if: >
+      github.event.pull_request.author_association != 'OWNER' &&
+      github.event.pull_request.author_association != 'MEMBER' &&
+      github.event.pull_request.author_association != 'COLLABORATOR'
+    steps:
+      - name: Comment and close
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = [
+              "Thanks for your interest in Capy.",
+              "",
+              "This repository is **not accepting external pull requests** at this time. See [CONTRIBUTING.md](https://github.com/${{ github.repository }}/blob/main/CONTRIBUTING.md) and section 3 of the [LICENSE](https://github.com/${{ github.repository }}/blob/main/LICENSE).",
+              "",
+              "If you found a bug, please open an [issue](https://github.com/${{ github.repository }}/issues/new/choose) — bug reports are welcome.",
+              "",
+              "_This PR was closed automatically._",
+            ].join("\n");
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            });
+            await github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+              state: "closed",
+            });

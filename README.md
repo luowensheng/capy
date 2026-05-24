@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/luowensheng/capy/actions/workflows/ci.yml/badge.svg)](https://github.com/luowensheng/capy/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/luowensheng/capy?include_prereleases)](https://github.com/luowensheng/capy/releases)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: Source-Available](https://img.shields.io/badge/License-Source--Available-orange.svg)](LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/luowensheng/capy)](https://goreportcard.com/report/github.com/luowensheng/capy)
 
 Capy reads source code, matches each statement against library-defined
@@ -225,9 +225,14 @@ for what's planned.
 
 ## Contributing
 
-PRs welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). For bigger ideas,
-open an issue first.
+**Contributions are closed.** No pull requests, no patches. Bug
+reports via issues are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md)
+for the full statement.
 
 ## License
 
-[MIT](LICENSE) — © 2026 Capy authors.
+[Capy Source-Available License](LICENSE) — © 2026 Capy authors.
+
+Source-visible for reading, building, and personal evaluation.
+Commercial use, redistribution, and derivative works require prior
+written permission.

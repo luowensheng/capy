@@ -4,7 +4,7 @@ All notable changes to Capy are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) —
 with the important caveat that **while pre-1.0, the library YAML schema
-may break between minor versions** (see `CONTRIBUTING.md`).
+may break between minor versions**.
 
 ## [Unreleased]
 
