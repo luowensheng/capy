@@ -322,7 +322,9 @@ func compileFunction(name string, f infra.RawFunction, tokenize func(string) ([]
 	if err != nil {
 		return nil, err
 	}
-	// Auto-name-prepend rule.
+	// Auto-name-prepend rule. The `bare` directive opts out — useful
+	// for shape-only functions (e.g. a row of bare string literals)
+	// whose source has no leading keyword to anchor on.
 	hasLiteral := false
 	for _, a := range args {
 		if a.Kind == "literal" {
@@ -330,7 +332,7 @@ func compileFunction(name string, f infra.RawFunction, tokenize func(string) ([]
 			break
 		}
 	}
-	if !hasLiteral {
+	if !hasLiteral && !f.Bare {
 		args = append([]domain.ArgEntry{{Kind: "literal", Value: name}}, args...)
 	}
 

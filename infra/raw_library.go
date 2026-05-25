@@ -101,6 +101,13 @@ type RawFunction struct {
 	Block       *RawBlock
 	Priority    int
 
+	// Bare opts the function out of the auto-name-prepend rule. With
+	// this flag set, a function declared with only `arg capture` entries
+	// matches purely by shape — useful for grammars whose data lines
+	// have no leading keyword (e.g. `"1" "2" "3"` as a row of button
+	// labels).
+	Bare bool
+
 	// Body is the function body — inner-DSL statements including
 	// `write` calls. The loader parses it into the FuncDef's
 	// TemplateAST + RunAST.

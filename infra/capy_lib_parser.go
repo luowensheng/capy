@@ -485,6 +485,12 @@ func (p *capyLibParser) parseFunction() (RawFunction, error) {
 				return fn, p.errf("priority: %v", err)
 			}
 			fn.Priority = n
+		case "bare":
+			p.nextLine()
+			if len(tokens) != 1 {
+				return fn, p.errf("bare takes no arguments")
+			}
+			fn.Bare = true
 		case "arg":
 			p.nextLine()
 			if len(tokens) < 2 {

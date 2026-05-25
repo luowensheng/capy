@@ -66,6 +66,14 @@ func (p *outerP) Restore(s int)         { p.pos = s }
 
 func (p *outerP) parseProgram(inBlock bool, closerName string) (domain.Block, error) {
 	var stmts []domain.FuncCall
+	// strayIndents counts INDENT tokens that appeared mid-body without a
+	// block-opener directive in front of them — i.e. the user nested
+	// content deeper than the block's anchor purely for visual styling.
+	// Each stray INDENT must be paired with a matching DEDENT before the
+	// real body-closing DEDENT is reached. If the matching DEDENT is
+	// immediately followed by the body's closer keyword, that closer is
+	// also part of the cosmetic nesting and is consumed as a no-op.
+	strayIndents := 0
 	for {
 		k := p.Peek().Kind
 		if k == domain.TokEOF {
@@ -75,7 +83,28 @@ func (p *outerP) parseProgram(inBlock bool, closerName string) (domain.Block, er
 			p.Advance()
 			continue
 		}
+		if k == domain.TokIndent {
+			// A stray indent — content deeper than the surrounding block
+			// without a real opener. Treat as a no-op so user-side
+			// indentation is purely cosmetic.
+			p.Advance()
+			strayIndents++
+			continue
+		}
 		if k == domain.TokDedent {
+			if strayIndents > 0 {
+				p.Advance()
+				strayIndents--
+				// If the user mirrored their stray INDENT with a stray
+				// `end` keyword, consume it (and its newline) so the
+				// real block closer is reached.
+				if inBlock && p.atCloser(closerName) {
+					cp := p.byName[closerName]
+					_, _ = p.tryMatch(cp)
+					p.consumeNewlines()
+				}
+				continue
+			}
 			break
 		}
 		if inBlock && p.atCloser(closerName) {
