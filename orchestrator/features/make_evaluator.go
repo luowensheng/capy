@@ -118,7 +118,16 @@ func (e *outerEval) renderFuncCall(c domain.FuncCall) (string, error) {
 		return "", err
 	}
 	if c.Func.RunAST != nil {
-		if err := e.inner.Exec(*c.Func.RunAST, c.Captures); err != nil {
+		// Expose the rendered inner-block output to the run pass as
+		// `body` so state-mutation statements can stash the rendered
+		// text into context (e.g. CSS-rule accumulation). Do NOT
+		// shadow a user-defined capture also named `body` — captures
+		// take precedence.
+		runLocals := map[string]any{}
+		if _, shadowed := c.Captures["body"]; !shadowed {
+			runLocals["body"] = bodyOutput
+		}
+		if err := e.inner.ExecWithLocals(*c.Func.RunAST, c.Captures, runLocals); err != nil {
 			return "", fmt.Errorf("function %q run: %v", c.Func.Name, err)
 		}
 	}
@@ -190,7 +199,7 @@ func (e *outerEval) validateArgs(c domain.FuncCall) error {
 // look like an integer literal); library-defined types apply pattern/options.
 func (e *outerEval) checkType(t string, text string) error {
 	switch t {
-	case "", "any", "raw", "ident":
+	case "", "any", "raw", "ident", "tail":
 		return nil
 	case "string":
 		// String captures parse as StringLit and the source-text form is

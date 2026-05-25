@@ -118,6 +118,10 @@ type RawBlock struct {
 	Closer string
 	Open   string
 	Close  string
+	// IsDedent: body ends at the first DEDENT after the opener, with
+	// no closer keyword. Used for indent-only blocks (CSS-style rules,
+	// YAML-style sections, etc.).
+	IsDedent bool
 }
 
 // RawArg is an args-list entry. The Kind discriminator is required.

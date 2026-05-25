@@ -152,9 +152,10 @@ type ArgEntry struct {
 //     The body is delimited by exact tokens. No closer function involved.
 //     Useful for `for x in 40 { ... }` style.
 type BlockSpec struct {
-	Closer string
-	Open   string
-	Close  string
+	Closer   string
+	Open     string
+	Close    string
+	IsDedent bool
 }
 
 // PatternElement is one compiled token in the function's match shape.

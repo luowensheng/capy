@@ -52,6 +52,14 @@ func (e *InnerEvaluator) Exec(prog domain.InnerBlock, captures map[string]domain
 	return e.execBlock(prog, captures, locals)
 }
 
+// ExecWithLocals runs a state-mutation block with pre-seeded locals.
+// The outer evaluator uses this to expose the rendered inner-block
+// output as `body` to the run pass, so state mutations can capture
+// or transform the rendered text.
+func (e *InnerEvaluator) ExecWithLocals(prog domain.InnerBlock, captures map[string]domain.CaptureValue, locals map[string]any) error {
+	return e.execBlock(prog, captures, locals)
+}
+
 func (e *InnerEvaluator) execBlock(b domain.InnerBlock, caps map[string]domain.CaptureValue, locals map[string]any) error {
 	for _, s := range b.Stmts {
 		if err := e.execStmt(s, caps, locals); err != nil {

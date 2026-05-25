@@ -310,6 +310,32 @@ func (p *outerP) captureValue(t string, stop []string) (domain.CaptureValue, err
 			return domain.CaptureValue{Text: tok.Text}, nil
 		}
 		return domain.CaptureValue{}, fmt.Errorf("expected raw token, got %q", tok.Text)
+	case "tail":
+		// Capture every remaining token on the current statement as a
+		// single source-text string, reconstructed using the original
+		// column positions so `20px` (no source whitespace) stays
+		// joined as `20px` while `1px solid red` keeps its spaces.
+		// Useful for free-form trailing values like CSS property
+		// values.
+		var b strings.Builder
+		prevEnd := -1
+		for {
+			k := p.Peek().Kind
+			if k == domain.TokNewline || k == domain.TokEOF || k == domain.TokDedent || k == domain.TokIndent {
+				break
+			}
+			tok := p.Advance()
+			if prevEnd >= 0 && tok.Col > prevEnd {
+				// Preserve only as many spaces as appeared in source.
+				b.WriteString(strings.Repeat(" ", tok.Col-prevEnd))
+			}
+			b.WriteString(tok.Text)
+			prevEnd = tok.Col + len(tok.Text)
+		}
+		if b.Len() == 0 {
+			return domain.CaptureValue{}, fmt.Errorf("expected tail value, got end of line")
+		}
+		return domain.CaptureValue{Text: b.String()}, nil
 	}
 	// Library-defined types. If the type declares a `base:` (e.g. base int),
 	// recursively dispatch to the base type's token-capture rules — that's
@@ -352,6 +378,12 @@ func (p *outerP) parseBlockBody(closerName string) (domain.Block, *domain.FuncCa
 		return domain.Block{}, nil, fmt.Errorf("line %d: expected end of block", p.Peek().Line)
 	}
 	p.Advance()
+	// Dedent-only block: no closer keyword to match. Useful for
+	// CSS-style selectors and other DSLs where a body is delimited
+	// purely by indentation.
+	if closerName == "" {
+		return body, nil, nil
+	}
 	cp, ok := p.byName[closerName]
 	if !ok {
 		return domain.Block{}, nil, fmt.Errorf("library function %q (closer) not found", closerName)

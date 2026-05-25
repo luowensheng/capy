@@ -287,24 +287,39 @@ func mapLibrary(r infra.RawLibrary, tokenize func(string) ([]domain.Token, error
 			if a.Kind == "capture" && !validType(a.Type, lib.Types) {
 				ce := &domain.CapyError{Msg: fmt.Sprintf("function %q: capture %q has unknown type %q", fd.Name, a.Name, a.Type)}
 				// Suggest the closest known type (built-ins + library-declared).
-				cands := []string{"any", "ident", "raw", "string", "int", "float", "bool"}
+				cands := []string{"any", "ident", "raw", "tail", "string", "int", "float", "bool"}
 				for n := range lib.Types {
 					cands = append(cands, n)
 				}
 				if best := domain.SuggestClosest(a.Type, cands, 2); best != "" {
 					ce.Hint = fmt.Sprintf("did you mean %q?", best)
 				} else {
-					ce.Hint = fmt.Sprintf("built-in types: any, ident, raw, string, int, float, bool; declared types: %v", typeNames(lib.Types))
+					ce.Hint = fmt.Sprintf("built-in types: any, ident, raw, tail, string, int, float, bool; declared types: %v", typeNames(lib.Types))
 				}
 				return lib, ce
 			}
 		}
 		if fd.Block != nil {
-			// Two modes: named-closer OR delimiter pair. Exactly one must be set.
+			// Three modes: named-closer keyword, delimiter pair, or
+			// dedent-only (no keyword, body delimited by indentation).
+			// Dedent-only is signalled by IsDedent == true with no
+			// Closer/Open/Close set.
 			hasCloser := fd.Block.Closer != ""
 			hasDelim := fd.Block.Open != "" && fd.Block.Close != ""
-			if hasCloser == hasDelim {
-				return lib, fmt.Errorf("function %q: block must set either `closer:` OR both `open:`/`close:`", fd.Name)
+			hasDedent := fd.Block.IsDedent
+			// Exactly one of the three modes must be set.
+			modes := 0
+			if hasCloser {
+				modes++
+			}
+			if hasDelim {
+				modes++
+			}
+			if hasDedent {
+				modes++
+			}
+			if modes != 1 {
+				return lib, fmt.Errorf("function %q: block must set exactly one of block_closer, block_open/close, or block_dedent", fd.Name)
 			}
 			if hasCloser {
 				if _, ok := lib.Functions[fd.Block.Closer]; !ok {
@@ -376,7 +391,7 @@ func compileFunction(name string, f infra.RawFunction, tokenize func(string) ([]
 		Priority:    f.Priority,
 	}
 	if f.Block != nil {
-		fd.Block = &domain.BlockSpec{Closer: f.Block.Closer, Open: f.Block.Open, Close: f.Block.Close}
+		fd.Block = &domain.BlockSpec{Closer: f.Block.Closer, Open: f.Block.Open, Close: f.Block.Close, IsDedent: f.Block.IsDedent}
 	}
 
 	if strings.TrimSpace(run) != "" {
@@ -479,7 +494,7 @@ func typeNames(types map[string]domain.TypeDef) []string {
 
 func validType(t string, types map[string]domain.TypeDef) bool {
 	switch t {
-	case "any", "ident", "raw", "string", "int", "float", "bool":
+	case "any", "ident", "raw", "tail", "string", "int", "float", "bool":
 		return true
 	}
 	_, ok := types[t]

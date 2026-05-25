@@ -543,6 +543,13 @@ func (p *capyLibParser) parseFunction() (RawFunction, error) {
 			}
 			block.Closer = tokens[1]
 			blockSet = true
+		case "block_dedent":
+			p.nextLine()
+			if len(tokens) != 1 {
+				return fn, p.errf("block_dedent takes no arguments")
+			}
+			block.IsDedent = true
+			blockSet = true
 		case "block_open":
 			p.nextLine()
 			if len(tokens) != 4 || tokens[2] != "close" {
