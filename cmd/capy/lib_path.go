@@ -8,9 +8,12 @@ import (
 	"strings"
 )
 
-// libSearchPath returns the resolved CAPY_LIBS list. Default paths
-// follow XDG-style conventions per platform; CAPY_LIBS overrides
-// entirely (it's a path list, not a supplement).
+// libSearchPath returns the resolved CAPY_LIBS list. When the
+// `CAPY_LIBS` env var is set, it overrides everything (treat it as
+// the full list). When it's not set, the current working directory
+// is the first entry, followed by XDG-style per-platform defaults —
+// so a local `interface.capy` next to your script is discoverable
+// out of the box without any environment setup.
 func libSearchPath() []string {
 	if env := os.Getenv("CAPY_LIBS"); env != "" {
 		sep := ":"
@@ -26,27 +29,33 @@ func libSearchPath() []string {
 		}
 		return out
 	}
-	// Defaults.
+	// Defaults. CWD goes first so a project's local library always
+	// wins over a globally-installed one of the same name.
+	out := []string{}
+	if cwd, err := os.Getwd(); err == nil {
+		out = append(out, cwd)
+	}
 	home, _ := os.UserHomeDir()
 	switch runtime.GOOS {
 	case "darwin":
-		return []string{filepath.Join(home, "Library", "Application Support", "Capy", "libs")}
+		out = append(out, filepath.Join(home, "Library", "Application Support", "Capy", "libs"))
 	case "windows":
 		appdata := os.Getenv("APPDATA")
 		if appdata == "" {
 			appdata = filepath.Join(home, "AppData", "Roaming")
 		}
-		return []string{filepath.Join(appdata, "Capy", "libs")}
+		out = append(out, filepath.Join(appdata, "Capy", "libs"))
 	default:
 		xdg := os.Getenv("XDG_CONFIG_HOME")
 		if xdg == "" {
 			xdg = filepath.Join(home, ".config")
 		}
-		return []string{
+		out = append(out,
 			filepath.Join(xdg, "capy", "libs"),
 			filepath.Join(home, ".capy", "libs"),
-		}
+		)
 	}
+	return out
 }
 
 // resolveLib tries to find a library by name on the search path.

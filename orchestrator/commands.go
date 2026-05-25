@@ -150,12 +150,19 @@ func libSearchPathRuntime() []string {
 		}
 		return out
 	}
+	// CWD is part of the default search path: a project's local
+	// library is trusted without requiring CAPY_LIBS to be set.
+	out := []string{}
+	if cwd, err := os.Getwd(); err == nil {
+		out = append(out, cwd)
+	}
 	home, _ := os.UserHomeDir()
-	return []string{
+	out = append(out,
 		filepath.Join(home, ".config", "capy", "libs"),
 		filepath.Join(home, ".capy", "libs"),
 		filepath.Join(home, "Library", "Application Support", "Capy", "libs"),
-	}
+	)
+	return out
 }
 
 func isWindows() bool {
