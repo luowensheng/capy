@@ -87,12 +87,21 @@ func MakeEvaluatorWithHost(host domain.Host) features.Evaluator {
 type outerEval struct {
 	lib   domain.Library
 	inner *InnerEvaluator
+	// depth is the AST depth at which the next renderFuncCall will run.
+	// Used as a fallback when the explicit-depth helpers aren't on the
+	// call path; renderBlockAt / renderFuncCallAt thread the value
+	// explicitly through recursion.
+	depth int
 }
 
 func (e *outerEval) renderBlock(b domain.Block) (string, error) {
+	return e.renderBlockAt(b, e.depth)
+}
+
+func (e *outerEval) renderBlockAt(b domain.Block, depth int) (string, error) {
 	var out strings.Builder
 	for _, c := range b.Stmts {
-		s, err := e.renderFuncCall(c)
+		s, err := e.renderFuncCallAt(c, depth)
 		if err != nil {
 			return "", err
 		}
@@ -102,18 +111,27 @@ func (e *outerEval) renderBlock(b domain.Block) (string, error) {
 }
 
 func (e *outerEval) renderFuncCall(c domain.FuncCall) (string, error) {
+	return e.renderFuncCallAt(c, e.depth)
+}
+
+// renderFuncCallAt renders one FuncCall, tracking the AST depth so
+// templates can branch on whether they're being rendered at the
+// top level (depth == 0) or inside another block's body (depth > 0).
+// The depth is exposed to the inner DSL as the integer local `depth`
+// plus the boolean convenience `top_level` (depth == 0).
+func (e *outerEval) renderFuncCallAt(c domain.FuncCall, depth int) (string, error) {
 	if err := e.validateArgs(c); err != nil {
 		return "", err
 	}
 	var bodyOutput string
 	if c.Body != nil {
-		s, err := e.renderBlock(*c.Body)
+		s, err := e.renderBlockAt(*c.Body, depth+1)
 		if err != nil {
 			return "", err
 		}
 		bodyOutput = s
 	}
-	out, err := e.renderTemplate(c, bodyOutput)
+	out, err := e.renderTemplateAt(c, bodyOutput, depth)
 	if err != nil {
 		return "", err
 	}
@@ -132,7 +150,7 @@ func (e *outerEval) renderFuncCall(c domain.FuncCall) (string, error) {
 		}
 	}
 	if c.Closer != nil {
-		s, err := e.renderFuncCall(*c.Closer)
+		s, err := e.renderFuncCallAt(*c.Closer, depth)
 		if err != nil {
 			return "", err
 		}
@@ -142,10 +160,18 @@ func (e *outerEval) renderFuncCall(c domain.FuncCall) (string, error) {
 }
 
 func (e *outerEval) renderTemplate(c domain.FuncCall, body string) (string, error) {
+	return e.renderTemplateAt(c, body, e.depth)
+}
+
+func (e *outerEval) renderTemplateAt(c domain.FuncCall, body string, depth int) (string, error) {
 	if c.Func.TemplateAST == nil {
 		return "", nil
 	}
-	locals := map[string]any{"body": body}
+	locals := map[string]any{
+		"body":      body,
+		"depth":     int64(depth),
+		"top_level": depth == 0,
+	}
 	for k, v := range c.Captures {
 		// Templates always see the source-text form of a capture.
 		// This is the transpiler model: what the user wrote appears
