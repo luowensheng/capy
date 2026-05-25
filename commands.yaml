@@ -1,0 +1,7 @@
+name: "capylang-claude"
+commands:
+    build:
+        dir: cmd/capy
+        script: |-
+          output_file=/tmp/capy  
+          go build -o $output_file && bman add $output_file && rm $output_file

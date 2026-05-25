@@ -44,7 +44,7 @@ func cmdRun(args []string) error {
 		// the library to consume via the inner `arg N` primitive.
 		userArgs = pos[2:]
 	case len(pos) == 1:
-		// One arg form: `capy run <script.ext>` — auto-resolve the
+		// One-arg form: `capy run <script.ext>` — auto-resolve the
 		// library by looking for a `.capy` file matching the script's
 		// extension (e.g. `main.interface` → `interface.capy`), or
 		// `lib.capy` in the script's directory.
@@ -54,6 +54,16 @@ func cmdRun(args []string) error {
 			return err
 		}
 		libPath = lp
+		// If the resolved library declares a `command "run"`, dispatch
+		// through it (same path as `capy <script.ext>` without the
+		// explicit `run` subcommand) so users get the library's full
+		// `run` behaviour — including any post-render side-effects like
+		// opening a browser. Falling back to the lower-level transpile
+		// path only when no such command exists keeps the legacy
+		// behaviour for libraries that haven't declared one.
+		if libraryHasCommand(libPath, "run") {
+			return orchestrator.RunCommand(libPath, "run", []string{scriptPath})
+		}
 		userArgs = nil
 	default:
 		return fmt.Errorf("usage: capy run [--out-dir DIR | --zip ARCHIVE.zip] [<library>] <script> [args...]")
@@ -110,6 +120,7 @@ func peekOutputFile(libPath string) string {
 	}
 	return lib.OutputFile
 }
+
 
 // writeTree writes every (path, content) pair under root, creating
 // subdirectories as needed. Paths are sorted for deterministic logging.
