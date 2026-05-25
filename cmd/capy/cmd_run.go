@@ -7,9 +7,11 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/luowensheng/capy/domain"
 	"github.com/luowensheng/capy/orchestrator"
+	orchfeatures "github.com/luowensheng/capy/orchestrator/features"
 )
 
 func cmdRun(args []string) error {
@@ -41,8 +43,20 @@ func cmdRun(args []string) error {
 		// Anything beyond <library> <script> is a positional arg for
 		// the library to consume via the inner `arg N` primitive.
 		userArgs = pos[2:]
+	case len(pos) == 1:
+		// One arg form: `capy run <script.ext>` — auto-resolve the
+		// library by looking for a `.capy` file matching the script's
+		// extension (e.g. `main.interface` → `interface.capy`), or
+		// `lib.capy` in the script's directory.
+		scriptPath = pos[0]
+		lp, err := autoResolveLib(scriptPath)
+		if err != nil {
+			return err
+		}
+		libPath = lp
+		userArgs = nil
 	default:
-		return fmt.Errorf("usage: capy run [--out-dir DIR | --zip ARCHIVE.zip] <library> <script.capy> [args...]")
+		return fmt.Errorf("usage: capy run [--out-dir DIR | --zip ARCHIVE.zip] [<library>] <script> [args...]")
 	}
 
 	// Read source for nice error formatting.
@@ -68,12 +82,33 @@ func cmdRun(args []string) error {
 		}
 	}
 
-	// Single-output: --out takes precedence over the library's output_file:
+	// Single-output. Precedence: --out flag → library's `output_file`
+	// directive → stdout.
 	if *out != "" {
 		return os.WriteFile(*out, []byte(output), 0644)
 	}
+	if libOut := peekOutputFile(libPath); libOut != "" {
+		full := libOut
+		if !filepath.IsAbs(full) {
+			full = filepath.Join(filepath.Dir(scriptPath), libOut)
+		}
+		return os.WriteFile(full, []byte(output), 0644)
+	}
 	fmt.Print(output)
 	return nil
+}
+
+// peekOutputFile reloads the library just to read its `output_file:`
+// directive. Cheap (the library is small), and avoids threading the
+// value through orchestrator.RunMultiWithArgs.
+func peekOutputFile(libPath string) string {
+	lex := orchfeatures.MakeLexer()
+	loader := orchfeatures.MakeLibraryLoader(lex.Tokenize)
+	lib, err := loader.Load(libPath)
+	if err != nil {
+		return ""
+	}
+	return lib.OutputFile
 }
 
 // writeTree writes every (path, content) pair under root, creating
@@ -129,6 +164,31 @@ func writeZip(zipFile string, files map[string]string) error {
 	}
 	fmt.Fprintf(os.Stderr, "wrote %s (%d entries, %d bytes)\n", zipFile, len(files), size)
 	return nil
+}
+
+// autoResolveLib finds the library file to use when the user invokes
+// `capy run` with only a script path. Resolution order, all relative
+// to the script's directory:
+//
+//  1. <ext>.capy  — extension-name match (e.g. main.interface → interface.capy)
+//  2. lib.capy    — conventional default name
+//
+// If neither exists, returns an error pointing at both candidates.
+func autoResolveLib(scriptPath string) (string, error) {
+	dir := filepath.Dir(scriptPath)
+	ext := strings.TrimPrefix(filepath.Ext(scriptPath), ".")
+	candidates := []string{}
+	if ext != "" {
+		candidates = append(candidates, filepath.Join(dir, ext+".capy"))
+	}
+	candidates = append(candidates, filepath.Join(dir, "lib.capy"))
+	for _, c := range candidates {
+		if _, err := os.Stat(c); err == nil {
+			return c, nil
+		}
+	}
+	return "", fmt.Errorf("no library found for %q (looked for: %s)",
+		scriptPath, strings.Join(candidates, ", "))
 }
 
 func sortedKeys(m map[string]string) []string {
