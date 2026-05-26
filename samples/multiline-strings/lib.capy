@@ -1,0 +1,12 @@
+# multiline-strings — backtick literals in user scripts span lines.
+# Combine with `${decoded text}` to recover the real newlines at
+# render time.
+extension txt
+
+function p
+    arg literal "p"
+    arg capture text string
+    write `${decoded text}
+
+`
+end

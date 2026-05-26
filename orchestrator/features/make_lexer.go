@@ -38,7 +38,7 @@ func tokenizeWith(source string, commentMarkers []string) ([]domain.Token, error
 	indents := []int{0}
 	bracket := 0
 
-	lines := splitLines(source)
+	lines := mergeBacktickLines(splitLines(source))
 	for li, raw := range lines {
 		line := raw
 		// startCol carries the source-absolute column at which
@@ -115,6 +115,53 @@ func tokenizeWith(source string, commentMarkers []string) ([]domain.Token, error
 func splitLines(s string) []string {
 	s = strings.ReplaceAll(s, "\r\n", "\n")
 	return strings.Split(s, "\n")
+}
+
+// mergeBacktickLines collapses multi-line backtick literals into
+// single logical lines with embedded `\n` escapes, so the line-based
+// `tokenizeWith` loop sees one continuous string instead of three
+// separate "unterminated" ones. Mirrors the same behaviour the
+// library-file parser applies to function bodies — this brings
+// parity to user scripts so the docs' promise of multi-line
+// backticks ("strings use double quotes … or backticks (multi-line,
+// with `${EXPR}` interpolation)") finally holds in scripts too.
+//
+// The merged form is byte-equivalent to writing the original on a
+// single line with `\n` escape sequences in place of real newlines.
+// `${decoded x}` recovers the original newlines at render time.
+func mergeBacktickLines(lines []string) []string {
+	var out []string
+	var cur strings.Builder
+	inBacktick := false
+	for _, ln := range lines {
+		if inBacktick {
+			cur.WriteString(`\n`)
+		} else if cur.Len() > 0 {
+			out = append(out, cur.String())
+			cur.Reset()
+		}
+		for i := 0; i < len(ln); i++ {
+			c := ln[i]
+			if c == '\\' && i+1 < len(ln) && inBacktick {
+				cur.WriteByte(c)
+				cur.WriteByte(ln[i+1])
+				i++
+				continue
+			}
+			if c == '`' {
+				inBacktick = !inBacktick
+			}
+			cur.WriteByte(c)
+		}
+		if !inBacktick {
+			out = append(out, cur.String())
+			cur.Reset()
+		}
+	}
+	if cur.Len() > 0 {
+		out = append(out, cur.String())
+	}
+	return out
 }
 
 // punctChars are accepted as parts of a TokPunct token. We greedily consume

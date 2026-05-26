@@ -1,0 +1,9 @@
+p `This is
+a multi-line
+paragraph.`
+
+p `Single line still works.`
+
+p `Empty lines preserved:
+
+middle blank.`

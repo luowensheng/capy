@@ -1,0 +1,10 @@
+This is
+a multi-line
+paragraph.
+
+Single line still works.
+
+Empty lines preserved:
+
+middle blank.
+
