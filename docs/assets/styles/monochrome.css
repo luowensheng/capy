@@ -304,3 +304,30 @@
 [data-md-color-scheme="slate"] .md-header__option [for^="__palette"]::before {
   color: rgba(255, 255, 255, 0.7);
 }
+
+/* ─────────────────────────────────────────────────────────────────────
+   AI multi-target rendering pattern (docs/ai-agents.md):
+   subtle visual cues that the tabbed examples are "live transitions"
+   of the same underlying Capy source rather than separate snippets.
+   ───────────────────────────────────────────────────────────────────── */
+
+.md-typeset .tabbed-set > input:checked + label {
+  /* Pulse the active tab so the reader notices it changed. */
+  animation: capy-target-pulse 320ms ease-out;
+}
+
+@keyframes capy-target-pulse {
+  0%   { box-shadow: 0 0 0 0 var(--md-accent-fg-color, #4ef); }
+  60%  { box-shadow: 0 0 0 6px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+.md-typeset .tabbed-set .tabbed-content {
+  /* Fade-in the freshly-selected target. */
+  animation: capy-target-fade-in 280ms ease-out;
+}
+
+@keyframes capy-target-fade-in {
+  from { opacity: 0; transform: translateY(2px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

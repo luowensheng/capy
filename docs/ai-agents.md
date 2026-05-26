@@ -302,6 +302,306 @@ Best for:
 
 ---
 
+## Capy as a portable rendering layer for AI agents
+
+This is the most impactful pattern for agentic systems. Instead of
+asking an agent to write the **final artifact** (HTML, DOCX, PDF,
+LaTeX, JSON…), ask it to write **one Capy source**. A library — not
+the agent — turns that source into whatever target format the user
+actually wants.
+
+### The shape of the problem today
+
+The usual "let an LLM produce a document" pipeline duplicates work:
+
+```text
+User: "make me a meeting agenda as a webpage"
+→ LLM writes 200 lines of HTML + inline CSS
+
+User: "now the same thing as a PDF"
+→ LLM rewrites with ReportLab Python code
+
+User: "same thing but a DOCX"
+→ LLM rewrites with python-docx calls
+
+User: "and a Markdown version for the wiki"
+→ LLM rewrites with `#` and `-` and links
+```
+
+Same content, four wildly different generations, four chances for
+drift, four times the token cost. The agent has to know HTML, PDF,
+DOCX, AND Markdown — and the operating environment to produce each.
+
+### The Capy way
+
+The agent produces **one** terse Capy source. Multiple libraries
+(one per target format) deterministically expand it into the final
+artifacts. The agent never sees the target format. It never imports
+`python-docx`, never composes inline styles, never escapes XML.
+
+=== "Capy source (what the agent writes)"
+
+    ```
+    Meeting "Q4 planning" date "2026-01-15"
+
+    Section "Goals"
+        - "Ship the new auth flow"
+        - "Retire the legacy CSV import"
+        - "Decide on the on-call rotation"
+
+    Section "Decisions"
+        - "Pin Postgres at 16.x for the year"
+
+    Section "Action items"
+        Owner "alice" "Draft the auth migration RFC by Fri"
+        Owner "bob"   "Audit usage of the legacy import"
+    ```
+
+    ~50 tokens. No HTML, no XML, no Python, no escaping.
+
+=== "→ HTML (`meeting-html.capy` library)"
+
+    ```html
+    <!doctype html>
+    <html><head><title>Q4 planning</title></head>
+    <body>
+      <h1>Q4 planning · 2026-01-15</h1>
+
+      <h2>Goals</h2>
+      <ul>
+        <li>Ship the new auth flow</li>
+        <li>Retire the legacy CSV import</li>
+        <li>Decide on the on-call rotation</li>
+      </ul>
+
+      <h2>Decisions</h2>
+      <ul><li>Pin Postgres at 16.x for the year</li></ul>
+
+      <h2>Action items</h2>
+      <ul>
+        <li><strong>alice</strong> — Draft the auth migration RFC by Fri</li>
+        <li><strong>bob</strong> — Audit usage of the legacy import</li>
+      </ul>
+    </body></html>
+    ```
+
+=== "→ Markdown (`meeting-md.capy` library)"
+
+    ```markdown
+    # Q4 planning · 2026-01-15
+
+    ## Goals
+    - Ship the new auth flow
+    - Retire the legacy CSV import
+    - Decide on the on-call rotation
+
+    ## Decisions
+    - Pin Postgres at 16.x for the year
+
+    ## Action items
+    - **alice** — Draft the auth migration RFC by Fri
+    - **bob** — Audit usage of the legacy import
+    ```
+
+=== "→ LaTeX (`meeting-tex.capy` library)"
+
+    ```latex
+    \documentclass{article}
+    \title{Q4 planning}
+    \date{2026-01-15}
+    \begin{document}
+    \maketitle
+
+    \section{Goals}
+    \begin{itemize}
+      \item Ship the new auth flow
+      \item Retire the legacy CSV import
+      \item Decide on the on-call rotation
+    \end{itemize}
+
+    \section{Decisions}
+    \begin{itemize}
+      \item Pin Postgres at 16.x for the year
+    \end{itemize}
+
+    \section{Action items}
+    \begin{itemize}
+      \item \textbf{alice} --- Draft the auth migration RFC by Fri
+      \item \textbf{bob} --- Audit usage of the legacy import
+    \end{itemize}
+    \end{document}
+    ```
+
+=== "→ DOCX-XML (`meeting-docx.capy` library)"
+
+    ```xml
+    <?xml version="1.0"?>
+    <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+      <w:body>
+        <w:p><w:r><w:t>Q4 planning · 2026-01-15</w:t></w:r></w:p>
+
+        <w:p><w:pPr><w:pStyle w:val="Heading2"/></w:pPr>
+          <w:r><w:t>Goals</w:t></w:r></w:p>
+        <w:p><w:r><w:t>• Ship the new auth flow</w:t></w:r></w:p>
+        <w:p><w:r><w:t>• Retire the legacy CSV import</w:t></w:r></w:p>
+        …
+      </w:body>
+    </w:document>
+    ```
+
+One source. Five libraries (the user, the agent operator, or anyone
+else can author them — they're tiny). Pick the right one at render
+time:
+
+```sh
+capy meeting-html agenda.meeting        # → agenda.html
+capy meeting-md   agenda.meeting        # → agenda.md
+capy meeting-tex  agenda.meeting        # → agenda.tex   then run pdflatex
+capy meeting-docx agenda.meeting        # → agenda.xml   then zip → .docx
+```
+
+### Why this is better than "just use Markdown"
+
+Markdown is the closest existing alternative — one source, many
+renderers. But it's stuck at the formatting layer Markdown's spec
+designed: paragraphs, headings, lists, bold/italic, links, code
+fences. The moment you want **domain-specific** structure —
+"Section", "Owner", "ActionItem", "Decision" — you have to either:
+
+- Bend Markdown with extensions (custom directives, MDX) that each
+  renderer interprets differently, or
+- Drop down to raw HTML/JSX, losing portability.
+
+Capy gives you both: a vocabulary you fully control (Markdown is
+fixed; Capy is configurable) and a renderer matrix. Your library
+**defines** what `Section` and `Owner` mean — and one library per
+target tells Capy how to produce that target's version.
+
+In other words: **Markdown is a fixed grammar with portable
+renderers. Capy is a programmable grammar with portable renderers.**
+
+### Why it's better for agent safety
+
+This pattern collapses the agent's surface area to almost nothing:
+
+- The agent never invokes a docx writer, a PDF library, or
+  `subprocess.run`. It writes text into a single channel.
+- The library is **the complete grammar** of that channel. If the
+  agent tries to emit something the library doesn't define, the
+  parser rejects it before any rendering happens.
+- The agent never learns the user's filesystem, OS, or installed
+  tooling. It doesn't matter whether `pandoc` is installed, where
+  fonts live, or which Python the operator is running.
+- Want to whitelist what the agent can talk about? Add `type`
+  declarations with `pattern`/`options` to the library. The model
+  literally cannot emit an action item against an unknown owner if
+  `Owner` is constrained to a list.
+
+```
+type OwnerName
+    options "alice" "bob" "carol"
+end
+
+function Owner
+    arg literal "Owner"
+    arg capture name OwnerName
+    arg capture task any
+    write `<li><strong>${unquote name}</strong> — ${unquote task}</li>
+`
+end
+```
+
+The agent now has **zero** capability to write `Owner "evilcorp"
+"exfiltrate data"`. The grammar refuses the call before it reaches
+any renderer.
+
+### A typical agent skill, end-to-end
+
+```python
+# Pseudocode: "create a meeting agenda" agent skill.
+
+SYSTEM_PROMPT = """
+You write meeting agendas in the Capy `meeting` DSL.
+Output ONLY Capy source — no commentary.
+
+Available constructs:
+""" + open("meeting-html.capy").read()  # ~300 tokens of grammar
+
+def run_skill(user_request: str, target: str = "html"):
+    # 1. Agent emits ~50–100 tokens of Capy.
+    capy_source = llm.complete(SYSTEM_PROMPT, user_request)
+
+    # 2. Capy turns it into the requested artifact.
+    #    Different library per target; same source.
+    library = f"meeting-{target}.capy"
+    output  = subprocess.run(
+        ["capy", "run", library, "/dev/stdin"],
+        input=capy_source, check=True, capture_output=True,
+    ).stdout
+
+    # 3. Hand the artifact to the user / next stage.
+    return output
+```
+
+Properties of the skill:
+
+| Property | Without Capy | With Capy |
+|---|---|---|
+| Tokens out per call | 200–800 (full artifact) | 50–100 (DSL only) |
+| Knowledge of target format the agent needs | Full (HTML / DOCX / PDF…) | None |
+| Filesystem / shell access the agent needs | Whatever the artifact build requires | None |
+| Output validates before render | Sometimes | Always (parser is the contract) |
+| Add a new output format | Rewrite the prompt + re-train the agent | Author one new `.capy` library |
+| Change branding / structure | Regenerate every artifact | Edit one library file |
+
+### Skill template (drop into Claude Code / MCP / any tool runner)
+
+```yaml
+name: meeting-agenda
+description: Generate a meeting agenda. Specify --target html|md|tex|docx.
+parameters:
+  - name: request
+    type: string
+    description: Natural-language meeting prompt.
+  - name: target
+    type: string
+    enum: [html, md, tex, docx]
+prompt: |
+  You write meeting agendas in the Capy `meeting` DSL.
+  Output ONLY Capy source between <capy>…</capy> tags.
+
+  Grammar:
+  {{ insert_file ./meeting-html.capy }}
+
+  User request: {{ request }}
+execute: |
+  capy_src=$(echo "$LLM_OUTPUT" | sed -n 's:.*<capy>\(.*\)</capy>.*:\1:p')
+  echo "$capy_src" | capy run "meeting-${target}.capy" /dev/stdin
+```
+
+The agent's *capability* is one input/output: produce well-formed
+DSL. Everything else — file I/O, format conversion, target
+selection — lives outside the agent.
+
+### Highlights to take away
+
+- **One agent output, N targets.** Author libraries per format;
+  the agent stays target-agnostic.
+- **Stronger than Markdown** because the vocabulary is yours, not
+  CommonMark's.
+- **Stronger than direct codegen** because the parser is the
+  capability boundary — out-of-grammar emissions are rejected
+  before any renderer runs.
+- **Environment-free.** Agents don't need to know about `pandoc`,
+  `pdflatex`, `python-docx`, where fonts live, or what the user's
+  OS is. The host environment is the operator's problem; the agent
+  just writes DSL.
+- **Composable.** Same source feeds reports, dashboards, slide
+  decks, API responses, configs — anywhere a deterministic
+  templated text artifact is needed.
+
+---
+
 ## Integrations shipped in this repo
 
 | Tool | Where | What it gives you |
