@@ -121,18 +121,20 @@ file_template
 end
 ```
 
-### `html <string>`
+### `escapeHtml <string>`
 
 HTML-entity-escape the five characters every HTML emitter has to
 neutralise: `&`, `<`, `>`, `"`, `'`. Wrap any free-form capture that
 flows into HTML so the output stays safe even if the capture
-contains markup:
+contains markup. The verbose name is deliberate: `${html x}` would
+read as "make this HTML"; `${escapeHtml x}` makes the intent
+("escape this FOR HTML") obvious at the call site.
 
 ```
 function p
     arg literal "p"
     arg capture text string
-    write `<p>${html text}</p>
+    write `<p>${escapeHtml text}</p>
 `
 end
 ```
@@ -140,7 +142,7 @@ end
 Source `p "Look at <script>"` then emits `<p>Look at &lt;script&gt;</p>`
 — no markup injection. Composes with `unquote` / `decoded` for
 captures that need their quotes stripped first:
-`${html (decoded text)}`.
+`${escapeHtml (decoded text)}`.
 
 ### `decoded <string>`
 
@@ -155,7 +157,7 @@ literally — `p "He said \"hi\""` becomes `He said "hi"`, not
 function p
     arg literal "p"
     arg capture text string
-    write `<p>${html (decoded text)}</p>
+    write `<p>${escapeHtml (decoded text)}</p>
 `
 end
 ```

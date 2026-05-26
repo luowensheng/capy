@@ -121,7 +121,7 @@ function link
     arg literal "link"
     arg capture text Bracketed
     arg capture url  Parens
-    write `<a href="${html url}">${html text}</a>
+    write `<a href="${escapeHtml url}">${escapeHtml text}</a>
 `
 end
 ```

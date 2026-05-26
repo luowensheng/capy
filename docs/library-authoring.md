@@ -335,14 +335,14 @@ indentation.
 
 Verbatim block — captures the body as raw source bytes (NO nested
 parsing). Use for code blocks, embedded HTML, or anywhere the body
-is data not grammar. Pair with `${html body}` (see
-[templates.md](templates.md#html-string)) for XSS-safe emission:
+is data not grammar. Pair with `${escapeHtml body}` (see
+[templates.md](templates.md#escapehtml-string)) for XSS-safe emission:
 
 ```
 function pre
     arg capture lang ident
     block_verbatim end
-    write `<pre><code class="language-${lang}">${html body}</code></pre>
+    write `<pre><code class="language-${lang}">${escapeHtml body}</code></pre>
 `
 end
 ```
@@ -383,7 +383,7 @@ function link
     arg literal "link"
     arg capture text Bracketed
     arg capture url  Parens
-    write `<a href="${html url}">${html text}</a>
+    write `<a href="${escapeHtml url}">${escapeHtml text}</a>
 `
 end
 ```

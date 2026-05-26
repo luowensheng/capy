@@ -178,12 +178,19 @@ var funcs = map[string]any{
 		b, _ := json.Marshal(toStringAny(s))
 		return string(b)
 	},
-	// html HTML-entity-escapes a string. The five mappings every HTML
-	// emitter needs: ampersand FIRST (so subsequent rewrites' entities
-	// aren't re-escaped), then angle brackets and quotes. Use as
-	// `${html user_value}` inside any `<…>${…}…</…>` template to
-	// neutralise XSS-style injection from a free-form capture.
-	"html": func(s any) string {
+	// escapeHtml replaces the five characters every HTML emitter
+	// has to neutralise — `& < > " '` — with their HTML entities.
+	// Ampersand is rewritten FIRST so the entities introduced for
+	// the other four aren't re-escaped on a second pass. Use as
+	// `${escapeHtml user_value}` inside any `<…>${…}…</…>`
+	// template to neutralise XSS-style injection from a free-form
+	// capture.
+	//
+	// The verbose name is deliberate: `${html x}` read as "make this
+	// HTML" instead of "escape this FOR HTML", which is the opposite
+	// of what the helper does. `escapeHtml` makes the intent obvious
+	// at the call site.
+	"escapeHtml": func(s any) string {
 		r := strings.NewReplacer(
 			"&", "&amp;",
 			"<", "&lt;",

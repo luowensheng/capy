@@ -29,20 +29,20 @@ function link
     arg literal "link"
     arg capture text Bracketed
     arg capture url  Parens
-    write `<a href="${html url}">${html text}</a>
+    write `<a href="${escapeHtml url}">${escapeHtml text}</a>
 `
 end
 
 function bold
     arg literal "bold"
     arg capture text Bold
-    write `<strong>${html text}</strong>
+    write `<strong>${escapeHtml text}</strong>
 `
 end
 
 function strike
     arg literal "strike"
     arg capture text Strike
-    write `<s>${html text}</s>
+    write `<s>${escapeHtml text}</s>
 `
 end
