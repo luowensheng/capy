@@ -60,6 +60,22 @@ capy init my-dsl
 # created my-dsl/README.md
 ```
 
+## `capy build <library> [-o <output>]`
+
+Produce a **standalone binary** that has the library embedded. The
+output dispatches to the library's commands at runtime — no `capy`
+install needed on the target host.
+
+```sh
+capy build greet -o greet
+./greet run hello.greet
+```
+
+Honors `GOOS` / `GOARCH` env vars for cross-compilation. One macOS
+developer can produce Linux x86-64, Linux ARM64, Windows, and WASM
+binaries in seconds. Full walkthrough + size benchmarks + tips:
+[Compile a library to a standalone binary](compiling-libraries.md).
+
 ## `capy version`
 
 Print the version baked in at build time. `dev` if you built from source

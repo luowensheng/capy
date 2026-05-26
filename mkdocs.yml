@@ -106,6 +106,7 @@ nav:
   # Integrate — connect Capy to other systems.
   - Integrate:
     - Embed in your Go program: embedding.md
+    - Compile a library to a standalone binary: compiling-libraries.md
     - MCP server (for AI agents): mcp.md
     - AI integration cookbook: cookbook-ai.md
     - Capy for AI agents (overview): ai-agents.md
