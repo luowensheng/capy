@@ -1,0 +1,4 @@
+<p>Each line — yes, with em-dashes — becomes a paragraph.</p>
+<p>Café au lait with naïve crème brûlée</p>
+<p>北京 上海 东京</p>
+<p>🎉 emoji works too 🚀</p>

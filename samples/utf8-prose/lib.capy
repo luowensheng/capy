@@ -1,0 +1,11 @@
+# utf8-prose — regression fixture for non-ASCII tokens in `tail`
+# captures. Em-dashes, accented Latin, CJK, and emoji all flow
+# through bare prose positions without the lexer erroring.
+extension html
+
+function prose_line
+    bare
+    arg capture content tail
+    write `<p>${content}</p>
+`
+end

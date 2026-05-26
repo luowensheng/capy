@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
 	"github.com/luowensheng/capy/domain"
 	"github.com/luowensheng/capy/features"
@@ -129,22 +130,25 @@ func tokenizeLine(line string, lineNo int, commentMarkers []string) ([]domain.To
 	i := 0
 	col := 1
 	for i < len(line) {
-		c := line[i]
+		// Decode the next rune so non-ASCII letters / symbols / emoji
+		// don't get bit-truncated to garbage. ASCII chars return w == 1
+		// and the existing single-byte fast paths below stay correct.
+		r, w := utf8.DecodeRuneInString(line[i:])
 		switch {
-		case c == ' ' || c == '\t':
+		case r == ' ' || r == '\t':
 			i++
 			col++
 		case hasCommentPrefix(line[i:], commentMarkers):
 			i = len(line)
-		case c == '"' || c == '\'':
-			s, n, err := readString(line[i:], c)
+		case r == '"' || r == '\'':
+			s, n, err := readString(line[i:], byte(r))
 			if err != nil {
 				return nil, 0, fmt.Errorf("line %d: %v", lineNo, err)
 			}
 			toks = append(toks, domain.Token{Kind: domain.TokString, Text: s, Line: lineNo, Col: col})
 			i += n
 			col += n
-		case c == '`':
+		case r == '`':
 			s, n, err := readString(line[i:], '`')
 			if err != nil {
 				return nil, 0, fmt.Errorf("line %d: %v", lineNo, err)
@@ -152,55 +156,56 @@ func tokenizeLine(line string, lineNo int, commentMarkers []string) ([]domain.To
 			toks = append(toks, domain.Token{Kind: domain.TokTemplate, Text: s, Line: lineNo, Col: col})
 			i += n
 			col += n
-		case c == '(':
+		case r == '(':
 			toks = append(toks, domain.Token{Kind: domain.TokLParen, Text: "(", Line: lineNo, Col: col})
 			i++
 			col++
 			open++
-		case c == ')':
+		case r == ')':
 			toks = append(toks, domain.Token{Kind: domain.TokRParen, Text: ")", Line: lineNo, Col: col})
 			i++
 			col++
 			open--
-		case c == '[':
+		case r == '[':
 			toks = append(toks, domain.Token{Kind: domain.TokLBrack, Text: "[", Line: lineNo, Col: col})
 			i++
 			col++
 			open++
-		case c == ']':
+		case r == ']':
 			toks = append(toks, domain.Token{Kind: domain.TokRBrack, Text: "]", Line: lineNo, Col: col})
 			i++
 			col++
 			open--
-		case c == '{':
+		case r == '{':
 			toks = append(toks, domain.Token{Kind: domain.TokLBrace, Text: "{", Line: lineNo, Col: col})
 			i++
 			col++
 			open++
-		case c == '}':
+		case r == '}':
 			toks = append(toks, domain.Token{Kind: domain.TokRBrace, Text: "}", Line: lineNo, Col: col})
 			i++
 			col++
 			open--
-		case unicode.IsDigit(rune(c)) || (c == '-' && i+1 < len(line) && unicode.IsDigit(rune(line[i+1])) && (i == 0 || !isPunct(line[i-1]) && line[i-1] != ' ' && line[i-1] != '\t' || true)):
+		case unicode.IsDigit(r) || (r == '-' && i+1 < len(line) && unicode.IsDigit(rune(line[i+1])) && (i == 0 || !isPunct(line[i-1]) && line[i-1] != ' ' && line[i-1] != '\t' || true)):
 			n := readNumber(line[i:])
 			toks = append(toks, domain.Token{Kind: domain.TokNumber, Text: line[i : i+n], Line: lineNo, Col: col})
 			i += n
 			col += n
-		case isIdentStart(rune(c)):
+		case isIdentStart(r):
 			n := readIdent(line[i:])
 			text := line[i : i+n]
 			toks = append(toks, domain.Token{Kind: domain.TokIdent, Text: text, Line: lineNo, Col: col})
 			i += n
 			col += n
-		case isPunct(c):
+		case r < 0x80 && isPunct(byte(r)):
 			n := readPunct(line[i:])
 			toks = append(toks, domain.Token{Kind: domain.TokPunct, Text: line[i : i+n], Line: lineNo, Col: col})
 			i += n
 			col += n
 		default:
-			return nil, 0, fmt.Errorf("line %d col %d: unexpected character %q", lineNo, col, c)
+			return nil, 0, fmt.Errorf("line %d col %d: unexpected character %q", lineNo, col, r)
 		}
+		_ = w // most arms advance by single byte anyway; ident/number/string arms compute their own width
 	}
 	return toks, open, nil
 }
@@ -261,15 +266,33 @@ func readPunct(s string) int {
 	return i
 }
 
-func isIdentStart(r rune) bool { return r == '_' || unicode.IsLetter(r) }
-func isIdentPart(r rune) bool {
-	return r == '_' || unicode.IsLetter(r) || unicode.IsDigit(r)
+// isIdentStart accepts ASCII letters, underscore, AND any non-ASCII
+// rune. The lexer is purely lexical and Capy makes no assumptions
+// about how users write content — em-dashes, smart quotes, accented
+// Latin, CJK, and emoji must all flow through bare-prose positions
+// without erroring. ASCII punctuation that participates in literal
+// matches (`punctChars` — `=<>!+-*/%&|^~?:,.;@$`) is checked
+// separately in the switch BEFORE this predicate, so we don't have
+// to exclude them here.
+func isIdentStart(r rune) bool {
+	return r == '_' || unicode.IsLetter(r) || r >= 0x80
 }
 
+func isIdentPart(r rune) bool {
+	return r == '_' || unicode.IsLetter(r) || unicode.IsDigit(r) || r >= 0x80
+}
+
+// readIdent walks runes (not bytes) so a multi-byte sequence like
+// `é` (0xC3 0xA9) is consumed as one rune and the returned byte
+// length covers the whole encoded form.
 func readIdent(s string) int {
 	i := 0
-	for i < len(s) && isIdentPart(rune(s[i])) {
-		i++
+	for i < len(s) {
+		r, w := utf8.DecodeRuneInString(s[i:])
+		if !isIdentPart(r) {
+			break
+		}
+		i += w
 	}
 	return i
 }
