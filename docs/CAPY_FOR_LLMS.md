@@ -37,10 +37,18 @@ context                      # initial accumulated state
     <name> "default"         # string default
 end
 
-type <TypeName>              # library-defined argument type
+type <TypeName>              # library-defined argument type. EITHER
+                             # a constraint type (base/pattern/options)
+                             # OR a group type (group_open/close) —
+                             # never both.
     base <kind>              # optional: any|string|int|float|bool
     pattern "<regex>"        # optional: regex on the value's string form
     options "v1" "v2" "v3"   # optional: enum membership
+    group_open  "X"          # delimited capture: walk tokens between
+    group_close "Y"          # `X` and `Y` (balanced nesting, multi-
+                             # line OK) and return the joined source
+                             # text. Use for Markdown-style inline
+                             # syntax like `[label](url)` or `**bold**`.
 end
 
 function <NAME>              # one DSL statement shape
@@ -56,6 +64,9 @@ function <NAME>              # one DSL statement shape
     block_dedent             # alternative: body ends at first DEDENT,
                              # no closer keyword (CSS-style selectors,
                              # YAML-style sections)
+    block_verbatim <NAME>    # alternative: body captured as raw source
+                             # bytes (no nested parsing) until <NAME>.
+                             # For code blocks, embedded HTML/SVG.
 
     # Function body — sequence of inner-DSL statements:
     write `Hello, ${name}!\n`        # emit literal text + interpolations

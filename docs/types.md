@@ -98,6 +98,63 @@ type resolves — typos are caught at `capy check` time.
 - Put the most common options first; the engine scans linearly (it's a tiny
   list).
 
+## Group types
+
+A type can also describe a **delimited inline capture** — the
+parser walks tokens between an opening delimiter and a matching
+closing delimiter and hands you the joined source text. This is
+how Capy expresses Markdown / LaTeX-style inline syntax without a
+separate scanning pass.
+
+```
+type Bracketed
+    group_open  "["
+    group_close "]"
+end
+
+type Parens
+    group_open  "("
+    group_close ")"
+end
+
+function link
+    arg literal "link"
+    arg capture text Bracketed
+    arg capture url  Parens
+    write `<a href="${html url}">${html text}</a>
+`
+end
+```
+
+Source `link [Al the Alien](https://alien.com/1)` produces
+`<a href="https://alien.com/1">Al the Alien</a>` — `text` and `url`
+each capture their delimited run as plain text.
+
+### Properties
+
+- **Balanced nesting** — `link [nested [inner] brackets](url)`
+  captures `nested [inner] brackets` correctly because the parser
+  tracks open/close depth.
+- **Multi-char delimiters work** — `type Bold { group_open "**"
+  group_close "**" }` matches `**bold**`. The lexer's punct-greedy
+  rule already collapses `**` into a single token.
+- **Multi-line captures** — a group can span newlines; the
+  captured text contains the real newlines in between.
+- **Mutually exclusive with constraint fields** — a single type
+  declares EITHER `group_open`/`group_close` OR
+  `base`/`pattern`/`options`, never both. The loader rejects the
+  mixed form with a clear error.
+
+### Limitations
+
+- The **backtick** (`` ` ``) collides with Capy's string-literal
+  lexing — it can't currently be used as a group delimiter. Pick a
+  different character (e.g. `~` for `~~code~~`).
+- A **prose run that embeds inline calls** (`This is **important**
+  text.`) needs a separate prose-scanner that's not part of the
+  group-types primitive. For now, write the inline calls on their
+  own lines.
+
 ## What's NOT here yet
 
 - **`validate:` snippets** written in inner Capy. The README originally

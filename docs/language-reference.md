@@ -13,11 +13,11 @@ value-parser treats them specially.
 
 | Token        | Description                                                                 |
 |--------------|-----------------------------------------------------------------------------|
-| `IDENT`      | A word: letters, digits, underscores. Must not start with a digit.          |
+| `IDENT`      | A word: ASCII letters, digits, underscores, **and any non-ASCII rune** (accented Latin, CJK, emoji, em-dash, smart quotes). Must not start with a digit. |
 | `NUMBER`     | An integer or float literal. May be negative.                               |
 | `STRING`     | `"..."` or `'...'`. Both support `${expr}` interpolation at eval time.       |
-| `TEMPLATE`   | `` `...` ``. Same interpolation rules as STRING.                            |
-| `PUNCT`      | A run of `= < > ! + - * / % & \| ^ ~ ? : , . ; @ $`. Lexed greedily.        |
+| `TEMPLATE`   | `` `...` ``. **Multi-line.** Same interpolation rules as STRING.            |
+| `PUNCT`      | A run of `= < > ! + - * / % & \| ^ ~ ? : , . ; @ $ # \`. Lexed greedily.    |
 | `LPAREN/RPAREN/LBRACE/RBRACE/LBRACK/RBRACK` | `(` `)` `{` `}` `[` `]`                            |
 | `NEWLINE`    | End of a logical line.                                                      |
 | `INDENT/DEDENT` | Indent-level change at start of a line (4 spaces or 1 tab per level). |
@@ -35,8 +35,14 @@ changes.
 
 ### Strings
 
-- `"..."`, `'...'`, and `` `...` `` are all string-like. Backslash escapes
-  the next character.
+- `"..."` and `'...'` are **single-line**. Backslash escapes the next
+  character (`\n`, `\t`, `\"`, `\\`, `\xNN`, `\uNNNN`).
+- `` `...` `` (backtick / template) is **multi-line** — both inside
+  library `write` blocks AND inside user scripts. Newlines between
+  the opening and closing backtick become literal newlines in the
+  captured value. Combine with `${decoded text}` (see
+  [templates.md](templates.md#decoded-string)) to recover the
+  user-intended form.
 - Inside any string, `${expr}` is interpolated at eval time. `expr` may be a
   dotted identifier path; future versions will support full expressions.
 - For type-checking purposes, the source representation including its

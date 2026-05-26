@@ -121,6 +121,49 @@ file_template
 end
 ```
 
+### `html <string>`
+
+HTML-entity-escape the five characters every HTML emitter has to
+neutralise: `&`, `<`, `>`, `"`, `'`. Wrap any free-form capture that
+flows into HTML so the output stays safe even if the capture
+contains markup:
+
+```
+function p
+    arg literal "p"
+    arg capture text string
+    write `<p>${html text}</p>
+`
+end
+```
+
+Source `p "Look at <script>"` then emits `<p>Look at &lt;script&gt;</p>`
+— no markup injection. Composes with `unquote` / `decoded` for
+captures that need their quotes stripped first:
+`${html (decoded text)}`.
+
+### `decoded <string>`
+
+Strip outer quotes (if present) AND fully resolve Go-style escape
+sequences (`\"` → `"`, `\n` → newline, `\t` → tab, `\\` → `\`,
+plus `\xNN` / `\uNNNN`). Use this when a `string`-typed capture
+contains escaped quotes or whitespace that the user wrote
+literally — `p "He said \"hi\""` becomes `He said "hi"`, not
+`He said \"hi\"` like `${unquote x}` would produce.
+
+```
+function p
+    arg literal "p"
+    arg capture text string
+    write `<p>${html (decoded text)}</p>
+`
+end
+```
+
+Existing libraries that want the source-text quoted form (YAML
+output, TypeScript string literals, markdown frontmatter) keep
+using `${x}` directly — `decoded` is opt-in.
+
 ## Common patterns
 
 ### Imports at top, body below

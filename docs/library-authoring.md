@@ -259,14 +259,15 @@ See [inner-dsl.md](inner-dsl.md) for full details and examples.
 ## Block functions
 
 A function that opens a body block declares it in one of three modes —
-exactly one of `block_closer`, `block_open`/`close`, or
-`block_dedent`:
+exactly one of `block_closer`, `block_open`/`close`,
+`block_dedent`, or `block_verbatim`:
 
-| Directive | Body delimited by | Use for |
-|---|---|---|
-| `block_closer NAME` | An indented body that ends at a `NAME` keyword | Most cases — `if … end`, `for … end`, `match … end`. |
-| `block_open "X" close "Y"` | A `X`-prefixed, `Y`-suffixed delimited body on the same line as the opener (newlines inside OK) | Brace-style nesting, JSX-ish DSLs. |
-| `block_dedent` | An indented body that ends at the first DEDENT — no closer keyword | CSS-style selector blocks, YAML-style sections, anywhere the user expects "the indentation IS the boundary". |
+| Directive | Body delimited by | Body parsed? | Use for |
+|---|---|---|---|
+| `block_closer NAME` | An indented body that ends at a `NAME` keyword | Yes — as nested statements | Most cases — `if … end`, `for … end`, `match … end`. |
+| `block_open "X" close "Y"` | A `X`-prefixed, `Y`-suffixed delimited body on the same line as the opener (newlines inside OK) | Yes | Brace-style nesting, JSX-ish DSLs. |
+| `block_dedent` | An indented body that ends at the first DEDENT — no closer keyword | Yes | CSS-style selector blocks, YAML-style sections. |
+| `block_verbatim NAME` | An indented body that ends at a `NAME` keyword | **No** — captured as raw source bytes | Code blocks, embedded HTML / SVG, anywhere the body is data not grammar. |
 
 Named-closer example:
 
@@ -331,6 +332,66 @@ about stray indents inside a body — content nested deeper than its
 block's anchor (purely for visual styling) is treated as cosmetic, so
 hand-written DSL sources don't have to be pedantic about consistent
 indentation.
+
+Verbatim block — captures the body as raw source bytes (NO nested
+parsing). Use for code blocks, embedded HTML, or anywhere the body
+is data not grammar. Pair with `${html body}` (see
+[templates.md](templates.md#html-string)) for XSS-safe emission:
+
+```
+function pre
+    arg capture lang ident
+    block_verbatim end
+    write `<pre><code class="language-${lang}">${html body}</code></pre>
+`
+end
+```
+
+Source:
+
+```
+pre go
+    func main() {
+        fmt.Println("hello & welcome <world>")
+    }
+end
+```
+
+…renders the Go code with its quotes and angle-brackets HTML-escaped
+inside a `<pre><code>` block, indentation preserved verbatim. Every
+line between `pre go` and `end` is captured byte-for-byte; the user
+can paste arbitrary code without it being re-parsed as Capy.
+
+### Inline syntax via `group_open` / `group_close`
+
+For Markdown-style or LaTeX-style inline syntax (`[label](url)`,
+`**bold**`, `~~strike~~`), declare a type that opens and closes on
+specific delimiters:
+
+```
+type Bracketed
+    group_open  "["
+    group_close "]"
+end
+
+type Parens
+    group_open  "("
+    group_close ")"
+end
+
+function link
+    arg literal "link"
+    arg capture text Bracketed
+    arg capture url  Parens
+    write `<a href="${html url}">${html text}</a>
+`
+end
+```
+
+Source `link [Al the Alien](https://alien.com/1)` matches `link` with
+`text = "Al the Alien"` and `url = "https://alien.com/1"`. See
+[types.md](types.md#group-types) for the full reference including
+nested groups and multi-char delimiters.
 
 See [block-functions.md](block-functions.md) for nesting and edge cases.
 
