@@ -1,0 +1,13 @@
+text:    "He said \\\"hi\\\""
+unquote: He said \\\"hi\\\"
+decoded: He said "hi"
+---
+text:    "line1\\nline2"
+unquote: line1\\nline2
+decoded: line1
+line2
+---
+text:    "tab\\there"
+unquote: tab\\there
+decoded: tab	here
+---

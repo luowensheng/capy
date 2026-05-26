@@ -1,0 +1,18 @@
+# string-decoded — demonstrates `${decoded x}` for user-intended
+# strings. Pairs the new helper with the existing `${text}` and
+# `${unquote text}` patterns so the difference is visible:
+#
+#   ${text}         → source-quoted form ("a \"b\" c")
+#   ${unquote x}    → quotes stripped, escapes preserved (a \"b\" c)
+#   ${decoded x}    → user-intended form, escapes resolved (a "b" c)
+extension txt
+
+function p
+    arg literal "p"
+    arg capture text string
+    write `text:    ${text}
+unquote: ${unquote text}
+decoded: ${decoded text}
+---
+`
+end

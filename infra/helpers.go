@@ -193,6 +193,39 @@ var funcs = map[string]any{
 		)
 		return r.Replace(toStringAny(s))
 	},
+	// decoded delivers the user-intended string from a quoted `string`
+	// capture: strips the outer quote (if present) and fully resolves
+	// Go-style escape sequences (`\"`, `\n`, `\t`, `\\`, `\xNN`,
+	// `\uNNNN`). Use this instead of `unquote` when the captured
+	// content might contain escaped quotes or whitespace that need
+	// the user-intended form — `p "He said \"hi\""` becomes
+	// `He said "hi"`, not `He said \"hi\"`. Existing libraries that
+	// want the source-text form unchanged keep using `${text}` /
+	// `${unquote text}`.
+	"decoded": func(s any) string {
+		text := toStringAny(s)
+		quoted := text
+		// strconv.Unquote needs surrounding quotes. If the input
+		// already starts/ends with a single/double/backtick quote we
+		// can hand it straight in; otherwise wrap once.
+		if len(text) < 2 || !(text[0] == '"' && text[len(text)-1] == '"') {
+			quoted = "\"" + text + "\""
+		}
+		// First pass: decode the outer level.
+		if v, err := strconv.Unquote(quoted); err == nil {
+			// If the result STILL contains `\"`-style escapes (which
+			// happens when the source was lexed with byte-preserved
+			// escapes), do a second pass to decode them.
+			if strings.Contains(v, `\"`) || strings.Contains(v, `\\`) ||
+				strings.Contains(v, `\n`) || strings.Contains(v, `\t`) {
+				if v2, err2 := strconv.Unquote("\"" + v + "\""); err2 == nil {
+					return v2
+				}
+			}
+			return v
+		}
+		return text
+	},
 	// toPyLit formats any value as a Python literal.
 	"toPyLit": pyLit,
 	// toJSON marshals any value to compact JSON (good for config-file output).
