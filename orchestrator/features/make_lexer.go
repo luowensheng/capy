@@ -41,6 +41,15 @@ func tokenizeWith(source string, commentMarkers []string) ([]domain.Token, error
 	lines := splitLines(source)
 	for li, raw := range lines {
 		line := raw
+		// startCol carries the source-absolute column at which
+		// `line`'s tokenisation begins. When we strip leading indent
+		// at bracket==0, we'd otherwise lose track of the source
+		// column — tokens on a stripped line would report Col=1 while
+		// tokens on a bracket-mode line would report their raw source
+		// column. Keeping startCol = stripped_count + 1 makes Col
+		// consistently source-absolute across both cases, which the
+		// verbatim-body and tail captures rely on.
+		startCol := 1
 		if bracket == 0 {
 			indent := 0
 			i := 0
@@ -76,10 +85,11 @@ func tokenizeWith(source string, commentMarkers []string) ([]domain.Token, error
 				indents = indents[:len(indents)-1]
 				toks = append(toks, domain.Token{Kind: domain.TokDedent, Line: li + 1})
 			}
+			startCol = i + 1
 			line = line[i:]
 		}
 
-		newToks, openDelta, err := tokenizeLine(line, li+1, commentMarkers)
+		newToks, openDelta, err := tokenizeLine(line, li+1, commentMarkers, startCol)
 		if err != nil {
 			return nil, err
 		}
@@ -109,7 +119,12 @@ func splitLines(s string) []string {
 
 // punctChars are accepted as parts of a TokPunct token. We greedily consume
 // runs of these to form multi-char operators like ==, !=, <=, >=, ->, |>.
-var punctChars = "=<>!+-*/%&|^~?:,.;@$"
+// `#` and `\` are accepted so verbatim block bodies (code samples, LaTeX
+// source, shell snippets) tokenise cleanly without the library having to
+// declare them as comment markers — Capy's "no default grammar" stance
+// means `#` is only a comment when the library says so via the `comments`
+// directive, not by accident of the lexer.
+var punctChars = "=<>!+-*/%&|^~?:,.;@$#\\"
 
 func isPunct(b byte) bool { return strings.IndexByte(punctChars, b) >= 0 }
 
@@ -124,11 +139,11 @@ func hasCommentPrefix(s string, markers []string) bool {
 	return false
 }
 
-func tokenizeLine(line string, lineNo int, commentMarkers []string) ([]domain.Token, int, error) {
+func tokenizeLine(line string, lineNo int, commentMarkers []string, startCol int) ([]domain.Token, int, error) {
 	var toks []domain.Token
 	open := 0
 	i := 0
-	col := 1
+	col := startCol
 	for i < len(line) {
 		// Decode the next rune so non-ASCII letters / symbols / emoji
 		// don't get bit-truncated to garbage. ASCII chars return w == 1

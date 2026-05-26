@@ -125,11 +125,17 @@ func (e *outerEval) renderFuncCallAt(c domain.FuncCall, depth int) (string, erro
 	}
 	var bodyOutput string
 	if c.Body != nil {
-		s, err := e.renderBlockAt(*c.Body, depth+1)
-		if err != nil {
-			return "", err
+		if c.Body.IsVerbatim {
+			// Verbatim blocks bypass nested rendering — their raw text
+			// IS the body output.
+			bodyOutput = c.Body.VerbatimText
+		} else {
+			s, err := e.renderBlockAt(*c.Body, depth+1)
+			if err != nil {
+				return "", err
+			}
+			bodyOutput = s
 		}
-		bodyOutput = s
 	}
 	out, err := e.renderTemplateAt(c, bodyOutput, depth)
 	if err != nil {

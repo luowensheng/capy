@@ -171,12 +171,25 @@ func (p *outerP) parseStmt() (domain.FuncCall, error) {
 		}
 		p.consumeNewlines()
 		if fn.Block != nil {
-			body, closer, err := p.parseBlockBody(fn.Block.Closer)
-			if err != nil {
-				return domain.FuncCall{}, err
+			if fn.Block.IsVerbatim {
+				text, closer, err := p.parseVerbatimBody(fn.Block.Closer)
+				if err != nil {
+					return domain.FuncCall{}, err
+				}
+				// Stash the raw body bytes on the FuncCall via a
+				// synthetic single-statement block whose VerbatimText
+				// field carries the text. The renderer surfaces this
+				// via `${body}` exactly like a parsed block body.
+				inst.Body = &domain.Block{VerbatimText: text, IsVerbatim: true}
+				inst.Closer = closer
+			} else {
+				body, closer, err := p.parseBlockBody(fn.Block.Closer)
+				if err != nil {
+					return domain.FuncCall{}, err
+				}
+				inst.Body = &body
+				inst.Closer = closer
 			}
-			inst.Body = &body
-			inst.Closer = closer
 		}
 		return inst, nil
 	}
@@ -362,6 +375,162 @@ func (p *outerP) captureValue(t string, stop []string) (domain.CaptureValue, err
 		return domain.CaptureValue{}, err
 	}
 	return domain.CaptureValue{IsExpr: true, Expr: x, Text: ExprToText(x)}, nil
+}
+
+// parseVerbatimBody captures the body of a `block_verbatim`-declared
+// function as raw source text. INDENT-balanced nested blocks are
+// counted (so `pre … { something … } … end` works) but the body is
+// NEVER re-parsed against the library's functions — every token
+// between the opener and the matching closer is reconstructed back
+// into source-form text using column-position arithmetic, the same
+// way the `tail` capture rebuilds free-form values.
+//
+// The indent baseline is the leading column of the first body line;
+// every line's leading whitespace is shifted left by that amount so
+// the captured body starts at column 1. This makes block-verbatim
+// pleasant for code blocks: the user indents `pre go … end` four
+// spaces in their script and the captured body still starts at
+// column 1, ready for whatever the library's template does with it.
+func (p *outerP) parseVerbatimBody(closerName string) (string, *domain.FuncCall, error) {
+	if p.Peek().Kind != domain.TokIndent {
+		return "", nil, fmt.Errorf("line %d: expected indented block (verbatim, closer=%s)", p.Peek().Line, closerName)
+	}
+	p.Advance()
+
+	// Collect every body token. Track INDENT/DEDENT balance so nested
+	// indentation doesn't terminate the verbatim block early.
+	var bodyToks []domain.Token
+	depth := 0
+	for {
+		k := p.Peek().Kind
+		switch k {
+		case domain.TokEOF:
+			return "", nil, fmt.Errorf("line %d: unterminated verbatim block, expected closer %q", p.Peek().Line, closerName)
+		case domain.TokIndent:
+			depth++
+			bodyToks = append(bodyToks, p.Advance())
+			continue
+		case domain.TokDedent:
+			if depth == 0 {
+				// This is OUR closing DEDENT — body ends here.
+				p.Advance()
+				goto done
+			}
+			depth--
+			bodyToks = append(bodyToks, p.Advance())
+			continue
+		}
+		bodyToks = append(bodyToks, p.Advance())
+	}
+done:
+
+	text := reconstructVerbatim(bodyToks)
+
+	cp, ok := p.byName[closerName]
+	if !ok {
+		return "", nil, fmt.Errorf("library function %q (verbatim closer) not found", closerName)
+	}
+	saved := p.Save()
+	closerInst, err := p.tryMatch(cp)
+	if err != nil {
+		p.Restore(saved)
+		return "", nil, fmt.Errorf("line %d: expected closer %q", p.Peek().Line, closerName)
+	}
+	if p.Peek().Kind != domain.TokNewline && p.Peek().Kind != domain.TokEOF {
+		return "", nil, fmt.Errorf("line %d: closer must end the line", p.Peek().Line)
+	}
+	p.consumeNewlines()
+	return text, &closerInst, nil
+}
+
+// reconstructVerbatim rebuilds source-like text from a token slice
+// captured by `parseVerbatimBody`. With the lexer's source-absolute
+// `Col` tracking (see startCol in tokenizeWith), the algorithm is
+// straightforward: find the minimum first-token column across body
+// lines (= the body's indent baseline) and shift every line left by
+// that amount so the captured text starts at column 1. Within a
+// line, gap arithmetic between consecutive tokens uses the same
+// column-preserved spacing logic that `tail` already relies on.
+// INDENT/DEDENT tokens carry no visible text and are skipped — col
+// values already encode the right whitespace.
+func reconstructVerbatim(toks []domain.Token) string {
+	if len(toks) == 0 {
+		return ""
+	}
+	// Baseline: the leftmost source column of any text-bearing
+	// token. We shift every line left by (baseline - 1) so the
+	// captured body starts at column 1.
+	baseline := -1
+	for _, t := range toks {
+		switch t.Kind {
+		case domain.TokNewline, domain.TokIndent, domain.TokDedent:
+			continue
+		}
+		if baseline < 0 || t.Col < baseline {
+			baseline = t.Col
+		}
+	}
+	if baseline < 1 {
+		baseline = 1
+	}
+
+	var lines []string
+	var cur strings.Builder
+	onLineStart := true
+	prevEnd := -1
+
+	flushLine := func() {
+		lines = append(lines, cur.String())
+		cur.Reset()
+		onLineStart = true
+		prevEnd = -1
+	}
+
+	for _, t := range toks {
+		switch t.Kind {
+		case domain.TokIndent, domain.TokDedent:
+			continue
+		case domain.TokNewline:
+			flushLine()
+			continue
+		}
+		// Effective column after shifting the body to start at col 1.
+		effCol := t.Col - (baseline - 1)
+		if effCol < 1 {
+			effCol = 1
+		}
+		if onLineStart {
+			if effCol > 1 {
+				cur.WriteString(strings.Repeat(" ", effCol-1))
+			}
+			onLineStart = false
+		} else if effCol > prevEnd {
+			cur.WriteString(strings.Repeat(" ", effCol-prevEnd))
+		}
+		text := tokenSourceForm(t)
+		cur.WriteString(text)
+		prevEnd = effCol + len(text)
+	}
+	if !onLineStart {
+		flushLine()
+	}
+	if len(lines) > 0 && lines[len(lines)-1] == "" {
+		lines = lines[:len(lines)-1]
+	}
+	return strings.Join(lines, "\n") + "\n"
+}
+
+// tokenSourceForm reproduces a token's source-text representation.
+// For most kinds the Text field is exact; for strings we re-add the
+// quote characters that the lexer stripped.
+func tokenSourceForm(t domain.Token) string {
+	switch t.Kind {
+	case domain.TokString:
+		return "\"" + t.Text + "\""
+	case domain.TokTemplate:
+		return "`" + t.Text + "`"
+	}
+	return t.Text
 }
 
 func (p *outerP) parseBlockBody(closerName string) (domain.Block, *domain.FuncCall, error) {

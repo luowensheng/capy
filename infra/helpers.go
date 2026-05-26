@@ -178,6 +178,21 @@ var funcs = map[string]any{
 		b, _ := json.Marshal(toStringAny(s))
 		return string(b)
 	},
+	// html HTML-entity-escapes a string. The five mappings every HTML
+	// emitter needs: ampersand FIRST (so subsequent rewrites' entities
+	// aren't re-escaped), then angle brackets and quotes. Use as
+	// `${html user_value}` inside any `<…>${…}…</…>` template to
+	// neutralise XSS-style injection from a free-form capture.
+	"html": func(s any) string {
+		r := strings.NewReplacer(
+			"&", "&amp;",
+			"<", "&lt;",
+			">", "&gt;",
+			"\"", "&quot;",
+			"'", "&#39;",
+		)
+		return r.Replace(toStringAny(s))
+	},
 	// toPyLit formats any value as a Python literal.
 	"toPyLit": pyLit,
 	// toJSON marshals any value to compact JSON (good for config-file output).

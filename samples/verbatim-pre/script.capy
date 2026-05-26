@@ -1,0 +1,11 @@
+pre go
+    func main() {
+        fmt.Println("hello & welcome <world>")
+    }
+end
+
+pre python
+    def greet(name):
+        # quotes & angle brackets <stay> as text
+        print(f"Hello, {name}!")
+end

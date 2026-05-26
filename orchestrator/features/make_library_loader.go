@@ -300,14 +300,15 @@ func mapLibrary(r infra.RawLibrary, tokenize func(string) ([]domain.Token, error
 			}
 		}
 		if fd.Block != nil {
-			// Three modes: named-closer keyword, delimiter pair, or
-			// dedent-only (no keyword, body delimited by indentation).
-			// Dedent-only is signalled by IsDedent == true with no
-			// Closer/Open/Close set.
-			hasCloser := fd.Block.Closer != ""
+			// Four modes (exactly one must be set):
+			//   block_closer NAME      — keyword-closed, nested parsing
+			//   block_open X close Y   — delimiter-pair, nested parsing
+			//   block_dedent           — indent-closed, nested parsing
+			//   block_verbatim NAME    — keyword-closed, body is raw bytes
+			hasCloser := fd.Block.Closer != "" && !fd.Block.IsVerbatim
 			hasDelim := fd.Block.Open != "" && fd.Block.Close != ""
 			hasDedent := fd.Block.IsDedent
-			// Exactly one of the three modes must be set.
+			hasVerbatim := fd.Block.IsVerbatim
 			modes := 0
 			if hasCloser {
 				modes++
@@ -318,10 +319,15 @@ func mapLibrary(r infra.RawLibrary, tokenize func(string) ([]domain.Token, error
 			if hasDedent {
 				modes++
 			}
-			if modes != 1 {
-				return lib, fmt.Errorf("function %q: block must set exactly one of block_closer, block_open/close, or block_dedent", fd.Name)
+			if hasVerbatim {
+				modes++
 			}
-			if hasCloser {
+			if modes != 1 {
+				return lib, fmt.Errorf("function %q: block must set exactly one of block_closer, block_open/close, block_dedent, or block_verbatim", fd.Name)
+			}
+			// Both keyword-closed modes require the closer function to
+			// exist.
+			if (hasCloser || hasVerbatim) && fd.Block.Closer != "" {
 				if _, ok := lib.Functions[fd.Block.Closer]; !ok {
 					return lib, fmt.Errorf("function %q: block.closer %q not found", fd.Name, fd.Block.Closer)
 				}
@@ -391,7 +397,7 @@ func compileFunction(name string, f infra.RawFunction, tokenize func(string) ([]
 		Priority:    f.Priority,
 	}
 	if f.Block != nil {
-		fd.Block = &domain.BlockSpec{Closer: f.Block.Closer, Open: f.Block.Open, Close: f.Block.Close, IsDedent: f.Block.IsDedent}
+		fd.Block = &domain.BlockSpec{Closer: f.Block.Closer, Open: f.Block.Open, Close: f.Block.Close, IsDedent: f.Block.IsDedent, IsVerbatim: f.Block.IsVerbatim}
 	}
 
 	if strings.TrimSpace(run) != "" {

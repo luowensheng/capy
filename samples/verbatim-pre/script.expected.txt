@@ -1,0 +1,8 @@
+<pre><code class="language-go">func main() {
+    fmt.Println(&quot;hello &amp; welcome &lt;world&gt;&quot;)
+}
+</code></pre>
+<pre><code class="language-python">def greet(name):
+    # quotes &amp; angle brackets &lt;stay&gt; as text
+    print(f&quot;Hello, {name}!&quot;)
+</code></pre>

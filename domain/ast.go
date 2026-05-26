@@ -5,6 +5,13 @@ package domain
 // template, run snippet, args, and block info.
 type Block struct {
 	Stmts []FuncCall
+	// IsVerbatim marks a body that wasn't parsed as nested statements
+	// — instead the body's raw source bytes were captured into
+	// VerbatimText. Used by functions declared `block_verbatim`. The
+	// renderer surfaces VerbatimText via `${body}` exactly like a
+	// parsed block body's rendered output.
+	IsVerbatim   bool
+	VerbatimText string
 }
 
 type FuncCall struct {

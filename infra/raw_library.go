@@ -122,6 +122,10 @@ type RawBlock struct {
 	// no closer keyword. Used for indent-only blocks (CSS-style rules,
 	// YAML-style sections, etc.).
 	IsDedent bool
+	// IsVerbatim: body is captured as raw source bytes (no nested
+	// parsing) until the named `Closer` keyword. Used for code blocks,
+	// embedded HTML, or anywhere the body is data not grammar.
+	IsVerbatim bool
 }
 
 // RawArg is an args-list entry. The Kind discriminator is required.

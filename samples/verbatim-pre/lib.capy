@@ -1,0 +1,15 @@
+# verbatim-pre — `pre LANG … end` block whose body is captured as
+# raw source text (no nested parsing), HTML-escaped, and emitted
+# inside <pre><code>. Demonstrates `block_verbatim` + the `html`
+# template helper together.
+extension html
+
+function pre
+    arg capture lang ident
+    block_verbatim end
+    write `<pre><code class="language-${lang}">${html body}</code></pre>
+`
+end
+
+function end
+end

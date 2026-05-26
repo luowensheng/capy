@@ -550,6 +550,19 @@ func (p *capyLibParser) parseFunction() (RawFunction, error) {
 			}
 			block.IsDedent = true
 			blockSet = true
+		case "block_verbatim":
+			// `block_verbatim <CLOSER>` — body is captured as raw
+			// source bytes (no nested parsing) until the named closer
+			// keyword appears at the parent indent. Used for code
+			// blocks, embedded HTML, anywhere the body is data not
+			// grammar.
+			p.nextLine()
+			if len(tokens) != 2 {
+				return fn, p.errf("block_verbatim requires a closer-function name (e.g. `block_verbatim end`)")
+			}
+			block.Closer = tokens[1]
+			block.IsVerbatim = true
+			blockSet = true
 		case "block_open":
 			p.nextLine()
 			if len(tokens) != 4 || tokens[2] != "close" {
