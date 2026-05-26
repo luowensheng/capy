@@ -22,6 +22,52 @@ textual.
 [Open the playground :material-play-box-outline:](playground.md){ .md-button .md-button--primary }
 [See the samples :material-folder-open:](showcase.md){ .md-button }
 [Get started in 5 min :material-rocket-launch:](getting-started.md){ .md-button }
+[For AI agents :material-robot-outline:](ai-agents.md){ .md-button }
+
+</div>
+
+---
+
+<div class="capy-section capy-ai-banner" markdown>
+
+## :material-robot-outline: Built for AI agents
+
+Instead of asking an LLM to write **the artifact** (HTML, DOCX, PDF,
+Terraform, Kubernetes…), have it emit one terse Capy source. A
+library — not the agent — deterministically renders it into whichever
+target your environment needs.
+
+<div class="capy-ai-grid" markdown>
+
+<div class="capy-ai-cell" markdown>
+**5–10× fewer tokens** per generation. The agent ships ~50–100 tokens
+of DSL; the library expands it into 800+ tokens of target code.
+</div>
+
+<div class="capy-ai-cell" markdown>
+**One source → many targets.** Same `meeting.capy` source renders to
+HTML, Markdown, LaTeX, DOCX — pick the right library at run time. No
+re-prompting the agent for each format.
+</div>
+
+<div class="capy-ai-cell" markdown>
+**Sandboxed by construction.** The library is the agent's full
+vocabulary. Out-of-grammar emissions are rejected by the parser
+before any renderer runs. No shell, no filesystem, no
+`subprocess.run` exposed to the model.
+</div>
+
+<div class="capy-ai-cell" markdown>
+**Environment-agnostic agents.** The agent doesn't need to know
+about `pandoc`, `pdflatex`, `python-docx`, fonts, or the operator's
+OS. It just writes DSL; the host handles the rest.
+</div>
+
+</div>
+
+[Read the AI agents guide :material-arrow-right:](ai-agents.md){ .md-button .md-button--primary }
+[MCP server setup :material-server:](mcp.md){ .md-button }
+[One-page LLM brief :material-file-document:](CAPY_FOR_LLMS.md){ .md-button }
 
 </div>
 
@@ -184,12 +230,12 @@ Studio / Xcode.</p>
 
 <div class="audience-card" markdown>
 <div class="role">:material-robot-outline: AI / AGENTS</div>
-<h4>MCP server + Claude Code skill</h4>
-<p>`capy-mcp` exposes `capy_check` / `capy_run` / `capy_run_file` to
-any MCP client (Claude Desktop, Claude Code, Cursor, Zed). The
-library is the agent's contract — sandboxed by design, 5–10× fewer
-tokens than emitting target code directly.</p>
-<a href="mcp/">MCP setup →</a>
+<h4>One DSL source → HTML, PDF, DOCX, anything</h4>
+<p>Stop asking the agent to rewrite the same artifact for every
+target. It emits one Capy source; per-target libraries render the
+final HTML / Markdown / LaTeX / DOCX / config. Sandboxed by the
+parser, 5–10× fewer tokens, environment-agnostic.</p>
+<a href="ai-agents/">For AI agents →</a>
 </div>
 
 <div class="audience-card" markdown>

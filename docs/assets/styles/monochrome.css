@@ -331,3 +331,78 @@
   from { opacity: 0; transform: translateY(2px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+/* ─────────────────────────────────────────────────────────────────────
+   Home-page "Built for AI agents" banner.
+   High-contrast feature block placed right under the hero so the
+   AI use-case is visible above the fold.
+   ───────────────────────────────────────────────────────────────────── */
+
+.md-typeset .capy-ai-banner {
+  position: relative;
+  margin: 32px 0 12px;
+  padding: 28px 28px 24px;
+  border-radius: 18px;
+  background: linear-gradient(135deg,
+    rgba(78, 238, 255, 0.07) 0%,
+    rgba(78, 238, 255, 0.02) 60%,
+    transparent 100%);
+  border: 1px solid rgba(78, 238, 255, 0.20);
+  overflow: hidden;
+}
+
+.md-typeset .capy-ai-banner::before {
+  /* Subtle scanline that "powers up" once when the section enters view. */
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(78, 238, 255, 0.10) 50%,
+    transparent 100%);
+  transform: translateX(-100%);
+  animation: capy-ai-sweep 2.4s ease-out 0.4s 1 forwards;
+  pointer-events: none;
+}
+
+@keyframes capy-ai-sweep {
+  to { transform: translateX(100%); }
+}
+
+.md-typeset .capy-ai-banner h2 {
+  margin-top: 0;
+  letter-spacing: -0.01em;
+}
+
+.md-typeset .capy-ai-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin: 22px 0 24px;
+}
+
+.md-typeset .capy-ai-cell {
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  font-size: 0.92em;
+  line-height: 1.55;
+  transition: transform 180ms ease, border-color 180ms ease;
+}
+
+.md-typeset .capy-ai-cell:hover {
+  transform: translateY(-1px);
+  border-color: rgba(78, 238, 255, 0.35);
+}
+
+.md-typeset .capy-ai-cell strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--md-accent-fg-color, #4ef);
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md-typeset .capy-ai-banner::before { animation: none; }
+}

@@ -48,10 +48,20 @@ theme:
     code: JetBrains Mono
 
 nav:
-  # Three single-page tabs at the top — the quickest entry points.
+  # Four single-page tabs at the top — the quickest entry points.
   - Home: index.md
   - Playground: playground.md
   - Showcase: showcase.md
+
+  # AI agents tab — surfaced at the top because the agent / LLM use
+  # case is one of the strongest reasons to reach for Capy. Same
+  # pages also appear under Integrate so they're discoverable from
+  # both lanes.
+  - For AI agents:
+    - Overview & workflow patterns: ai-agents.md
+    - Integration cookbook: cookbook-ai.md
+    - MCP server: mcp.md
+    - One-page LLM brief: CAPY_FOR_LLMS.md
 
   # Learn — for newcomers, ordered by ramp-up.
   - Learn:
