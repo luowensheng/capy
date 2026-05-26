@@ -48,8 +48,9 @@ theme:
     code: JetBrains Mono
 
 nav:
-  # Four single-page tabs at the top — the quickest entry points.
+  # Five single-page tabs at the top — the quickest entry points.
   - Home: index.md
+  - "What's new": whats-new.md
   - Playground: playground.md
   - Showcase: showcase.md
 

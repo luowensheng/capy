@@ -20,6 +20,7 @@ textual.
 <iframe src="assets/hero/hero.html" width="100%" height="500" style="border: 0; border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.18); display: block; margin: 18px 0 24px;" title="Capy in action"></iframe>
 
 [Open the playground :material-play-box-outline:](playground.md){ .md-button .md-button--primary }
+[What's new :material-star-shooting:](whats-new.md){ .md-button }
 [See the samples :material-folder-open:](showcase.md){ .md-button }
 [Get started in 5 min :material-rocket-launch:](getting-started.md){ .md-button }
 [For AI agents :material-robot-outline:](ai-agents.md){ .md-button }

@@ -1,0 +1,423 @@
+---
+title: What's new — engine primitives shipped in this release
+---
+
+# What's new
+
+This release closes a six-stage roadmap focused on making Capy a
+viable substrate for **prose-heavy DSLs** (markdown-like authoring
+tools, blog/notes engines, technical docs, AI-emitted documents).
+Every feature here is opt-in — existing libraries keep working
+unchanged; nothing is deprecated.
+
+The lineup, ordered by impact-per-line-of-engine-change:
+
+| Stage | Feature | Solves |
+|---|---|---|
+| 1 | UTF-8 in bare prose | Em-dashes, accents, CJK, emoji no longer crash the lexer |
+| 2 | `block_verbatim` directive | Code blocks, embedded HTML, anywhere a body is data not grammar |
+| 3 | `${decoded x}` helper | Quotes-in-prose round-trip — `"He said \"hi\""` → `He said "hi"` |
+| 4 | `${escapeHtml x}` helper | XSS surface closed for HTML-emitting libraries |
+| 5 | Multi-line backticks in scripts | Heredoc-style prose, multi-line paragraphs |
+| 6 | `group_open` / `group_close` types | First-class inline syntax — `[label](url)`, `**bold**`, `~~strike~~` |
+
+Plus a few smaller correctness fixes (source-absolute column tracking,
+`#` and `\` accepted as punctuation tokens, the renamed
+`${escapeHtml x}` helper) that all the above build on.
+
+---
+
+## 1. UTF-8 in bare prose
+
+**Before:** the lexer walked the source byte-by-byte, so any
+non-ASCII character (em-dash, accented Latin, CJK, emoji) crashed
+with `unexpected character`. To get prose with Unicode through, you
+had to wrap every line in `"…"` — which then needed escape
+unwrapping at render time. The Pages preprocessor was doing exactly
+this.
+
+**Now:** the lexer decodes UTF-8 properly. Any rune that's a Letter
+(or any non-ASCII rune at all) is accepted as part of an identifier
+token. A `bare + tail` catch-all function happily reassembles
+arbitrary prose:
+
+```
+function prose_line
+    bare
+    arg capture content tail
+    write `<p>${content}</p>
+`
+end
+```
+
+Source — straight from `samples/utf8-prose/script.capy`:
+
+```
+Each line — yes, with em-dashes — becomes a paragraph.
+Café au lait with naïve crème brûlée
+北京 上海 东京
+🎉 emoji works too 🚀
+```
+
+Output:
+
+```html
+<p>Each line — yes, with em-dashes — becomes a paragraph.</p>
+<p>Café au lait with naïve crème brûlée</p>
+<p>北京 上海 东京</p>
+<p>🎉 emoji works too 🚀</p>
+```
+
+ASCII-only sources tokenise identically to before; this is a strict
+superset.
+
+---
+
+## 2. `block_verbatim` — raw bodies, no nested parsing
+
+**Before:** every block mode (`block_closer`, `block_open … close …`,
+`block_dedent`) re-parsed the body as nested Capy statements. A code
+block like `pre go { func main() { fmt.Println("hi") } }` would
+fail because `func main() {` doesn't match any library function.
+Workaround: every line had to be wrapped in `raw "…"` calls.
+
+**Now:** declare `block_verbatim NAME` and the body is captured as
+**raw source bytes** until the named closer keyword appears. The
+captured text reaches your template as `${body}`.
+
+```
+function pre
+    arg capture lang ident
+    block_verbatim end
+    write `<pre><code class="language-${lang}">${escapeHtml body}</code></pre>
+`
+end
+
+function end
+end
+```
+
+Source — from `samples/verbatim-pre/script.capy`:
+
+```
+pre go
+    func main() {
+        fmt.Println("hello & welcome <world>")
+    }
+end
+```
+
+Output (indent preserved, HTML-escaped for safety):
+
+```html
+<pre><code class="language-go">func main() {
+    fmt.Println(&quot;hello &amp; welcome &lt;world&gt;&quot;)
+}
+</code></pre>
+```
+
+`block_verbatim` is the **fourth** block mode; the loader validates
+that exactly one of the four is set per function:
+
+| Directive | Body delimited by | Body parsed? |
+|---|---|---|
+| `block_closer NAME` | Indented body, ends at `NAME` keyword | Yes |
+| `block_open "X" close "Y"` | Delimiter pair | Yes |
+| `block_dedent` | First DEDENT (no closer keyword) | Yes |
+| `block_verbatim NAME` | Indented body, ends at `NAME` keyword | **No — raw source bytes** |
+
+---
+
+## 3. `${decoded x}` — full escape round-trip in one helper
+
+**Before:** capturing a `string` like `"He said \"hi\""` left two
+levels of escaping in the captured text. `${x}` showed
+`"He said \\\"hi\\\""`, `${unquote x}` stripped one level to
+`He said \\\"hi\\\"`, and `${unescape x}` only ran one Unquote
+pass — `He said \"hi\"`. No composition recovered the user-intended
+form. Quotes inside prose simply didn't work.
+
+**Now:** the `decoded` helper does the full round-trip:
+
+```
+function p
+    arg literal "p"
+    arg capture text string
+    write `<p>${decoded text}</p>
+`
+end
+```
+
+Source:
+
+```
+p "He said \"hi\""
+p "line1\nline2"
+p "tab\there"
+```
+
+Output:
+
+```html
+<p>He said "hi"</p>
+<p>line1
+line2</p>
+<p>tab	here</p>
+```
+
+`decoded` strips outer quotes (if present), then resolves Go-style
+escape sequences (`\"`, `\n`, `\t`, `\\`, plus `\xNN` and `\uNNNN`).
+If the source has doubled escapes (which happens when Capy stored
+them as byte-preserved literals), a second decode pass catches them.
+
+Compose with `escapeHtml` for safe-by-construction HTML:
+`${escapeHtml (decoded text)}`.
+
+This is **additive**: existing libraries that want the source-text
+quoted form (YAML output, TypeScript string literals, Markdown
+frontmatter) keep using `${x}` directly. `decoded` is opt-in.
+
+---
+
+## 4. `${escapeHtml x}` — close the XSS surface
+
+**Before:** Capy shipped helpers for case conversion (`upper`,
+`lower`, `pascalCase`), indentation (`indent N`), JSON (`toJSON`,
+`toJSONIndent`), and quoting (`unquote`, `toQuoted`, `unescape`) —
+but **no HTML escape**. Any `${user_value}` in an HTML-emitting
+library was an XSS hole.
+
+**Now:** the `escapeHtml` helper replaces the five characters every
+HTML emitter has to neutralise — `& < > " '` — with their entity
+references:
+
+```
+function p
+    arg literal "p"
+    arg capture text string
+    write `<p>${escapeHtml text}</p>
+`
+end
+```
+
+Source:
+
+```
+p "Look at <script>alert('xss')</script>"
+```
+
+Output:
+
+```html
+<p>Look at &lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt;</p>
+```
+
+The verbose name is deliberate: `${html x}` would read as "convert
+this to HTML" instead of "escape this FOR HTML". `${escapeHtml x}`
+makes the intent obvious at the call site.
+
+Composes with `decoded` for the common pattern "decode user-string
+escapes, then HTML-escape the result":
+
+```
+write `<p>${escapeHtml (decoded text)}</p>
+`
+```
+
+---
+
+## 5. Multi-line backticks in user scripts
+
+**Before:** the docs said backtick strings span lines — and they did,
+inside library `write` blocks (which run a separate body parser).
+Inside **user scripts** the tokenizer treated backticks the same as
+double quotes, closing them at end-of-line:
+
+```
+p `This is
+a multi-line
+paragraph.`
+```
+
+→ `line 1: unterminated string`. Workaround: type each line as a
+separate `p "…"` call.
+
+**Now:** the user-script lexer merges any line opening an unclosed
+backtick with subsequent lines (using `\n` escapes for the
+intervening newlines) until the closing backtick. Combine with
+`${decoded text}` to recover the real newlines at render time:
+
+```
+function p
+    arg literal "p"
+    arg capture text string
+    write `${decoded text}
+
+`
+end
+```
+
+Source — from `samples/multiline-strings/script.capy`:
+
+```
+p `This is
+a multi-line
+paragraph.`
+
+p `Empty lines preserved:
+
+middle blank.`
+```
+
+Output:
+
+```
+This is
+a multi-line
+paragraph.
+
+Empty lines preserved:
+
+middle blank.
+```
+
+The docs' multi-line-backtick promise now holds in user scripts
+too.
+
+---
+
+## 6. `group_open` / `group_close` — inline syntax as a type
+
+**Before:** Capy could parse statement-shaped DSLs cleanly, but it
+had no way to express Markdown-style inline syntax. A line like
+`link [Al the Alien](https://alien.com/1)` had no path through the
+parser — `[` and `]` weren't delimiters that any function could
+own.
+
+**Now:** types can declare `group_open` / `group_close` directives.
+A capture of that type consumes the open delimiter, walks tokens
+(with balanced nesting and multi-line support) until the matching
+close delimiter, and returns the joined source text:
+
+```
+type Bracketed
+    group_open  "["
+    group_close "]"
+end
+
+type Parens
+    group_open  "("
+    group_close ")"
+end
+
+type Bold
+    group_open  "**"
+    group_close "**"
+end
+
+function link
+    arg literal "link"
+    arg capture text Bracketed
+    arg capture url  Parens
+    write `<a href="${escapeHtml url}">${escapeHtml text}</a>
+`
+end
+
+function bold
+    arg literal "bold"
+    arg capture text Bold
+    write `<strong>${escapeHtml text}</strong>
+`
+end
+```
+
+Source — from `samples/inline-markdown/script.capy`:
+
+```
+link [Al the Alien](https://alien.com/1)
+link [Click & view](https://example.com/<safe>)
+link [nested [inner] brackets](https://example.com/path)
+bold **important text**
+```
+
+Output:
+
+```html
+<a href="https://alien.com/1">Al the Alien</a>
+<a href="https://example.com/&lt;safe&gt;">Click &amp; view</a>
+<a href="https://example.com/path">nested [inner] brackets</a>
+<strong>important text</strong>
+```
+
+Key properties:
+
+- **Balanced nesting** — `[nested [inner] brackets]` captures the
+  whole text including the inner brackets, because the parser
+  tracks depth.
+- **Multi-char delimiters work** — `**` is a single token thanks
+  to the lexer's punct-greedy rule. Same for `~~`, `$$`, etc.
+- **Multi-line groups** — a group can span newlines; the captured
+  text contains the real newlines.
+- **Mutually exclusive with constraint fields** — a type is either
+  a group type OR a constraint type (`base`/`pattern`/`options`),
+  never both.
+
+Limitations called out in [types.md](types.md#group-types):
+
+- The **backtick** (`` ` ``) collides with Capy's string-literal
+  lexing; it can't currently be used as a group delimiter. Pick
+  another delimiter (e.g. `~~code~~`).
+- A **prose run that embeds inline calls** (`This is **important**
+  text.`) needs a separate prose-scanner that's not part of the
+  group-types primitive. For now, write inline calls on their own
+  lines.
+
+---
+
+## Smaller correctness fixes that ship with the above
+
+### Source-absolute column tracking
+
+The lexer previously used two different column conventions: lines
+outside brackets were tokenised after the indent was stripped (so
+`fmt` on a `    func main()` line reported col 1), but lines inside
+brackets kept their raw source column. `block_verbatim`
+reconstruction needed consistent columns, so the lexer now passes a
+`startCol` argument to `tokenizeLine` equal to `1 + stripped_count`.
+Tokens carry source-absolute columns regardless of bracket state —
+better error messages too.
+
+### `#` and `\` accepted as punct tokens
+
+These weren't in `punctChars` before, so a Python comment inside a
+`block_verbatim` body or a LaTeX command (`\href{x}{y}`) would error
+with `unexpected character`. Now they're tokens — neutral by
+default; libraries that want them to mean something (e.g.
+`comments line "#"`) opt in.
+
+### `${html x}` renamed to `${escapeHtml x}`
+
+The helper shipped briefly as `${html x}` but the name was
+ambiguous ("make this HTML"? "treat this as HTML"?). Renamed to
+`${escapeHtml x}` before reaching anyone outside this repo.
+
+---
+
+## Where to go from here
+
+| You want to… | Read |
+|---|---|
+| Build a Markdown-like authoring DSL | [Group types in types.md](types.md#group-types) |
+| Ship a code-block library | [Block functions in library-authoring.md](library-authoring.md#block-functions) |
+| Safely emit HTML | [`escapeHtml` in templates.md](templates.md#escapehtml-string) |
+| Handle quoted user strings cleanly | [`decoded` in templates.md](templates.md#decoded-string) |
+| See the full grammar | [language-reference.md](language-reference.md) |
+| Drop into the LLM-facing brief | [CAPY_FOR_LLMS.md](CAPY_FOR_LLMS.md) |
+
+Every new feature has a regression sample under `samples/`:
+
+- [`samples/utf8-prose/`](https://github.com/luowensheng/capy/tree/main/samples/utf8-prose)
+- [`samples/verbatim-pre/`](https://github.com/luowensheng/capy/tree/main/samples/verbatim-pre)
+- [`samples/string-decoded/`](https://github.com/luowensheng/capy/tree/main/samples/string-decoded)
+- [`samples/multiline-strings/`](https://github.com/luowensheng/capy/tree/main/samples/multiline-strings)
+- [`samples/inline-markdown/`](https://github.com/luowensheng/capy/tree/main/samples/inline-markdown)
