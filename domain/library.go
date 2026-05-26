@@ -175,4 +175,11 @@ type TypeDef struct {
 	Base        string   // any | string | int | float | bool
 	Pattern     string   // optional regex on the value's string form
 	Options     []string // optional enum membership
+	// GroupOpen / GroupClose mark a type as a delimited inline group.
+	// When set, the capture machinery walks tokens between the open
+	// and close delimiters (with depth tracking) and returns the
+	// joined source-form text. Constraint fields (Base / Pattern /
+	// Options) are mutually exclusive with these.
+	GroupOpen  string
+	GroupClose string
 }

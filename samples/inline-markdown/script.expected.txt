@@ -1,0 +1,6 @@
+<a href="https://alien.com/1">Al the Alien</a>
+<a href="https://example.com/&lt;safe&gt;">Click &amp; view</a>
+<a href="https://example.com/path">nested [inner] brackets</a>
+<strong>important text</strong>
+<strong>two words</strong>
+<s>obsolete idea</s>

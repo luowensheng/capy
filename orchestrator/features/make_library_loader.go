@@ -226,12 +226,27 @@ func mapLibrary(r infra.RawLibrary, tokenize func(string) ([]domain.Token, error
 	}
 
 	for name, t := range r.Types {
+		// Group types are mutually exclusive with constraint types.
+		// Either you declare a delimited capture (open + close) or
+		// you declare a constraint (base / pattern / options) — not
+		// both. Reject the mixed form early with a clear error.
+		isGroup := t.GroupOpen != "" || t.GroupClose != ""
+		if isGroup {
+			if t.GroupOpen == "" || t.GroupClose == "" {
+				return lib, fmt.Errorf("type %q: group_open and group_close must BOTH be set", name)
+			}
+			if t.Base != "" || t.Pattern != "" || len(t.Options) > 0 {
+				return lib, fmt.Errorf("type %q: group types cannot also declare base/pattern/options", name)
+			}
+		}
 		lib.Types[name] = domain.TypeDef{
 			Name:        name,
 			Description: t.Description,
 			Base:        t.Base,
 			Pattern:     t.Pattern,
 			Options:     t.Options,
+			GroupOpen:   t.GroupOpen,
+			GroupClose:  t.GroupClose,
 		}
 	}
 

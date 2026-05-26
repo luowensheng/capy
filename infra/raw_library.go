@@ -142,4 +142,12 @@ type RawType struct {
 	Base        string
 	Pattern     string
 	Options     []string
+	// GroupOpen / GroupClose declare a type as a delimited group:
+	// when the outer parser captures a value of this type it consumes
+	// the open delimiter, walks tokens (with balanced nesting) until
+	// the matching close delimiter, and joins everything in between
+	// as source-form text. Use for inline syntax like Markdown's
+	// `[label](url)`, `**bold**`, `` `code` ``, or LaTeX's `\cmd{x}`.
+	GroupOpen  string
+	GroupClose string
 }

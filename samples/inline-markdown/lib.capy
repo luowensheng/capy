@@ -1,0 +1,48 @@
+# inline-markdown — group types for Markdown-style inline syntax.
+# Each function uses one or two group-typed captures so a single
+# source line like `link [label](url)` maps cleanly onto an HTML
+# emission. The lexer's punct-greedy rule already collapses `**`
+# into one token, so symmetric multi-char delimiters Just Work.
+extension html
+
+type Bracketed
+    group_open  "["
+    group_close "]"
+end
+
+type Parens
+    group_open  "("
+    group_close ")"
+end
+
+type Bold
+    group_open  "**"
+    group_close "**"
+end
+
+type Strike
+    group_open  "~~"
+    group_close "~~"
+end
+
+function link
+    arg literal "link"
+    arg capture text Bracketed
+    arg capture url  Parens
+    write `<a href="${html url}">${html text}</a>
+`
+end
+
+function bold
+    arg literal "bold"
+    arg capture text Bold
+    write `<strong>${html text}</strong>
+`
+end
+
+function strike
+    arg literal "strike"
+    arg capture text Strike
+    write `<s>${html text}</s>
+`
+end

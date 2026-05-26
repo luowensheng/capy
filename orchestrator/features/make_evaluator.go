@@ -261,6 +261,11 @@ func (e *outerEval) checkType(t string, text string) error {
 	if !ok {
 		return fmt.Errorf("unknown type %q", t)
 	}
+	// Group types: the parser already enforced the delimiters at
+	// capture time, so the captured text is valid by construction.
+	if td.GroupOpen != "" {
+		return nil
+	}
 	if td.Base != "" && td.Base != "any" {
 		if err := e.checkType(td.Base, text); err != nil {
 			return err

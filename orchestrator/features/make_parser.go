@@ -350,12 +350,18 @@ func (p *outerP) captureValue(t string, stop []string) (domain.CaptureValue, err
 		}
 		return domain.CaptureValue{Text: b.String()}, nil
 	}
-	// Library-defined types. If the type declares a `base:` (e.g. base int),
-	// recursively dispatch to the base type's token-capture rules — that's
-	// what users expect when they write `type Port { base: int }` and then
-	// `port 8443`. Without a base, behave like `raw`: accept one ident-or-
-	// string token and defer all validation to evaluation time.
+	// Library-defined types. Three sub-cases:
+	//   * `group_open`/`group_close` set → delimited capture: walk
+	//     tokens between the open and close delimiters (with balanced
+	//     nesting) and return the joined source-form text.
+	//   * `base:` set → dispatch to the base type's token-capture
+	//     rules (lets `type Port { base: int }` accept `port 8443`).
+	//   * Otherwise → behave like `raw`: accept one ident / string /
+	//     number token and defer all validation to evaluation time.
 	if td, isLibType := p.types[t]; isLibType {
+		if td.GroupOpen != "" {
+			return p.captureGroup(td)
+		}
 		if td.Base != "" && td.Base != "any" {
 			return p.captureValue(td.Base, stop)
 		}
@@ -375,6 +381,88 @@ func (p *outerP) captureValue(t string, stop []string) (domain.CaptureValue, err
 		return domain.CaptureValue{}, err
 	}
 	return domain.CaptureValue{IsExpr: true, Expr: x, Text: ExprToText(x)}, nil
+}
+
+// captureGroup walks tokens between a group type's open and close
+// delimiters, joining the in-between source text with column-
+// preserved spacing (same algorithm as `tail`). Balanced nesting:
+// each occurrence of `GroupOpen` increments depth, each
+// `GroupClose` decrements; the capture only terminates when depth
+// returns to zero. Supports multi-line groups — the scanner just
+// keeps walking past NEWLINE / INDENT / DEDENT until it finds the
+// matching close.
+func (p *outerP) captureGroup(td domain.TypeDef) (domain.CaptureValue, error) {
+	if !p.consumeLiteral(td.GroupOpen) {
+		return domain.CaptureValue{}, fmt.Errorf("expected group open %q, got %q", td.GroupOpen, p.Peek().Text)
+	}
+	var b strings.Builder
+	depth := 1
+	prevEnd := -1
+	prevLine := -1
+	for {
+		tok := p.Peek()
+		switch tok.Kind {
+		case domain.TokEOF:
+			return domain.CaptureValue{}, fmt.Errorf("unterminated group: expected %q before end of input", td.GroupClose)
+		case domain.TokNewline:
+			// Multi-line groups: keep newlines as literal newline
+			// characters in the captured text. Reset intra-line state.
+			b.WriteByte('\n')
+			p.Advance()
+			prevEnd = -1
+			continue
+		case domain.TokIndent, domain.TokDedent:
+			// These structural tokens contribute no characters to
+			// the captured text; their effect is encoded in the next
+			// token's Col on the new line.
+			p.Advance()
+			continue
+		}
+		if tok.Text == td.GroupClose {
+			depth--
+			if depth == 0 {
+				p.Advance()
+				return domain.CaptureValue{Text: b.String()}, nil
+			}
+			// A nested close: include it in the captured text.
+		} else if tok.Text == td.GroupOpen {
+			depth++
+		}
+		// Inter-token spacing: if we're still on the same line as
+		// the previous token, pad to the source column. After a
+		// newline reset prevEnd so we start fresh at column 0.
+		if prevLine == tok.Line && prevEnd >= 0 && tok.Col > prevEnd {
+			b.WriteString(strings.Repeat(" ", tok.Col-prevEnd))
+		} else if prevLine != tok.Line && tok.Col > 1 && b.Len() > 0 {
+			// Cross-line: leading indent on a continuation line.
+			b.WriteString(strings.Repeat(" ", tok.Col-1))
+		}
+		text := tokenSourceForm(tok)
+		b.WriteString(text)
+		prevEnd = tok.Col + len(text)
+		prevLine = tok.Line
+		p.Advance()
+	}
+}
+
+// consumeLiteral peeks at the current token and, if its Text matches
+// `lit` (over the token kinds the outer parser considers literal-
+// matchable), advances. Mirrors the existing matchLiteral but is
+// also tolerant of TokString/TokNumber whose text might appear as
+// a group delimiter in unusual DSLs.
+func (p *outerP) consumeLiteral(lit string) bool {
+	t := p.Peek()
+	switch t.Kind {
+	case domain.TokIdent, domain.TokPunct,
+		domain.TokLParen, domain.TokRParen,
+		domain.TokLBrace, domain.TokRBrace,
+		domain.TokLBrack, domain.TokRBrack:
+		if t.Text == lit {
+			p.Advance()
+			return true
+		}
+	}
+	return false
 }
 
 // parseVerbatimBody captures the body of a `block_verbatim`-declared

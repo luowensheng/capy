@@ -1045,6 +1045,18 @@ func (p *capyLibParser) parseType() (RawType, error) {
 				return td, p.errf("options requires one or more values")
 			}
 			td.Options = append(td.Options, tokens[1:]...)
+		case "group_open":
+			p.nextLine()
+			if len(tokens) != 2 {
+				return td, p.errf("group_open requires one delimiter string")
+			}
+			td.GroupOpen = tokens[1]
+		case "group_close":
+			p.nextLine()
+			if len(tokens) != 2 {
+				return td, p.errf("group_close requires one delimiter string")
+			}
+			td.GroupClose = tokens[1]
 		default:
 			return td, p.errf("unknown directive inside type: %q", tokens[0])
 		}
