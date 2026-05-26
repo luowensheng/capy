@@ -65,15 +65,23 @@ capy new my-app --using recipe
 ## `CAPY_LIBS` search path
 
 `capy` resolves library names against a colon-separated
-(semicolon on Windows) path list. Defaults:
+(semicolon on Windows) path list. Defaults (when `CAPY_LIBS` is
+unset):
 
 | Platform | Default |
 |---|---|
+| Any | The current working directory (so a project-local `<name>.capy` is always discoverable) |
 | Linux | `$XDG_CONFIG_HOME/capy/libs/` (and `~/.capy/libs/` as a fallback) |
 | macOS | `~/Library/Application Support/Capy/libs/` |
 | Windows | `%APPDATA%\Capy\libs\` |
 
-Override with `CAPY_LIBS`:
+The CWD entry is what makes `capy main.<ext>` work out of the box for
+projects whose library file sits next to the script — no install
+step required. Libraries resolved via the CWD entry are also
+trusted (no "not on CAPY_LIBS" warning when their commands shell out).
+
+Override entirely with `CAPY_LIBS` — it's a full list, not a
+supplement:
 
 ```sh
 export CAPY_LIBS="$HOME/.capy/libs:/usr/local/share/capy/libs"

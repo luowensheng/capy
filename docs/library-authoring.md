@@ -148,6 +148,31 @@ end
 
 …matches `<ident> = <any>`. No leading `assign` token in source.
 
+### `bare` — opt out of auto-name-prepend
+
+If you want a function whose args are all captures AND you DON'T want
+a leading keyword, declare it `bare`. The function then matches
+purely by shape — useful for grammars whose data lines have no
+syntactic anchor:
+
+```
+function row
+    bare
+    arg capture a string
+    arg capture b string
+    arg capture c string
+    write `<button>${unquote a}</button><button>${unquote b}</button><button>${unquote c}</button>
+`
+end
+```
+
+Source: `"1" "2" "3"` parses as one call to `row` with three
+captures — no `row` keyword needed.
+
+Use sparingly: a function declared `bare` will try to match every
+statement that starts with a capture-compatible token, so prioritise
+specific shapes ahead of it if there's ambiguity.
+
 ## Built-in types
 
 `any`, `ident`, `raw`, `string`, `int`, `float`, `bool`.
@@ -157,6 +182,7 @@ end
 | `any`  | Any single value expression (number, string, ident, list, object, bool, null, dotted ident, parenthesized sub-call). |
 | `ident`| A single identifier token; bound as a string.                                                                       |
 | `raw`  | One identifier OR string token; bound as a string.                                                                   |
+| `tail` | Every remaining token on the statement, reconstructed with original column-position spacing. Use for free-form trailing values (e.g. CSS `20px`, `1px solid red`) that don't fit `any`'s single-value-expression grammar. |
 | `string` | A quoted string literal — OR a bare identifier (transpile-mode permissive).                                       |
 | `int`/`float`/`bool` | The respective literal — OR a bare identifier.                                                          |
 
@@ -232,8 +258,17 @@ See [inner-dsl.md](inner-dsl.md) for full details and examples.
 
 ## Block functions
 
-A function that opens a body block declares it with `block_closer`
-(named-closer mode) or an explicit delimiter pair:
+A function that opens a body block declares it in one of three modes —
+exactly one of `block_closer`, `block_open`/`close`, or
+`block_dedent`:
+
+| Directive | Body delimited by | Use for |
+|---|---|---|
+| `block_closer NAME` | An indented body that ends at a `NAME` keyword | Most cases — `if … end`, `for … end`, `match … end`. |
+| `block_open "X" close "Y"` | A `X`-prefixed, `Y`-suffixed delimited body on the same line as the opener (newlines inside OK) | Brace-style nesting, JSX-ish DSLs. |
+| `block_dedent` | An indented body that ends at the first DEDENT — no closer keyword | CSS-style selector blocks, YAML-style sections, anywhere the user expects "the indentation IS the boundary". |
+
+Named-closer example:
 
 ```
 function if
@@ -265,6 +300,37 @@ ${indent 2 body}
 `
 end
 ```
+
+Dedent-only block (no keyword needed to close):
+
+```
+function selector
+    arg capture name ident
+    arg literal ":"
+    block_dedent
+    write `${name} {
+${indent 2 body}}
+`
+end
+```
+
+Source:
+
+```
+header:
+    color: white
+    padding: 8px
+
+footer:
+    color: gray
+```
+
+Each selector's body is whatever is indented under it, up to the next
+peer line or the block's enclosing dedent. The parser is also lenient
+about stray indents inside a body — content nested deeper than its
+block's anchor (purely for visual styling) is treated as cosmetic, so
+hand-written DSL sources don't have to be pedantic about consistent
+indentation.
 
 See [block-functions.md](block-functions.md) for nesting and edge cases.
 

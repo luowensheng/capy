@@ -183,6 +183,29 @@ When you reference a capture by name, you get the **evaluated** value:
 This means `append context.imports name` correctly stores `"json"` without
 extra quoting — useful for the file template's `for ... in ... end` loop.
 
+## Engine-injected locals
+
+In addition to your function's captures, three locals are always
+available inside the function body:
+
+| Local | Available where | What it is |
+|---|---|---|
+| `body` | `write` literals AND state-mutation statements | The rendered output of the function's inner block (block functions only). In a state mutation like `append context.styles {name: name, body: body}`, this lets you stash rendered text back into context. |
+| `top_level` | `write` literals AND state-mutation statements | Boolean. `true` when the function call is being rendered at the file's outermost program block; `false` once we're inside any block's body. |
+| `depth` | `write` literals AND state-mutation statements | Integer. `0` at the top level, `1` inside one nested block, `2` inside two, etc. |
+
+`top_level` is the convenience boolean — most uses only need
+`if top_level … else … end` to branch between "this call appears at
+file scope" and "this call appears inside a block body". Concrete
+win: a single `NAME = VALUE` syntax can be a *declaration* at file
+scope (wrap in `<script>` for an HTML target, emit a `var` line for
+a JS target, etc.) and a *bare reassignment* inside a handler body,
+with no extra keyword required from the user.
+
+If a user-defined capture happens to be named `body`, `top_level`,
+or `depth`, the capture **wins**: the engine local only gets
+injected when there is no capture of the same name.
+
 ## Context paths
 
 Paths must be rooted at `context` (or at a local introduced by a `loop`).

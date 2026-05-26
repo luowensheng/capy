@@ -196,6 +196,110 @@ generator.
 Best for: user-facing scripting (admin DSLs, low-code platforms,
 shareable snippets).
 
+### Pattern D: "Human defines the syntax, AI fits a library to it"
+
+This one is the most underrated for non-programmers and the most
+collaborative for everyone else. The human starts by writing the
+**source** in whatever way feels natural — the keywords they wish
+existed, the indentation they prefer, the verbs that map onto how
+they think about the domain. The AI's job is to make Capy parse
+that source by iterating on the **library**.
+
+The split of responsibilities:
+
+| Who | Owns |
+|---|---|
+| **Human** | The DSL surface — `main.<ext>`. The words, the shapes, the structure they want to write in. |
+| **AI** | The library — `<ext>.capy`. Function shapes, captures, `write` templates, commands. Whatever it takes to make the human's source compile to the target output. |
+
+A typical loop:
+
+1. Human writes a few lines of their imagined DSL.
+2. They paste it to the AI with a one-sentence goal: *"this should
+   produce an HTML calculator"* / *"this should generate a Kubernetes
+   manifest"* / *"this should compile to a SQL view."*
+3. AI iterates a library (adding `function`, `arg`, `write`, `block_*`,
+   commands…) until `capy main.<ext>` produces the right output.
+4. AI may also iterate Capy itself — if the human's source style
+   reveals a gap (`bare` for keyword-less rows, `tail` for free-form
+   values, `block_dedent` for indent-only blocks, `top_level` for
+   position-aware emission), the engine grows to fit. **The user's
+   syntax is the spec; the toolchain adapts.**
+5. Once the library is good, the human edits `main.<ext>` freely
+   without AI help — they're writing in their own vocabulary. They
+   only return to the AI when they want to grow the DSL itself.
+
+Why this matters for non-programmers:
+
+- The artifact they read and edit is **the DSL they designed** —
+  not React, not Tailwind, not Terraform. The vocabulary fits the
+  domain.
+- The library + Capy engine + AI prompt are the "compiler stack",
+  but the user never has to look at them. They just write.
+- Edits stay deterministic. The library is fixed; the same DSL
+  source always produces the same output. No "the AI wrote
+  something different this time."
+- The AI is on tap for *grammar-level* changes (new keywords,
+  new constructs) but doesn't need to be in the loop for
+  *content-level* edits.
+
+Why it matters for AI workflows:
+
+- Less prompt context burned on re-explaining the target language
+  on every call.
+- The AI's outputs are tiny (`50–200` tokens of DSL) instead of
+  large (`800+` tokens of HTML/YAML/SQL). Cost and latency both
+  drop.
+- Reviewability: a human can read `main.<ext>` and audit it in
+  seconds. They can't audit `index.html` plus inline `<script>`
+  plus inline `<style>` as fast.
+
+Concrete shape of a session:
+
+```
+# Round 1: human-authored source
+USER (paste):
+
+    TodoList "Today"
+        DO "Buy groceries"
+        DO "Finish report" priority high
+        DONE "Email client"
+    end
+
+USER (goal): "Generate a clean HTML page with a checkbox list."
+
+# AI iteration: add `TodoList`, `DO`, `DONE`, and a `priority`
+# attribute function; wire a file_template. Commit `todolist.capy`.
+
+# Round 2: human iterates the source freely
+USER (edit main.todolist):
+
+    TodoList "Today"
+        DO "Buy groceries" priority high
+        DO "Pick up dry cleaning"
+        DONE "Email client"
+
+    TodoList "This week"
+        DO "Tax filing"
+        DO "Annual review prep"
+    end
+
+# Re-run `capy main.todolist` — works without an AI call.
+
+# Round 3: human wants something new
+USER: "Add a `due TOMORROW` annotation that renders as a yellow badge."
+
+# AI adds one function to `todolist.capy`. Human keeps writing.
+```
+
+Best for:
+- Domain-specific tools authored by domain experts (recipe writers,
+  game designers, ops engineers, marketers, teachers).
+- Long-lived projects where the SAME human edits the source many
+  times, and only occasionally needs grammar growth.
+- "I want a `lib.capy`-as-IDE" workflows where the DSL becomes a
+  living tool tailored to one person or team.
+
 ---
 
 ## Integrations shipped in this repo

@@ -45,15 +45,26 @@ end
 
 function <NAME>              # one DSL statement shape
     priority <int>           # optional; higher wins ambiguous matches
+    bare                     # optional; opt out of auto-name-prepend so
+                             # captures-only functions match without a
+                             # leading keyword (e.g. a bare `"1" "2" "3"`
+                             # row of three string captures)
     arg literal "TEXT"       # match a literal token
     arg capture <NAME> <TYPE> # capture a typed named variable
     block_closer <NAME>      # block opener: body runs until <NAME> appears
     block_open "OPEN" close "CLOSE"   # alternative: explicit delimiters
+    block_dedent             # alternative: body ends at first DEDENT,
+                             # no closer keyword (CSS-style selectors,
+                             # YAML-style sections)
 
     # Function body — sequence of inner-DSL statements:
     write `Hello, ${name}!\n`        # emit literal text + interpolations
     append context.greetings name    # mutate state
     # if / for / set / prepend / merge / delete also available
+    # render-time locals always available inside the body:
+    #   `body`      — rendered inner-block output (block functions)
+    #   `top_level` — true when this call is at the file root
+    #   `depth`     — integer AST depth (0 at root)
 end
 
 file_template                # whole-file assembler
@@ -113,6 +124,7 @@ end
 | `any`    | Any value expression (number, string, ident, list, object, dotted path, paren-sub-call, comparison). |
 | `ident`  | A single identifier token.                            |
 | `raw`    | Identifier OR string.                                 |
+| `tail`   | Every remaining token on the statement, joined with original column spacing. For free-form trailing values like `20px` or `1px solid red`. |
 | `string` | A quoted string — OR a bare identifier.               |
 | `int`    | An integer literal — OR a bare identifier.            |
 | `float`  | A float literal — OR a bare identifier.               |
