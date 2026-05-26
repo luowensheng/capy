@@ -20,6 +20,7 @@ The lineup, ordered by impact-per-line-of-engine-change:
 | 4 | `${escapeHtml x}` helper | XSS surface closed for HTML-emitting libraries |
 | 5 | Multi-line backticks in scripts | Heredoc-style prose, multi-line paragraphs |
 | 6 | `group_open` / `group_close` types | First-class inline syntax — `[label](url)`, `**bold**`, `~~strike~~` |
+| 7 | `template … end` write-literal sugar | Multi-line HTML/text templates without backtick bookkeeping |
 
 Plus a few smaller correctness fixes (source-absolute column tracking,
 `#` and `\` accepted as punctuation tokens, the renamed
@@ -374,6 +375,76 @@ Limitations called out in [types.md](types.md#group-types):
 
 ---
 
+## 7. `template … end` — sugar for multi-line `write ` ... ` `
+
+**Before**: long HTML / text templates carried three pieces of
+ceremony per `write` — the opening backtick after `write`, the
+trailing newline before the closer, the closing backtick on its own
+line at arbitrary indent. Editors couldn't syntax-highlight the body
+as HTML because of the wrapping backtick. Auto-indent fought the
+closing backtick:
+
+```
+function card
+    arg capture title string
+    block_closer end
+    write `<div class="card">
+  <h3>${escapeHtml (decoded title)}</h3>
+  <div>${indent 2 body}</div>
+</div>
+`
+end
+```
+
+**Now**: the same function, no backtick bookkeeping:
+
+```
+function card
+    arg capture title string
+    block_closer end
+    template
+        <div class="card">
+          <h3>${escapeHtml (decoded title)}</h3>
+          <div>${indent 2 body}</div>
+        </div>
+    end
+end
+```
+
+`template … end` is **pure sugar** — the lib parser rewrites it into
+the synthesised backtick `write` before anything downstream sees the
+function body. Identical AST, identical render path, identical
+output bytes. `${…}` interpolation is active (the one thing that
+distinguishes this from `block_verbatim`, which is interpolation-OFF).
+
+Properties:
+
+- **Where it works** — anywhere a `write` is valid: function bodies,
+  `file_template`, and `file "X" … end` blocks.
+- **Composes with state mutations** — `template … end` is one
+  statement among many in the function body. Pair it with `append
+  context.x …` / `set` / `if` / `for` exactly the same way you would
+  pair a `write`.
+- **Auto-dedented** — body lines retain their relative indentation
+  but the common leading whitespace is stripped, so the captured
+  text starts flush-left.
+- **Nested templates** at the same indent are balanced via depth
+  tracking, so a `template … end` inside another `template … end`
+  works.
+- **Backticks and backslashes** inside the body are escaped
+  automatically — paste HTML containing `` ` `` without escaping
+  manually.
+
+Adds one new keyword (`template`) at statement position. Any
+existing library function literally named `template` would conflict
+at call site — we grepped the in-tree samples and found none.
+
+See [`samples/template-sugar/`](https://github.com/luowensheng/capy/tree/main/samples/template-sugar)
+for a complete worked example with `card`, `p`, `file_template`, and
+state accumulation in `context.cards`.
+
+---
+
 ## Smaller correctness fixes that ship with the above
 
 ### Source-absolute column tracking
@@ -421,3 +492,4 @@ Every new feature has a regression sample under `samples/`:
 - [`samples/string-decoded/`](https://github.com/luowensheng/capy/tree/main/samples/string-decoded)
 - [`samples/multiline-strings/`](https://github.com/luowensheng/capy/tree/main/samples/multiline-strings)
 - [`samples/inline-markdown/`](https://github.com/luowensheng/capy/tree/main/samples/inline-markdown)
+- [`samples/template-sugar/`](https://github.com/luowensheng/capy/tree/main/samples/template-sugar)

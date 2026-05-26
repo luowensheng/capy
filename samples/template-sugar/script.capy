@@ -1,0 +1,8 @@
+card "Welcome"
+    p "First card body."
+    p "It can contain <markup> & quotes."
+end
+
+card "Second"
+    p "Each card stacks under the previous."
+end

@@ -219,6 +219,67 @@ The bytes inside the backticks are emitted verbatim. There is no
 whitespace-trimming sigil — if you don't want a trailing newline,
 don't put one in.
 
+## `template … end` — write-literal sugar
+
+For functions whose output is a multi-line HTML / text block, the
+backtick bookkeeping (`write \` …`, closing \` on its own line, escape
+hatches for embedded backticks) crowds out the actual content. The
+`template … end` sugar drops the ceremony:
+
+```
+function card
+    arg capture title string
+    block_closer end
+    template
+        <div class="card">
+          <h3>${escapeHtml (decoded title)}</h3>
+          <div>${indent 2 body}</div>
+        </div>
+    end
+end
+```
+
+Semantically **identical** to the hand-authored equivalent:
+
+```
+function card
+    arg capture title string
+    block_closer end
+    write `<div class="card">
+  <h3>${escapeHtml (decoded title)}</h3>
+  <div>${indent 2 body}</div>
+</div>
+`
+end
+```
+
+Properties:
+
+- **Where it's valid:** anywhere a `write` statement is — function
+  bodies, `file_template`, and `file "X" … end` blocks. Mixes
+  freely with other statements (`set` / `append` / `if` / `for`).
+- **Opener:** a bare `template` line, no trailing args.
+- **Closer:** a bare `end` at the **same indent** as `template`.
+  Lines whose `end` is at a deeper indent are body content. Nested
+  `template … end` at the same indent are balanced via depth.
+- **Body:** captured verbatim, then auto-dedented to flush-left (the
+  smallest non-blank leading indent is stripped). Relative
+  indentation between body lines is preserved.
+- **`${…}` interpolation is active** — same parser as in a backtick
+  `write`. This is the only thing that distinguishes the sugar from
+  `block_verbatim`, which has interpolation OFF.
+- **Empty body** is allowed (`template\n…blanks…\nend` produces
+  empty output, no error).
+- **Backticks and backslashes** inside the body are escaped
+  automatically for the synthesised backtick literal — paste HTML
+  with embedded `` ` `` characters worry-free.
+
+Implementation note (for the curious): the sugar is rewritten into
+a synthesised `write ` … ` ` BEFORE the inner-DSL parser runs.
+There's no new AST node and the renderer doesn't need to know the
+sugar exists. So everything that works with a hand-authored
+multi-line `write` works with `template … end`.
+
 ## State mutation — `set`, `append`, `prepend`, `merge`, `delete`
 
 A small inner DSL. **Does not execute user source.** It only mutates

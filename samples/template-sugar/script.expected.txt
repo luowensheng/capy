@@ -1,0 +1,18 @@
+<!doctype html>
+<html>
+  <body>
+    <div class="card">
+  <h3>Welcome</h3>
+  <div class="body">  <p>First card body.</p>
+  <p>It can contain &lt;markup&gt; &amp; quotes.</p>
+</div>
+</div>
+<div class="card">
+  <h3>Second</h3>
+  <div class="body">  <p>Each card stacks under the previous.</p>
+</div>
+</div>
+
+    <footer>2 cards.</footer>
+  </body>
+</html>

@@ -70,6 +70,9 @@ function <NAME>              # one DSL statement shape
 
     # Function body — sequence of inner-DSL statements:
     write `Hello, ${name}!\n`        # emit literal text + interpolations
+    template                         # sugar for multi-line backtick `write`:
+        <div>${name}</div>           #   body captured verbatim, dedented,
+    end                              #   ${…} interpolation active.
     append context.greetings name    # mutate state
     # if / for / set / prepend / merge / delete also available
     # render-time locals always available inside the body:

@@ -60,6 +60,178 @@ func parseCapyLib(src string) (RawLibrary, error) {
 	return p.parseTop()
 }
 
+// rewriteTemplateBlocks transforms the `template ... end` sugar into
+// the equivalent multi-line `write ` ... ` ` literal. Pure syntactic
+// rewrite: the output bytes are what a library author would have
+// written by hand, so the downstream merge → dedent → inner-DSL
+// parse → render pipeline doesn't need to know this sugar exists.
+//
+//	template
+//	    <div>
+//	      ${escapeHtml text}
+//	    </div>
+//	end
+//
+// becomes (synth, before backtick merging):
+//
+//	write ` <div>
+//	  ${escapeHtml text}
+//	</div>
+//	`
+//
+// Semantics:
+//   - Opener: bareword `template` on its own line, no trailing args.
+//   - Closer: bareword `end` at the same indent as `template`. Inner
+//     `end` lines at a deeper indent are body content. Nested
+//     `template … end` at the same indent are balanced via depth.
+//   - Body: captured verbatim, then auto-dedented by the smallest
+//     non-blank leading indent so the captured text starts flush-
+//     left. ${…} interpolation runs at render time, same as a
+//     hand-authored `write ` ... ` `.
+//   - Backticks (`) inside the body are escaped (`\``) so the synth
+//     is a valid backtick literal.
+//
+// baseLineNo is the source line number of `raws[0]` — used to make
+// `missing end` errors point at the right line.
+func rewriteTemplateBlocks(raws []string, baseLineNo int) ([]string, error) {
+	var out []string
+	inBacktick := false
+	i := 0
+	for i < len(raws) {
+		ln := raws[i]
+		if !inBacktick && strings.TrimSpace(ln) == "template" {
+			openIndent := leadingWhitespace(ln)
+			// Walk forward until we hit `end` at the same indent, with
+			// depth tracking for nested `template … end` blocks AND
+			// backtick state so a literal `template`/`end` inside an
+			// existing `write ` ... ` ` doesn't trigger.
+			depth := 1
+			bodyEnd := -1
+			innerBT := false
+			for j := i + 1; j < len(raws); j++ {
+				bl := raws[j]
+				if innerBT {
+					innerBT = updateBacktickState(bl, innerBT)
+					continue
+				}
+				bs := strings.TrimSpace(bl)
+				bli := leadingWhitespace(bl)
+				if bs == "template" && bli == openIndent {
+					depth++
+				} else if bs == "end" && bli == openIndent {
+					depth--
+					if depth == 0 {
+						bodyEnd = j
+						break
+					}
+				}
+				innerBT = updateBacktickState(bl, innerBT)
+			}
+			if bodyEnd < 0 {
+				return nil, fmt.Errorf("line %d: template block has no matching `end` at the same indent", baseLineNo+i+1)
+			}
+			body := raws[i+1 : bodyEnd]
+			// Auto-dedent: strip the smallest non-blank leading indent.
+			bodyMin := -1
+			for _, bl := range body {
+				if strings.TrimSpace(bl) == "" {
+					continue
+				}
+				bi := leadingWhitespace(bl)
+				if bodyMin < 0 || bi < bodyMin {
+					bodyMin = bi
+				}
+			}
+			if bodyMin < 0 {
+				bodyMin = 0
+			}
+			dedented := make([]string, len(body))
+			for k, bl := range body {
+				if len(bl) >= bodyMin {
+					dedented[k] = escapeForBacktick(bl[bodyMin:])
+				} else {
+					dedented[k] = escapeForBacktick(bl)
+				}
+			}
+			// Emit the synth at the opener's indent. The opening
+			// backtick goes immediately after `write ` on the first
+			// line; body lines flow flush-left; the closing backtick
+			// sits on its own flush-left line. mergeBackticksInLines
+			// then collapses the whole thing into one logical line
+			// the same way it would for a hand-authored multi-line
+			// backtick.
+			prefix := strings.Repeat(" ", openIndent)
+			if len(dedented) == 0 {
+				out = append(out, prefix+"write ``")
+			} else {
+				out = append(out, prefix+"write `"+dedented[0])
+				for _, bl := range dedented[1:] {
+					out = append(out, bl)
+				}
+				out = append(out, "`")
+			}
+			i = bodyEnd + 1
+			continue
+		}
+		out = append(out, ln)
+		inBacktick = updateBacktickState(ln, inBacktick)
+		i++
+	}
+	return out, nil
+}
+
+// leadingWhitespace returns the count of leading space-or-tab bytes.
+// Used purely for indent-equality comparisons; mixed tabs/spaces are
+// the author's responsibility (matches the rest of the lib parser).
+func leadingWhitespace(s string) int {
+	n := 0
+	for n < len(s) && (s[n] == ' ' || s[n] == '\t') {
+		n++
+	}
+	return n
+}
+
+// updateBacktickState scans one line and toggles `inBacktick` on each
+// unescaped backtick. Matches the same logic the body collector uses
+// when tracking multi-line backtick state.
+func updateBacktickState(ln string, inBacktick bool) bool {
+	for i := 0; i < len(ln); i++ {
+		c := ln[i]
+		if c == '\\' && i+1 < len(ln) {
+			i++
+			continue
+		}
+		if c == '`' {
+			inBacktick = !inBacktick
+		}
+	}
+	return inBacktick
+}
+
+// escapeForBacktick prepares one body line for embedding inside a
+// backtick literal: backslashes double, backticks gain a backslash.
+// `${...}` interpolation markers pass through untouched — they're
+// what makes this sugar useful (vs `block_verbatim`, which is the
+// interpolation-OFF sibling).
+func escapeForBacktick(s string) string {
+	if !strings.ContainsAny(s, "`\\") {
+		return s
+	}
+	var b strings.Builder
+	b.Grow(len(s) + 4)
+	for i := 0; i < len(s); i++ {
+		switch s[i] {
+		case '\\':
+			b.WriteString(`\\`)
+		case '`':
+			b.WriteString("\\`")
+		default:
+			b.WriteByte(s[i])
+		}
+	}
+	return b.String()
+}
+
 // mergeBackticksInLines collapses multi-line backtick literals into
 // single logical lines (with embedded newlines escaped as `\n` so
 // the line-based parser doesn't split on them). Only applied to the
@@ -877,6 +1049,16 @@ func (p *capyLibParser) parseFunctionBodyStatements(startIndent int) (string, er
 			}
 		}
 	}
+	// Sugar pass: rewrite `template ... end` blocks into the
+	// equivalent multi-line `write ` ... ` ` literal BEFORE merging
+	// backticks. The synth is byte-equivalent to what a library
+	// author could have hand-written, so everything downstream
+	// (merge, dedent, inner-DSL parse, render) stays unchanged.
+	rewritten, err := rewriteTemplateBlocks(raws, p.lineNo-len(raws))
+	if err != nil {
+		return "", err
+	}
+	raws = rewritten
 	// Merge multi-line backticks inside the collected body slice.
 	raws = mergeBackticksInLines(raws)
 	// Strip the deepest common leading indent so the inner-DSL parser
