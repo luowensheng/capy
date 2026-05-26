@@ -107,6 +107,7 @@ nav:
   - Integrate:
     - Embed in your Go program: embedding.md
     - Compile a library to a standalone binary: compiling-libraries.md
+    - "Compile cookbook (CLI, WASM, Docker, npm, …)": cookbook-compile.md
     - MCP server (for AI agents): mcp.md
     - AI integration cookbook: cookbook-ai.md
     - Capy for AI agents (overview): ai-agents.md

@@ -339,6 +339,10 @@ your colleagues can `curl` and run.
 
 ## Next steps
 
+- [Compile cookbook](cookbook-compile.md) — eleven concrete recipes:
+  multi-target tarballs, GitHub release workflows, browser-embedded
+  WASM, static-site generators, Docker images, Homebrew formulas,
+  `npm` packages, CI matrices, reproducible signed builds.
 - [Library commands + `CAPY_LIBS`](library-commands.md) — design the
   commands that go inside your library before you ship it.
 - [Embedding](embedding.md) — alternative path: link Capy into your

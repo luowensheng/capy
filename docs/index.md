@@ -276,6 +276,16 @@ artifact.</p>
 <a href="for-everyone/">Start here →</a>
 </div>
 
+<div class="audience-card" markdown>
+<div class="role">:material-package-variant: SHIPPING</div>
+<h4>One library → native binaries + WASM</h4>
+<p>`capy build` turns any library into a self-contained CLI. Cross-
+compile for Linux / Windows / ARM / WebAssembly from one machine.
+Ship as a release tarball, Homebrew tap, Docker image, or
+`npm`-installable WASM module.</p>
+<a href="cookbook-compile/">Compile cookbook →</a>
+</div>
+
 </div>
 
 ---
