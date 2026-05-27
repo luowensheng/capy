@@ -49,7 +49,7 @@ end
 
 Rendered live below:
 
-<iframe src="assets/demos/math-plots.html" sandbox="allow-scripts allow-same-origin" style="width: 100%; height: 540px; border: 0; border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.18); display: block; margin: 18px 0 24px;" title="Math plots rendered live from a Capy source"></iframe>
+<iframe src="../assets/demos/math-plots.html" sandbox="allow-scripts allow-same-origin" style="width: 100%; height: 540px; border: 0; border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.18); display: block; margin: 18px 0 24px;" title="Math plots rendered live from a Capy source"></iframe>
 
 Full library + script: [`samples/math-plots/`](https://github.com/luowensheng/capy/tree/main/samples/math-plots).
 Walk-through of every primitive it uses: [What's new](whats-new.md).

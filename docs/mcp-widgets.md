@@ -49,7 +49,7 @@ typography, responsive layout, and any JS interactivity.
 
 **Live preview from [`samples/mcp-widgets/`](https://github.com/luowensheng/capy/tree/main/samples/mcp-widgets):**
 
-<iframe src="assets/demos/mcp-widgets.html" sandbox="allow-scripts allow-same-origin" style="width: 100%; height: 580px; border: 0; border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.18); display: block; margin: 18px 0 24px;" title="MCP widgets rendered live from a Capy source"></iframe>
+<iframe src="../assets/demos/mcp-widgets.html" sandbox="allow-scripts allow-same-origin" style="width: 100%; height: 580px; border: 0; border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.18); display: block; margin: 18px 0 24px;" title="MCP widgets rendered live from a Capy source"></iframe>
 
 The exact same `lib.capy` + DSL above produced the iframe content.
 Three widget shapes — weather card, bar chart with interactive
