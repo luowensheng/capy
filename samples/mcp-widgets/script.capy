@@ -1,0 +1,22 @@
+weather "San Francisco"
+    temp 68 unit "F"
+    condition "Partly cloudy"
+    forecast
+        day "Mon" high 70 low 55
+        day "Tue" high 68 low 53
+        day "Wed" high 72 low 56
+        day "Thu" high 75 low 58
+        day "Fri" high 71 low 54
+    end
+end
+
+chart "Sales by quarter"
+    bar "Q1" 120
+    bar "Q2" 185
+    bar "Q3" 142
+    bar "Q4" 230
+end
+
+product_card "Wireless Headphones" price "$129" rating "4.6"
+    summary "Active noise cancelling, 30-hour battery, USB-C."
+end

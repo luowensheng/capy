@@ -67,6 +67,7 @@ OS. It just writes DSL; the host handles the rest.
 </div>
 
 [Read the AI agents guide :material-arrow-right:](ai-agents.md){ .md-button .md-button--primary }
+[MCP Apps / AI widgets :material-view-grid:](mcp-widgets.md){ .md-button }
 [MCP server setup :material-server:](mcp.md){ .md-button }
 [One-page LLM brief :material-file-document:](CAPY_FOR_LLMS.md){ .md-button }
 
@@ -117,6 +118,26 @@ event handlers. 226 lines of working JS generated.</p>
 <div class="footer">
 <a href="showcase/">More playable demos →</a>
 <code>samples/interactive-breakout</code>
+</div>
+</div>
+
+<div class="show-card" markdown>
+<div class="show-card-head" markdown>
+<div class="show-card-eyebrow">MCP / AI WIDGETS</div>
+<h3>Interactive widgets from one DSL line</h3>
+<p>MCP Apps (Claude Desktop, mcp-ui, mcp-widgets) render
+sandbox-iframe HTML returned by tool calls. With Capy, the
+LLM emits <code>weather "Tokyo" temp 17 unit "C" … end</code>
+(20 tokens); a compiled library renders the complete weather
+card, chart, or product widget. 5–10× fewer tokens per
+response, sandboxed by parser-as-grammar.</p>
+</div>
+<div class="canvas" markdown>
+<iframe src="assets/demos/mcp-widgets.html" sandbox="allow-scripts allow-same-origin" style="width: 100%; max-width: 480px; height: 320px; border: 1px solid #333; border-radius: 6px; background: #0a0a14;" title="MCP widget"></iframe>
+</div>
+<div class="footer">
+<a href="mcp-widgets/">Widget guide →</a>
+<code>samples/mcp-widgets</code>
 </div>
 </div>
 

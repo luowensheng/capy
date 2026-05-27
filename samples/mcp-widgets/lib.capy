@@ -1,0 +1,256 @@
+# mcp-widgets — a small Capy library that compiles to interactive
+# HTML widgets suitable for MCP App responses (Apps SDK / mcp-ui /
+# mcp-widgets ecosystem). The LLM emits a few lines of Capy DSL; the
+# library renders the complete sandbox-iframe-ready HTML.
+#
+# Widget vocabulary (the entire grammar an LLM ever needs to know):
+#   weather "City"
+#       temp N unit "F"
+#       condition "..."
+#       forecast
+#           day "Mon" high N low N
+#           ...
+#       end
+#   end
+#
+#   chart "Title"
+#       bar "Label" N
+#       ...
+#   end
+#
+#   product_card "Name" price "..." rating "..."
+#       summary "..."
+#   end
+name        "mcp-widgets"
+version     "0.1.0"
+description "Interactive widget DSL for MCP App responses."
+extension   "html"
+output_file "widget.html"
+
+context
+    title "MCP Widget"
+end
+
+# ────────────────────────────────────────────────────────────────────
+# Weather widget
+# ────────────────────────────────────────────────────────────────────
+
+function weather
+    arg literal "weather"
+    arg capture city string
+    block_closer end
+    template
+        <div class="w-card w-weather">
+          <div class="w-weather-head">
+            <h2>${escapeHtml (decoded city)}</h2>
+          </div>
+          ${body}
+        </div>
+    end
+end
+
+function temp
+    arg literal "temp"
+    arg capture n any
+    arg literal "unit"
+    arg capture u string
+    template
+        <div class="w-temp">
+          <span class="w-temp-value">${n}</span><span class="w-temp-unit">°${escapeHtml (decoded u)}</span>
+        </div>
+    end
+end
+
+function condition
+    arg literal "condition"
+    arg capture text string
+    template
+        <div class="w-condition">${escapeHtml (decoded text)}</div>
+    end
+end
+
+function forecast
+    arg literal "forecast"
+    block_closer end
+    template
+        <div class="w-forecast">${body}</div>
+    end
+end
+
+function day
+    arg literal "day"
+    arg capture name string
+    arg literal "high"
+    arg capture hi any
+    arg literal "low"
+    arg capture lo any
+    template
+        <div class="w-day">
+          <div class="w-day-name">${escapeHtml (decoded name)}</div>
+          <div class="w-day-hi">${hi}°</div>
+          <div class="w-day-lo">${lo}°</div>
+        </div>
+    end
+end
+
+# ────────────────────────────────────────────────────────────────────
+# Bar chart widget — interactive (hover tooltips, click events).
+# Inline JS reads <li data-value="…"> nodes so the rendered HTML
+# stays inspectable + scrape-friendly even without JS.
+# ────────────────────────────────────────────────────────────────────
+
+function chart
+    arg literal "chart"
+    arg capture title string
+    block_closer end
+    template
+        <div class="w-card w-chart">
+          <h2>${escapeHtml (decoded title)}</h2>
+          <ul class="w-bars">${body}</ul>
+        </div>
+        <script>
+          (function () {
+            const card = document.currentScript.previousElementSibling;
+            const bars = card.querySelectorAll('.w-bars li');
+            let max = 0;
+            bars.forEach(li => max = Math.max(max, +li.dataset.value));
+            bars.forEach(li => {
+              const bar = li.querySelector('.w-bar');
+              bar.style.width = (100 * (+li.dataset.value) / max) + '%';
+              li.addEventListener('mouseenter', () => li.classList.add('w-hover'));
+              li.addEventListener('mouseleave', () => li.classList.remove('w-hover'));
+            });
+          })();
+        </script>
+    end
+end
+
+function bar
+    arg literal "bar"
+    arg capture label string
+    arg capture value any
+    template
+        <li data-value="${value}">
+          <span class="w-bar-label">${escapeHtml (decoded label)}</span>
+          <span class="w-bar"></span>
+          <span class="w-bar-value">${value}</span>
+        </li>
+    end
+end
+
+# ────────────────────────────────────────────────────────────────────
+# Product card widget — single-line opener with key=value attrs.
+# Mirrors the e-commerce MCP example pattern.
+# ────────────────────────────────────────────────────────────────────
+
+function product_card
+    arg literal "product_card"
+    arg capture name string
+    arg literal "price"
+    arg capture price string
+    arg literal "rating"
+    arg capture rating string
+    block_closer end
+    template
+        <div class="w-card w-product">
+          <h2>${escapeHtml (decoded name)}</h2>
+          <div class="w-product-meta">
+            <span class="w-price">${escapeHtml (decoded price)}</span>
+            <span class="w-rating">★ ${escapeHtml (decoded rating)}</span>
+          </div>
+          ${body}
+        </div>
+    end
+end
+
+function summary
+    arg literal "summary"
+    arg capture text string
+    template
+        <p class="w-summary">${escapeHtml (decoded text)}</p>
+    end
+end
+
+function end
+end
+
+# ────────────────────────────────────────────────────────────────────
+# Whole-page template: one <style> block, all widgets stacked.
+# Designed to render in a sandboxed iframe (MCP App / mcp-ui host)
+# at any width; no external CSS / JS dependencies.
+# ────────────────────────────────────────────────────────────────────
+
+file_template
+    template
+        <!doctype html>
+        <html lang="en">
+        <head>
+          <meta charset="utf-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <title>${escapeHtml context.title}</title>
+          <style>
+            *, *::before, *::after { box-sizing: border-box; }
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+              background: #0f0f12; color: #e6e6e6;
+              margin: 0; padding: 16px;
+              line-height: 1.45;
+            }
+            h2 { margin: 0 0 12px; font-size: 1.05em; letter-spacing: -0.01em; }
+            .w-card {
+              background: #1a1a20;
+              border: 1px solid #2a2a33;
+              border-radius: 12px;
+              padding: 16px;
+              margin-bottom: 14px;
+              box-shadow: 0 4px 18px rgba(0,0,0,0.35);
+            }
+            /* Weather */
+            .w-weather-head { display: flex; justify-content: space-between; align-items: center; }
+            .w-temp { display: flex; align-items: baseline; gap: 4px; margin: 4px 0; }
+            .w-temp-value { font-size: 2.6em; font-weight: 600; color: #4ef; }
+            .w-temp-unit  { font-size: 1.3em; color: #888; }
+            .w-condition { color: #aaa; margin-bottom: 12px; }
+            .w-forecast { display: grid; grid-template-columns: repeat(auto-fit, minmax(56px, 1fr)); gap: 8px; }
+            .w-day { text-align: center; padding: 8px 4px; background: #14141a; border-radius: 6px; }
+            .w-day-name { font-size: 0.85em; color: #aaa; margin-bottom: 4px; }
+            .w-day-hi   { color: #4ef; font-weight: 600; }
+            .w-day-lo   { color: #888; font-size: 0.85em; }
+            /* Chart */
+            .w-bars { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+            .w-bars li {
+              display: grid; grid-template-columns: 90px 1fr 50px;
+              align-items: center; gap: 8px;
+              padding: 4px 2px; border-radius: 4px;
+              transition: background 120ms;
+            }
+            .w-bars li.w-hover { background: #2a2a33; }
+            .w-bar-label { color: #aaa; font-size: 0.9em; }
+            .w-bar { height: 10px; background: linear-gradient(90deg, #4ef, #4bf); border-radius: 5px; min-width: 4px; transition: width 220ms ease-out; }
+            .w-bar-value { text-align: right; font-variant-numeric: tabular-nums; color: #fff; font-weight: 600; }
+            /* Product */
+            .w-product-meta { display: flex; gap: 12px; margin-bottom: 8px; }
+            .w-price  { color: #4ef; font-weight: 600; }
+            .w-rating { color: #fb4; }
+            .w-summary { color: #aaa; margin: 0; }
+          </style>
+        </head>
+        <body>
+          ${body}
+        </body>
+        </html>
+    end
+end
+
+# ────────────────────────────────────────────────────────────────────
+# Library command — the entry point an MCP server (or `capy` CLI)
+# uses to render a script into a self-contained HTML widget.
+# ────────────────────────────────────────────────────────────────────
+
+command "render"
+    description "Render a widget script to a self-contained HTML page."
+    let out    = (compile context.arg0)
+    let target = "${context.arg0}.html"
+    write_file target out
+    print "wrote ${target}"
+end

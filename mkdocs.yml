@@ -60,6 +60,7 @@ nav:
   # both lanes.
   - For AI agents:
     - Overview & workflow patterns: ai-agents.md
+    - "MCP Apps / AI widgets": mcp-widgets.md
     - Integration cookbook: cookbook-ai.md
     - MCP server: mcp.md
     - One-page LLM brief: CAPY_FOR_LLMS.md
@@ -110,6 +111,7 @@ nav:
     - Compile a library to a standalone binary: compiling-libraries.md
     - "Compile cookbook (CLI, WASM, Docker, npm, …)": cookbook-compile.md
     - MCP server (for AI agents): mcp.md
+    - "MCP Apps / AI widgets": mcp-widgets.md
     - AI integration cookbook: cookbook-ai.md
     - Capy for AI agents (overview): ai-agents.md
     - One-page LLM brief: CAPY_FOR_LLMS.md

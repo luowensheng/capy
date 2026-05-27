@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MCP Widget</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      background: #0f0f12; color: #e6e6e6;
+      margin: 0; padding: 16px;
+      line-height: 1.45;
+    }
+    h2 { margin: 0 0 12px; font-size: 1.05em; letter-spacing: -0.01em; }
+    .w-card {
+      background: #1a1a20;
+      border: 1px solid #2a2a33;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.35);
+    }
+    /* Weather */
+    .w-weather-head { display: flex; justify-content: space-between; align-items: center; }
+    .w-temp { display: flex; align-items: baseline; gap: 4px; margin: 4px 0; }
+    .w-temp-value { font-size: 2.6em; font-weight: 600; color: #4ef; }
+    .w-temp-unit  { font-size: 1.3em; color: #888; }
+    .w-condition { color: #aaa; margin-bottom: 12px; }
+    .w-forecast { display: grid; grid-template-columns: repeat(auto-fit, minmax(56px, 1fr)); gap: 8px; }
+    .w-day { text-align: center; padding: 8px 4px; background: #14141a; border-radius: 6px; }
+    .w-day-name { font-size: 0.85em; color: #aaa; margin-bottom: 4px; }
+    .w-day-hi   { color: #4ef; font-weight: 600; }
+    .w-day-lo   { color: #888; font-size: 0.85em; }
+    /* Chart */
+    .w-bars { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+    .w-bars li {
+      display: grid; grid-template-columns: 90px 1fr 50px;
+      align-items: center; gap: 8px;
+      padding: 4px 2px; border-radius: 4px;
+      transition: background 120ms;
+    }
+    .w-bars li.w-hover { background: #2a2a33; }
+    .w-bar-label { color: #aaa; font-size: 0.9em; }
+    .w-bar { height: 10px; background: linear-gradient(90deg, #4ef, #4bf); border-radius: 5px; min-width: 4px; transition: width 220ms ease-out; }
+    .w-bar-value { text-align: right; font-variant-numeric: tabular-nums; color: #fff; font-weight: 600; }
+    /* Product */
+    .w-product-meta { display: flex; gap: 12px; margin-bottom: 8px; }
+    .w-price  { color: #4ef; font-weight: 600; }
+    .w-rating { color: #fb4; }
+    .w-summary { color: #aaa; margin: 0; }
+  </style>
+</head>
+<body>
+  <div class="w-card w-weather">
+  <div class="w-weather-head">
+    <h2>San Francisco</h2>
+  </div>
+  <div class="w-temp">
+  <span class="w-temp-value">68</span><span class="w-temp-unit">°F</span>
+</div>
+<div class="w-condition">Partly cloudy</div>
+<div class="w-forecast"><div class="w-day">
+  <div class="w-day-name">Mon</div>
+  <div class="w-day-hi">70°</div>
+  <div class="w-day-lo">55°</div>
+</div>
+<div class="w-day">
+  <div class="w-day-name">Tue</div>
+  <div class="w-day-hi">68°</div>
+  <div class="w-day-lo">53°</div>
+</div>
+<div class="w-day">
+  <div class="w-day-name">Wed</div>
+  <div class="w-day-hi">72°</div>
+  <div class="w-day-lo">56°</div>
+</div>
+<div class="w-day">
+  <div class="w-day-name">Thu</div>
+  <div class="w-day-hi">75°</div>
+  <div class="w-day-lo">58°</div>
+</div>
+<div class="w-day">
+  <div class="w-day-name">Fri</div>
+  <div class="w-day-hi">71°</div>
+  <div class="w-day-lo">54°</div>
+</div>
+</div>
+
+</div>
+<div class="w-card w-chart">
+  <h2>Sales by quarter</h2>
+  <ul class="w-bars"><li data-value="120">
+  <span class="w-bar-label">Q1</span>
+  <span class="w-bar"></span>
+  <span class="w-bar-value">120</span>
+</li>
+<li data-value="185">
+  <span class="w-bar-label">Q2</span>
+  <span class="w-bar"></span>
+  <span class="w-bar-value">185</span>
+</li>
+<li data-value="142">
+  <span class="w-bar-label">Q3</span>
+  <span class="w-bar"></span>
+  <span class="w-bar-value">142</span>
+</li>
+<li data-value="230">
+  <span class="w-bar-label">Q4</span>
+  <span class="w-bar"></span>
+  <span class="w-bar-value">230</span>
+</li>
+</ul>
+</div>
+<script>
+  (function () {
+    const card = document.currentScript.previousElementSibling;
+    const bars = card.querySelectorAll('.w-bars li');
+    let max = 0;
+    bars.forEach(li => max = Math.max(max, +li.dataset.value));
+    bars.forEach(li => {
+      const bar = li.querySelector('.w-bar');
+      bar.style.width = (100 * (+li.dataset.value) / max) + '%';
+      li.addEventListener('mouseenter', () => li.classList.add('w-hover'));
+      li.addEventListener('mouseleave', () => li.classList.remove('w-hover'));
+    });
+  })();
+</script>
+<div class="w-card w-product">
+  <h2>Wireless Headphones</h2>
+  <div class="w-product-meta">
+    <span class="w-price">$129</span>
+    <span class="w-rating">★ 4.6</span>
+  </div>
+  <p class="w-summary">Active noise cancelling, 30-hour battery, USB-C.</p>
+
+</div>
+
+</body>
+</html>
