@@ -17,6 +17,45 @@ directory if you want to clone and run them yourself.
 
 ---
 
+## 📈 Math plots — plotting equations from a one-line DSL
+
+A tiny DSL (`plot "sin(x)" … end`) turns into a self-contained HTML
+page with canvas plots, axes, and an inline plotter. Showcases every
+primitive shipped in this release: `template … end` sugar, the
+`${escapeHtml}` / `${decoded}` helpers, UTF-8 prose in titles, and
+`context.plots` accumulation. The library also ships a `command
+"run"` block so `capy math-plots run page.plots` writes the HTML
+next to the source and opens it in the browser.
+
+```
+title "A few familiar shapes"
+
+plot "sin(x)"
+    domain -6.28 6.28
+    color "#4ef"
+end
+
+plot "sin(x) + 0.5*sin(3*x) + 0.25*sin(5*x)"
+    domain -6.28 6.28
+    color "#f4b"
+end
+
+plot "exp(-x*x)"
+    domain -3 3
+    color "#bf4"
+    samples 400
+end
+```
+
+Rendered live below:
+
+<iframe src="assets/demos/math-plots.html" sandbox="allow-scripts allow-same-origin" style="width: 100%; height: 540px; border: 0; border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.18); display: block; margin: 18px 0 24px;" title="Math plots rendered live from a Capy source"></iframe>
+
+Full library + script: [`samples/math-plots/`](https://github.com/luowensheng/capy/tree/main/samples/math-plots).
+Walk-through of every primitive it uses: [What's new](whats-new.md).
+
+---
+
 ## 🏡 Capy for everyday things — no coding needed
 
 These four demos use vocabularies designed for ordinary tasks: a

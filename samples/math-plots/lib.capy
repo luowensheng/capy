@@ -1,0 +1,207 @@
+# math-plots — a tiny DSL for math equation plots.
+# Every `plot "EXPR" … end` block turns into a <canvas> + a single
+# `drawPlot(…)` call. The Capy library is the entire grammar; the
+# generated HTML is a self-contained, server-free page.
+#
+# Showcases every feature shipped in this release:
+#   • template … end — sugar for the multi-line HTML literals
+#   • ${decoded x}   — recover the user-intended expression text
+#   • ${escapeHtml}  — neutralise HTML-special chars in the caption
+#   • UTF-8 in prose — captions, titles, expressions can contain
+#                       em-dashes / Greek letters / etc.
+#   • context accumulation for the per-page plot count
+name        "mathplots"
+version     "0.1.0"
+description "A tiny DSL for math equation plots."
+extension   "html"
+output_file "plots.html"
+
+context
+    title "Math plots"
+    plots []
+end
+
+function title
+    arg literal "title"
+    arg capture name string
+    set context.title (decoded name)
+end
+
+# `plot "EXPR" … end` — open a plot block. The inner body emits JS
+# key-value lines that flow into a single `{…}` options object.
+function plot
+    arg literal "plot"
+    arg capture expr string
+    block_closer end
+    append context.plots (decoded expr)
+    template
+        <figure class="plot">
+          <canvas width="640" height="320"></canvas>
+          <figcaption>y = <code>${escapeHtml (decoded expr)}</code></figcaption>
+        </figure>
+        <script>
+          drawPlot(
+            document.currentScript.previousElementSibling.querySelector('canvas'),
+            ${toQuoted (decoded expr)},
+            { ${body} }
+          );
+        </script>
+    end
+end
+
+# Inner-options handlers. Each emits a single JS object entry.
+function domain
+    arg literal "domain"
+    arg capture min any
+    arg capture max any
+    template
+        xmin: ${min}, xmax: ${max},
+    end
+end
+
+function color
+    arg literal "color"
+    arg capture c string
+    template
+        color: ${toQuoted (decoded c)},
+    end
+end
+
+function samples
+    arg literal "samples"
+    arg capture n any
+    template
+        samples: ${n},
+    end
+end
+
+function end
+end
+
+file_template
+    template
+        <!doctype html>
+        <html lang="en">
+        <head>
+          <meta charset="utf-8" />
+          <title>${escapeHtml context.title}</title>
+          <style>
+            * { box-sizing: border-box; }
+            body {
+              font-family: -apple-system, system-ui, sans-serif;
+              background: #0f0f12; color: #eee;
+              margin: 0; padding: 32px;
+              max-width: 720px; margin-inline: auto;
+            }
+            h1 { margin-top: 0; letter-spacing: -0.02em; }
+            .plot {
+              background: #1a1a20; padding: 16px;
+              border-radius: 12px; margin: 0 0 18px;
+              box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+            }
+            canvas {
+              display: block; background: #000;
+              border-radius: 8px; width: 100%; height: auto;
+            }
+            figcaption {
+              margin-top: 10px;
+              font-family: ui-monospace, "SF Mono", monospace;
+              color: #4ef;
+              font-size: 0.95em;
+            }
+            code { background: rgba(78,238,255,0.06); padding: 1px 6px; border-radius: 4px; }
+            .meta { color: #888; font-size: 0.9em; margin-top: 24px; }
+          </style>
+        </head>
+        <body>
+          <h1>${escapeHtml context.title}</h1>
+          ${body}
+          <p class="meta">Rendered from a Capy source. No server.</p>
+          <script>
+            function drawPlot(canvas, expr, opts) {
+              const ctx = canvas.getContext('2d');
+              const W = canvas.width, H = canvas.height;
+              const { xmin = -6.28, xmax = 6.28,
+                      color = '#4ef', samples = 240 } = opts;
+              let fn;
+              try {
+                fn = new Function('x',
+                  'const {sin,cos,tan,exp,log,sqrt,abs,pow,floor,ceil,round,min,max,PI,E} = Math;' +
+                  'return (' + expr + ');');
+              } catch (err) {
+                ctx.fillStyle = '#f88';
+                ctx.font = '14px monospace';
+                ctx.fillText('parse error: ' + err.message, 12, 24);
+                return;
+              }
+              const pts = [];
+              let ymin = Infinity, ymax = -Infinity;
+              for (let i = 0; i <= samples; i++) {
+                const x = xmin + (xmax - xmin) * i / samples;
+                let y;
+                try { y = fn(x); } catch { y = NaN; }
+                if (Number.isFinite(y)) {
+                  if (y < ymin) ymin = y;
+                  if (y > ymax) ymax = y;
+                }
+                pts.push([x, y]);
+              }
+              if (!Number.isFinite(ymin) || ymin === ymax) {
+                ymin = -1; ymax = 1;
+              }
+              const yrange = ymax - ymin;
+              const pad = Math.max(yrange * 0.1, 0.001);
+              ymin -= pad; ymax += pad;
+              const xpad = 12, ypad = 12;
+              const sx = x => xpad + (W - 2*xpad) * (x - xmin) / (xmax - xmin);
+              const sy = y => H - ypad - (H - 2*ypad) * (y - ymin) / (ymax - ymin);
+              // axes
+              ctx.strokeStyle = '#333';
+              ctx.lineWidth = 1;
+              ctx.beginPath();
+              if (ymin <= 0 && ymax >= 0) {
+                const y0 = sy(0);
+                ctx.moveTo(xpad, y0); ctx.lineTo(W - xpad, y0);
+              }
+              if (xmin <= 0 && xmax >= 0) {
+                const x0 = sx(0);
+                ctx.moveTo(x0, ypad); ctx.lineTo(x0, H - ypad);
+              }
+              ctx.stroke();
+              // curve
+              ctx.strokeStyle = color;
+              ctx.lineWidth = 2;
+              ctx.lineJoin = 'round';
+              ctx.beginPath();
+              let started = false;
+              for (const [x, y] of pts) {
+                if (!Number.isFinite(y)) { started = false; continue; }
+                const px = sx(x), py = sy(y);
+                if (!started) { ctx.moveTo(px, py); started = true; }
+                else { ctx.lineTo(px, py); }
+              }
+              ctx.stroke();
+            }
+          </script>
+        </body>
+        </html>
+    end
+end
+
+command "run"
+    description "Render plots to plots.html and open in the default browser."
+    let out    = (compile context.arg0)
+    let target = "${context.arg0}.html"
+    write_file target out
+    print "wrote ${target}"
+    let host_os = (os)
+    if host_os == "darwin"
+        exec "open" target
+    end
+    if host_os == "linux"
+        exec "xdg-open" target
+    end
+    if host_os == "windows"
+        exec "cmd" "/c" "start" "" target
+    end
+end

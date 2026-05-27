@@ -1,0 +1,28 @@
+title "A few familiar shapes"
+
+plot "sin(x)"
+    domain -6.28 6.28
+    color "#4ef"
+end
+
+plot "sin(x) + 0.5*sin(3*x) + 0.25*sin(5*x)"
+    domain -6.28 6.28
+    color "#f4b"
+end
+
+plot "x*x"
+    domain -3 3
+    color "#fb4"
+end
+
+plot "exp(-x*x)"
+    domain -3 3
+    color "#bf4"
+    samples 400
+end
+
+plot "sin(5*x) / x"
+    domain -10 10
+    color "#4bf"
+    samples 600
+end

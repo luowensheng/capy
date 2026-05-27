@@ -28,6 +28,254 @@ Plus a few smaller correctness fixes (source-absolute column tracking,
 
 ---
 
+## A flagship demo: math equation plots
+
+Every primitive composes in [`samples/math-plots/`](https://github.com/luowensheng/capy/tree/main/samples/math-plots).
+The library takes a one-line DSL —
+
+```
+title "A few familiar shapes"
+
+plot "sin(x)"
+    domain -6.28 6.28
+    color "#4ef"
+end
+
+plot "exp(-x*x)"
+    domain -3 3
+    color "#bf4"
+    samples 400
+end
+```
+
+— and produces a self-contained HTML page with canvas plots and a
+small inline plotter. **Live preview** (rendered by the actual
+library committed to this repo):
+
+<iframe src="assets/demos/math-plots.html" sandbox="allow-scripts allow-same-origin" style="width: 100%; height: 540px; border: 0; border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.18); display: block; margin: 18px 0 24px;" title="Math plots rendered live from a Capy source"></iframe>
+
+The library uses every new primitive in concert:
+
+- **`template … end` sugar** for the multi-line HTML literals (the
+  page template AND the per-plot `<figure>` block);
+- **`${escapeHtml (decoded expr)}`** to render the expression
+  safely in the figure caption — `sin(x*<thing>)` won't inject
+  markup;
+- **`${decoded expr}`** to recover the user-intended expression
+  for JS evaluation;
+- **context accumulation** (`append context.plots …`) tracks every
+  plot for an end-of-page summary;
+- **UTF-8 in prose** for the page title and captions (works with
+  Greek letters, em-dashes, accented descriptions out of the box);
+- A `command "run"` block compiles the script, writes the HTML
+  next to it, and opens the default browser — `capy math-plots run
+  page.plots` is the entire workflow.
+
+If you have the repo:
+
+```sh
+cd samples/math-plots
+capy run lib.capy script.capy > plots.html && open plots.html
+```
+
+---
+
+## Copy-paste snippets for each new primitive
+
+Want to see each feature in isolation? The snippets below all
+compile against today's `capy` and produce the output shown.
+
+### `template … end` sugar
+
+```
+function card
+    arg literal "card"
+    arg capture title string
+    block_closer end
+    template
+        <div class="card">
+          <h3>${escapeHtml (decoded title)}</h3>
+          <div>${indent 2 body}</div>
+        </div>
+    end
+end
+
+function p
+    arg literal "p"
+    arg capture text string
+    template
+        <p>${escapeHtml (decoded text)}</p>
+    end
+end
+
+function end
+end
+```
+
+Input:
+
+```
+card "Hello"
+    p "First line of body."
+    p "Second line, with <markup> & quotes."
+end
+```
+
+Output:
+
+```html
+<div class="card">
+  <h3>Hello</h3>
+  <div>  <p>First line of body.</p>
+  <p>Second line, with &lt;markup&gt; &amp; quotes.</p>
+</div>
+</div>
+```
+
+### `block_verbatim` — raw code blocks
+
+```
+function pre
+    arg capture lang ident
+    block_verbatim end
+    template
+        <pre><code class="language-${lang}">${escapeHtml body}</code></pre>
+    end
+end
+
+function end
+end
+```
+
+Input:
+
+```
+pre go
+    func main() {
+        fmt.Println("hello & world")
+    }
+end
+```
+
+Output:
+
+```html
+<pre><code class="language-go">func main() {
+    fmt.Println(&quot;hello &amp; world&quot;)
+}
+</code></pre>
+```
+
+### Group types — `[label](url)`, `**bold**`
+
+```
+type Bracketed
+    group_open  "["
+    group_close "]"
+end
+
+type Parens
+    group_open  "("
+    group_close ")"
+end
+
+type Bold
+    group_open  "**"
+    group_close "**"
+end
+
+function link
+    arg literal "link"
+    arg capture text Bracketed
+    arg capture url  Parens
+    template
+        <a href="${escapeHtml url}">${escapeHtml text}</a>
+    end
+end
+
+function bold
+    arg literal "bold"
+    arg capture text Bold
+    template
+        <strong>${escapeHtml text}</strong>
+    end
+end
+```
+
+Input:
+
+```
+link [Al the Alien](https://example.com/alien)
+bold **important text**
+```
+
+Output:
+
+```html
+<a href="https://example.com/alien">Al the Alien</a>
+<strong>important text</strong>
+```
+
+### Multi-line user-script backticks + `${decoded …}`
+
+```
+function p
+    arg literal "p"
+    arg capture text string
+    template
+        <p>${escapeHtml (decoded text)}</p>
+    end
+end
+```
+
+Input — a single `p` call spans three source lines:
+
+```
+p `This is
+a multi-line paragraph
+written with backticks.`
+```
+
+Output:
+
+```html
+<p>This is
+a multi-line paragraph
+written with backticks.</p>
+```
+
+### UTF-8 in bare prose
+
+```
+function prose_line
+    bare
+    arg capture content tail
+    template
+        <p>${content}</p>
+    end
+end
+```
+
+Input:
+
+```
+Each line — yes, with em-dashes — becomes a paragraph.
+Café au lait with naïve crème brûlée
+北京 上海 东京
+🎉 emoji works too 🚀
+```
+
+Output:
+
+```html
+<p>Each line — yes, with em-dashes — becomes a paragraph.</p>
+<p>Café au lait with naïve crème brûlée</p>
+<p>北京 上海 东京</p>
+<p>🎉 emoji works too 🚀</p>
+```
+
+---
+
 ## 1. UTF-8 in bare prose
 
 **Before:** the lexer walked the source byte-by-byte, so any

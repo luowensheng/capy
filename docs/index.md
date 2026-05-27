@@ -122,6 +122,25 @@ event handlers. 226 lines of working JS generated.</p>
 
 <div class="show-card" markdown>
 <div class="show-card-head" markdown>
+<div class="show-card-eyebrow">MATH</div>
+<h3>Math plots — one DSL line per curve</h3>
+<p><code>plot "sin(x)" … end</code> → a self-contained HTML page with
+five canvas plots, axes, and an inline plotter. Demonstrates the
+new <code>template … end</code> sugar, <code>${escapeHtml}</code>,
+and <code>${decoded}</code> composing to drive a JS render at
+runtime.</p>
+</div>
+<div class="canvas" markdown>
+<iframe src="assets/demos/math-plots.html" sandbox="allow-scripts allow-same-origin" style="width: 100%; max-width: 480px; height: 320px; border: 1px solid #333; border-radius: 6px; background: #0a0a14;" title="Math plots"></iframe>
+</div>
+<div class="footer">
+<a href="whats-new/">See the new primitives →</a>
+<code>samples/math-plots</code>
+</div>
+</div>
+
+<div class="show-card" markdown>
+<div class="show-card-head" markdown>
 <div class="show-card-eyebrow">3D</div>
 <h3>Three.js scene — interactive 3D</h3>
 <p>~25 declarative lines (meshes + abstract motions + `click` / `key` /
