@@ -693,6 +693,35 @@ state accumulation in `context.cards`.
 
 ---
 
+## Bonus: `#!/usr/bin/env -S capy --lib …` shebang scripts
+
+Capy strips a leading `#!` line before lexing, so any `.capy` /
+`.recipe` / `.greet` / `.<your-ext>` file with a shebang is
+directly executable on Linux and macOS:
+
+```
+#!/usr/bin/env -S capy --lib greet
+greet "world"
+greet "from a shebang script"
+```
+
+```sh
+chmod +x hello.greet
+./hello.greet
+# → Hello from greet, world!
+#   Hello from greet, from a shebang script!
+```
+
+Works with the system `capy` binary or a standalone `capy build`
+output. Four shebang forms with trade-offs (`env -S`, plain `env`,
+absolute path, built-binary path) are documented in the
+[compile cookbook §12](cookbook-compile.md#recipe-12-shebang-scripts-greet-files-that-run-themselves).
+Built standalone binaries automatically suppress the
+"library not on CAPY_LIBS" trust warning since the library is
+embedded in the binary — `chmod +x script.greet` and ship it.
+
+---
+
 ## Smaller correctness fixes that ship with the above
 
 ### Source-absolute column tracking

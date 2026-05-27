@@ -558,6 +558,110 @@ every user needs `capy` installed — which is itself a single
 
 ---
 
+## Recipe 12 — Shebang scripts: `.greet` files that run themselves
+
+**Scenario:** make your DSL source files directly executable so
+users `chmod +x script.greet && ./script.greet` instead of having
+to remember the `capy` invocation.
+
+Capy strips a leading `#!` line before lexing, so any of these
+shebangs work. Three forms, three trade-offs:
+
+### Form A: `env -S` (most portable, recommended)
+
+```
+#!/usr/bin/env -S capy --lib greet
+greet "world"
+```
+
+```sh
+chmod +x hello.greet
+./hello.greet
+# → Hello from greet, world!
+```
+
+Works on macOS (any modern version) and Linux (GNU coreutils 8.30+
+ships `env -S`, which is every distro from 2018 onward — Ubuntu
+20.04+, Debian 11+, RHEL/Rocky 9+, Alpine 3.16+). The `-S` ("split
+string") flag lets `env` see `capy --lib greet` as two arguments.
+
+### Form B: `env` without `-S`
+
+```
+#!/usr/bin/env capy --lib greet
+greet "world"
+```
+
+Works on macOS (it splits on whitespace by default) and on Linux
+distros with GNU env 8.30+. Older Linux (CentOS 7, Ubuntu 18.04)
+would treat `"capy --lib greet"` as a single binary name and fail.
+Prefer Form A unless you control the deployment.
+
+### Form C: Absolute path (no `env`)
+
+```
+#!/usr/local/bin/capy --lib greet
+greet "world"
+```
+
+Most portable — no `env` quirks — but hard-codes the path to the
+`capy` binary. Use for internal tooling where everyone has the
+same install location.
+
+### Form D: Standalone binary (no `capy` required)
+
+After [Recipe 1 / 2](#recipe-1-ship-a-cli-to-your-team-multi-target-tarball)
+ships a built `greet` binary, the shebang invokes the binary
+directly:
+
+```
+#!/usr/local/bin/greet run
+greet "world"
+```
+
+The user doesn't need `capy` installed; the library is embedded in
+the `greet` binary. The trust warning that fires for "library not
+on CAPY_LIBS" is automatically suppressed in built standalone
+binaries — they set `CAPY_TRUST=1` internally because the embedded
+library is the binary's identity.
+
+### `PATH` and library resolution
+
+For Forms A–C the library must be discoverable. Either:
+
+- Drop it on `CAPY_LIBS` (`~/.capy/libs/greet.capy`), or
+- Run the script from a directory that contains `greet.capy` (CWD
+  is part of the default search path), or
+- Use the `--lib /absolute/path/to/lib.capy` form to pin a
+  specific file.
+
+For Form D the binary IS the library — no resolution needed.
+
+### Putting it together
+
+```sh
+# Install once, system-wide.
+sudo cp capy /usr/local/bin/capy
+sudo mkdir -p /usr/local/share/capy/libs
+sudo cp greet.capy /usr/local/share/capy/libs/
+export CAPY_LIBS=/usr/local/share/capy/libs
+
+# Now any user can write:
+cat > /tmp/hello.greet <<'EOF'
+#!/usr/bin/env -S capy --lib greet
+greet "world"
+EOF
+chmod +x /tmp/hello.greet
+/tmp/hello.greet
+# → Hello from greet, world!
+```
+
+The file is now indistinguishable from a Python / Ruby / Lua
+script as far as the OS is concerned — execute permission flag +
+shebang, the kernel does the rest.
+
+---
+
 ## When to pick which recipe
 
 | You want… | Recipe |
@@ -572,6 +676,7 @@ every user needs `capy` installed — which is itself a single
 | Cross-OS CI for your library | 8 (test matrix) |
 | Reproducible, signed builds | 10 (`-trimpath` + minisign) |
 | Lowest-friction internal sharing | 11 (just ship the `.capy` file) |
+| Source files that run themselves (`./script.greet`) | 12 (shebang scripts) |
 
 ---
 

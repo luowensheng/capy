@@ -1,0 +1,2 @@
+Hello from greet, world!
+Hello from greet, shebang scripts!

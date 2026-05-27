@@ -1,0 +1,3 @@
+#!/usr/bin/env -S capy --lib greet
+greet "world"
+greet "shebang scripts"

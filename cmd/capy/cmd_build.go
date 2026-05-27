@@ -168,6 +168,11 @@ func buildMainGo(libName, libSrc string) string {
 		"\t\tprintUsage()\n" +
 		"\t\treturn\n" +
 		"\t}\n" +
+		"\t// The library is EMBEDDED in this binary; the user already\n" +
+		"\t// trusted it by running the binary. Suppress the\n" +
+		"\t// \"not on CAPY_LIBS\" warning that would otherwise fire\n" +
+		"\t// for the temp-file path.\n" +
+		"\tos.Setenv(\"CAPY_TRUST\", \"1\")\n" +
 		"\tf, err := os.CreateTemp(\"\", \"capy-lib-*.capy\")\n" +
 		"\tif err != nil { fmt.Fprintln(os.Stderr, err); os.Exit(1) }\n" +
 		"\tdefer os.Remove(f.Name())\n" +

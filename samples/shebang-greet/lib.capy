@@ -1,0 +1,21 @@
+# shebang-greet — a `.greet` DSL whose source files are directly
+# executable via `#!/usr/bin/env -S capy --lib greet`. Capy strips
+# the leading shebang before lexing, so the rest of the script
+# parses as normal.
+name        "greet"
+version     "0.1.0"
+description "A tiny greet DSL that runs as a shebang script."
+extension   "txt"
+
+function greet
+    arg literal "greet"
+    arg capture who string
+    write `Hello from greet, ${unquote who}!
+`
+end
+
+command "run"
+    description "Compile and print to stdout."
+    let out = (compile context.arg0)
+    print out
+end
