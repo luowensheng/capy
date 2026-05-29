@@ -102,6 +102,72 @@ func TestEmbed_ReportsErrors(t *testing.T) {
 	}
 }
 
+func TestEmbed_Introspect(t *testing.T) {
+	lib, err := capy.NewLibrary(`
+extension html
+
+comments
+    line "#"
+end
+
+function link
+    description "An anchor."
+    arg literal "link"
+    arg capture text string "Visible label."
+    arg capture url string "Destination URL."
+    write ` + "`<a href=${url}>${text}</a>`" + `
+end
+
+function pre
+    arg capture lang ident
+    block_verbatim end
+    write ` + "`<pre>${body}</pre>`" + `
+end
+
+function end
+end
+`)
+	if err != nil {
+		t.Fatalf("compile: %v", err)
+	}
+
+	fns := lib.Introspect()
+	byName := map[string]capy.FunctionInfo{}
+	for _, f := range fns {
+		byName[f.Name] = f
+	}
+
+	link, ok := byName["link"]
+	if !ok {
+		t.Fatal("link not introspected")
+	}
+	if link.Description != "An anchor." {
+		t.Errorf("link description = %q", link.Description)
+	}
+	if len(link.Args) != 3 {
+		t.Fatalf("link args = %d, want 3", len(link.Args))
+	}
+	if link.Args[0].Kind != "literal" || link.Args[0].Value != "link" {
+		t.Errorf("arg0 = %+v", link.Args[0])
+	}
+	if link.Args[1].Kind != "capture" || link.Args[1].Name != "text" ||
+		link.Args[1].Type != "string" || link.Args[1].Description != "Visible label." {
+		t.Errorf("arg1 = %+v", link.Args[1])
+	}
+
+	pre, ok := byName["pre"]
+	if !ok {
+		t.Fatal("pre not introspected")
+	}
+	if pre.Block != "verbatim:end" {
+		t.Errorf("pre block = %q, want verbatim:end", pre.Block)
+	}
+
+	if got := lib.CommentMarkers(); len(got) != 1 || got[0] != "#" {
+		t.Errorf("comment markers = %v, want [#]", got)
+	}
+}
+
 // ExampleNewLibrary demonstrates the canonical embedding pattern: define a
 // tiny DSL inline, then run user sources against it — all in pure Go, no
 // external binary or library files.

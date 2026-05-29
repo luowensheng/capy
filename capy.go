@@ -32,6 +32,8 @@
 package capy
 
 import (
+	"sort"
+
 	"github.com/luowensheng/capy/domain"
 	"github.com/luowensheng/capy/features"
 	"github.com/luowensheng/capy/infra"
@@ -190,5 +192,89 @@ func (l *Library) FunctionNames() []string {
 	for name := range l.lib.Functions {
 		out = append(out, name)
 	}
+	return out
+}
+
+// ArgInfo describes one argument in a function's match shape.
+type ArgInfo struct {
+	// Kind is "literal" or "capture".
+	Kind string `json:"kind"`
+	// Value is the literal token text (Kind == "literal").
+	Value string `json:"value,omitempty"`
+	// Name is the capture's bound name (Kind == "capture").
+	Name string `json:"name,omitempty"`
+	// Type is the capture's declared type (Kind == "capture").
+	Type string `json:"type,omitempty"`
+	// Description is the optional trailing doc string on the arg line.
+	Description string `json:"description,omitempty"`
+}
+
+// FunctionInfo is the introspected shape of one library function —
+// everything an editor needs for autocomplete, hover-docs, syntax
+// highlighting, and a reference panel, derived from the library
+// itself rather than a hand-maintained parallel catalogue.
+type FunctionInfo struct {
+	Name        string    `json:"name"`
+	Description string    `json:"description,omitempty"`
+	Args        []ArgInfo `json:"args"`
+	// Block is "" for a non-block function, otherwise one of:
+	// "closer:NAME", "open:X close:Y", "dedent", "verbatim:NAME".
+	Block    string `json:"block,omitempty"`
+	Priority int    `json:"priority,omitempty"`
+}
+
+// Introspect returns the declared functions of the library — name,
+// description, argument shapes (literal / capture + type), block kind,
+// and priority. The data comes straight from the compiled library, so
+// an editor can derive its autocomplete / hover / highlight metadata
+// instead of hand-maintaining a parallel catalogue that silently
+// drifts. Results are sorted by function name for stable output.
+func (l *Library) Introspect() []FunctionInfo {
+	names := make([]string, 0, len(l.lib.Functions))
+	for name := range l.lib.Functions {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	out := make([]FunctionInfo, 0, len(names))
+	for _, name := range names {
+		fn := l.lib.Functions[name]
+		fi := FunctionInfo{
+			Name:        fn.Name,
+			Description: fn.Description,
+			Priority:    fn.Priority,
+		}
+		for _, a := range fn.Args {
+			fi.Args = append(fi.Args, ArgInfo{
+				Kind:        a.Kind,
+				Value:       a.Value,
+				Name:        a.Name,
+				Type:        a.Type,
+				Description: a.Description,
+			})
+		}
+		if b := fn.Block; b != nil {
+			switch {
+			case b.IsVerbatim:
+				fi.Block = "verbatim:" + b.Closer
+			case b.IsDedent:
+				fi.Block = "dedent"
+			case b.Open != "":
+				fi.Block = "open:" + b.Open + " close:" + b.Close
+			case b.Closer != "":
+				fi.Block = "closer:" + b.Closer
+			}
+		}
+		out = append(out, fi)
+	}
+	return out
+}
+
+// CommentMarkers returns the library's declared line-comment markers
+// (from its `comments` block). Empty when the library declares none —
+// in which case user scripts have no comment syntax. Useful for a
+// syntax highlighter that wants to stop hardcoding the marker set.
+func (l *Library) CommentMarkers() []string {
+	out := make([]string, len(l.lib.Comments))
+	copy(out, l.lib.Comments)
 	return out
 }
