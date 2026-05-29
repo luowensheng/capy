@@ -144,6 +144,10 @@ func (p *outerP) parseStmt() (domain.FuncCall, error) {
 			p.Restore(saved)
 			continue
 		}
+		// Stamp the statement's source position so templates can read
+		// it via the `line` / `col` render locals.
+		inst.Line = startLine
+		inst.Col = startCol
 		// Delimiter-mode block: opener is followed directly by `open` (no newline).
 		// Named-closer block: opener is followed by NEWLINE then INDENT.
 		// Non-block: opener is followed by NEWLINE.

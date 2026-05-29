@@ -19,6 +19,12 @@ type FuncCall struct {
 	Captures map[string]CaptureValue
 	Body     *Block    // when Func.Block != nil
 	Closer   *FuncCall // when Func.Block != nil
+	// Line / Col are the 1-indexed source position of the statement's
+	// first token. Exposed to templates as the render locals `line`
+	// and `col` so a library can stamp source-mapping attributes
+	// (e.g. `data-capy-line="${line}"`) onto emitted output.
+	Line int
+	Col  int
 }
 
 // CaptureValue is the bound value for a named capture in a matched FuncCall.

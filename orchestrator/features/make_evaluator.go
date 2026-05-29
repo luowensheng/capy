@@ -177,6 +177,8 @@ func (e *outerEval) renderTemplateAt(c domain.FuncCall, body string, depth int) 
 		"body":      body,
 		"depth":     int64(depth),
 		"top_level": depth == 0,
+		"line":      int64(c.Line),
+		"col":       int64(c.Col),
 	}
 	for k, v := range c.Captures {
 		// Templates always see the source-text form of a capture.

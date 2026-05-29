@@ -1,0 +1,23 @@
+# line-mapping — every statement exposes its source position via the
+# `line` and `col` render locals. A library opts into source↔output
+# mapping by stamping them onto emitted elements (here as
+# `data-capy-line`). The host editor can then scroll-sync or place
+# inline error underlines with `querySelector('[data-capy-line="N"]')`
+# — no source mutation, works inside every region.
+extension html
+
+function p
+    arg literal "p"
+    arg capture text string
+    template
+        <p data-capy-line="${line}" data-capy-col="${col}">${escapeHtml (decoded text)}</p>
+    end
+end
+
+function heading
+    arg literal "heading"
+    arg capture text string
+    template
+        <h2 data-capy-line="${line}">${escapeHtml (decoded text)}</h2>
+    end
+end

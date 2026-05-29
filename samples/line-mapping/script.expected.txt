@@ -1,0 +1,4 @@
+<h2 data-capy-line="1">Notes</h2>
+<p data-capy-line="2" data-capy-col="1">First paragraph.</p>
+<p data-capy-line="3" data-capy-col="1">Second paragraph.</p>
+<p data-capy-line="4" data-capy-col="1">Third paragraph.</p>
