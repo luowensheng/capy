@@ -34,11 +34,60 @@ var version = "dev"
 func main() {
 	js.Global().Set("capyRun", js.FuncOf(capyRun))
 	js.Global().Set("capyDocs", js.FuncOf(capyDocs))
+	js.Global().Set("capyIntrospect", js.FuncOf(capyIntrospect))
 	js.Global().Set("capyVersion", js.FuncOf(func(this js.Value, args []js.Value) any {
 		return version
 	}))
 	// Block forever so the module stays alive for callbacks.
 	<-make(chan struct{})
+}
+
+// capyIntrospect(libSrc) → { ok, functions:[…], comments:[…] }
+//
+// Returns the declared functions (name / description / args / block /
+// priority) and comment markers of the supplied library, so an editor
+// can derive autocomplete / hover-docs / highlighting instead of
+// hand-maintaining a parallel catalogue.
+func capyIntrospect(this js.Value, args []js.Value) any {
+	if len(args) < 1 {
+		return errResult("capyIntrospect expects (libSrc)", "")
+	}
+	libSrc := args[0].String()
+	lib, err := capy.NewLibrary(libSrc)
+	if err != nil {
+		return errResultFromErr(err, libSrc)
+	}
+	fns := lib.Introspect()
+	out := make([]any, 0, len(fns))
+	for _, fn := range fns {
+		argList := make([]any, 0, len(fn.Args))
+		for _, a := range fn.Args {
+			argList = append(argList, map[string]any{
+				"kind":        a.Kind,
+				"value":       a.Value,
+				"name":        a.Name,
+				"type":        a.Type,
+				"description": a.Description,
+			})
+		}
+		out = append(out, map[string]any{
+			"name":        fn.Name,
+			"description": fn.Description,
+			"args":        argList,
+			"block":       fn.Block,
+			"priority":    fn.Priority,
+		})
+	}
+	markers := lib.CommentMarkers()
+	jsMarkers := make([]any, len(markers))
+	for i, m := range markers {
+		jsMarkers[i] = m
+	}
+	return js.ValueOf(map[string]any{
+		"ok":        true,
+		"functions": out,
+		"comments":  jsMarkers,
+	})
 }
 
 // capyDocs(libSrc, format) → { ok, docs } or { ok:false, error, hint }
