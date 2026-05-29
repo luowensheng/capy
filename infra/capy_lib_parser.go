@@ -994,6 +994,12 @@ func (p *capyLibParser) parseFunctionBodyStatements(startIndent int) (string, er
 	// indent 0 (the function's closing `end`).
 	var raws []string
 	inBacktick := false
+	// tmplStack holds the indent of each open `template … end` block.
+	// While the stack is non-empty we're inside a template body, where
+	// a column-0 line is content (e.g. a flush-left `${indent 2 body}`)
+	// — NOT the function's closing `end`. Without this, such a line
+	// terminated body collection early (missing2.md §4a).
+	var tmplStack []int
 	for {
 		if p.lineNo >= len(p.lines) {
 			return "", p.errf("unexpected EOF inside function body")
@@ -1029,8 +1035,19 @@ func (p *capyLibParser) parseFunctionBodyStatements(startIndent int) (string, er
 		for leading < len(ln) && (ln[leading] == ' ' || ln[leading] == '\t') {
 			leading++
 		}
-		if leading == 0 {
-			// indent==0 = the function's closing `end`. Stop here.
+		// Track `template … end` nesting. A bare `template` opens a
+		// block; a bare `end` at the matching indent closes it. (Both
+		// are still collected as ordinary body lines below — the
+		// template→write rewrite happens in a later pass.)
+		if leading > 0 && strings.TrimSpace(ln) == "template" {
+			tmplStack = append(tmplStack, leading)
+		} else if len(tmplStack) > 0 && strings.TrimSpace(ln) == "end" &&
+			leading == tmplStack[len(tmplStack)-1] {
+			tmplStack = tmplStack[:len(tmplStack)-1]
+		}
+		if leading == 0 && len(tmplStack) == 0 {
+			// indent==0 outside any template body = the function's
+			// closing `end`. Stop here.
 			break
 		}
 		raws = append(raws, ln)

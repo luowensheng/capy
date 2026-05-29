@@ -19,7 +19,9 @@ function card
     template
         <div class="card">
           <h3>${escapeHtml (decoded title)}</h3>
-          <div class="body">${indent 2 body}</div>
+          <div class="body">
+${indent 4 body}
+          </div>
         </div>
     end
 end
