@@ -11,3 +11,9 @@ text:    "tab\\there"
 unquote: tab\\there
 decoded: tab	here
 ---
+text:    "<div class=\\\"card\\\">\\n  body\\n</div>"
+unquote: <div class=\\\"card\\\">\\n  body\\n</div>
+decoded: <div class="card">
+  body
+</div>
+---

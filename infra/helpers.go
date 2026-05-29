@@ -211,27 +211,19 @@ var funcs = map[string]any{
 	// `${unquote text}`.
 	"decoded": func(s any) string {
 		text := toStringAny(s)
-		quoted := text
-		// strconv.Unquote needs surrounding quotes. If the input
-		// already starts/ends with a single/double/backtick quote we
-		// can hand it straight in; otherwise wrap once.
-		if len(text) < 2 || !(text[0] == '"' && text[len(text)-1] == '"') {
-			quoted = "\"" + text + "\""
+		// A `string` capture's text is the strconv.Quote'd source form
+		// (ExprToText quotes the StringLit), so it carries TWO escape
+		// layers: the Quote layer + the user's own source escapes. Peel
+		// the Quote layer with strconv.Unquote (always valid Go-string
+		// syntax, so this never fails for a real string capture), then
+		// run the lenient byte scanner for the residual user escapes —
+		// the scanner tolerates bare `"` (the §4c bug) which strconv
+		// can't. If Unquote fails (e.g. a bare-ident capture, or an
+		// already-decoded value), fall straight through to the scanner.
+		if unq, err := strconv.Unquote(text); err == nil {
+			return decodeEscapes(unq)
 		}
-		// First pass: decode the outer level.
-		if v, err := strconv.Unquote(quoted); err == nil {
-			// If the result STILL contains `\"`-style escapes (which
-			// happens when the source was lexed with byte-preserved
-			// escapes), do a second pass to decode them.
-			if strings.Contains(v, `\"`) || strings.Contains(v, `\\`) ||
-				strings.Contains(v, `\n`) || strings.Contains(v, `\t`) {
-				if v2, err2 := strconv.Unquote("\"" + v + "\""); err2 == nil {
-					return v2
-				}
-			}
-			return v
-		}
-		return text
+		return decodeEscapes(text)
 	},
 	// toPyLit formats any value as a Python literal.
 	"toPyLit": pyLit,
@@ -411,4 +403,77 @@ func toStringAny(v any) string {
 		return x
 	}
 	return fmt.Sprintf("%v", v)
+}
+
+// decodeEscapes resolves Go-style escape sequences in a string WITHOUT
+// using strconv.Unquote — so it never chokes on a bare (unescaped) `"`
+// the way `"` + text + `"` + Unquote does. That bare-quote case is
+// ubiquitous in HTML (`class="…"`) and was the reason `${decoded src}`
+// left literal `\n` behind when the captured string contained a quote.
+//
+// One layer of matched surrounding quotes (", ', or `) is stripped
+// first if present. Then the body is scanned byte-by-byte:
+//
+//	\n \t \r \\ \" \' \`  → the obvious single char
+//	\xNN                  → one byte
+//	\uNNNN / \UNNNNNNNN   → the UTF-8 encoding of the rune
+//	\<other>              → the literal next char (lenient)
+//
+// Anything that isn't a recognised escape is copied verbatim,
+// including stray quotes.
+func decodeEscapes(s string) string {
+	if len(s) >= 2 {
+		if q := s[0]; (q == '"' || q == '\'' || q == '`') && s[len(s)-1] == q {
+			s = s[1 : len(s)-1]
+		}
+	}
+	if !strings.ContainsRune(s, '\\') {
+		return s
+	}
+	var b strings.Builder
+	b.Grow(len(s))
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if c != '\\' || i+1 >= len(s) {
+			b.WriteByte(c)
+			continue
+		}
+		i++
+		switch e := s[i]; e {
+		case 'n':
+			b.WriteByte('\n')
+		case 't':
+			b.WriteByte('\t')
+		case 'r':
+			b.WriteByte('\r')
+		case '\\', '"', '\'', '`':
+			b.WriteByte(e)
+		case 'x':
+			if i+2 < len(s) {
+				if v, err := strconv.ParseUint(s[i+1:i+3], 16, 8); err == nil {
+					b.WriteByte(byte(v))
+					i += 2
+					continue
+				}
+			}
+			b.WriteByte(e)
+		case 'u', 'U':
+			n := 4
+			if e == 'U' {
+				n = 8
+			}
+			if i+n < len(s) {
+				if v, err := strconv.ParseUint(s[i+1:i+1+n], 16, 32); err == nil {
+					b.WriteRune(rune(v))
+					i += n
+					continue
+				}
+			}
+			b.WriteByte(e)
+		default:
+			// Unknown escape — keep the next char literally (lenient).
+			b.WriteByte(e)
+		}
+	}
+	return b.String()
 }
