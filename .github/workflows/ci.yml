@@ -68,5 +68,5 @@ jobs:
       - name: build
         run: go build -o capy ./cmd/capy
       - name: smoke test
-        run: ./capy run samples/transpile-py/lib.yaml samples/transpile-py/script.capy
+        run: ./capy run samples/transpile-py/lib.capy samples/transpile-py/script.capy
         shell: bash
