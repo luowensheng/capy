@@ -1,0 +1,13 @@
+section "Entrées"
+    dish "Crème brûlée" "$8" Vanilla custard with a caramelised sugar crust.
+    dish "Naïve salad" "$7" Café greens, olive oil, a pinch of sel de mer.
+end
+
+section "メイン · 主菜"
+    dish "ラーメン" "¥900" 醤油 broth, soft egg, spring onion.
+    dish "北京烤鸭" "¥1200" Crisp roast duck with thin pancakes.
+end
+
+section "Dessert 🍮"
+    dish "Gelato 🍦" "€4" Pistachio & stracciatella — made fresh daily.
+end

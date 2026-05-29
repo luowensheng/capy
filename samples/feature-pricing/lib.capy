@@ -1,0 +1,52 @@
+# feature-pricing — pricing tiers with optional trailing args.
+# `tier "Pro" "$29"` works; `tier "Pro" "$29" "/yr" "Buy now"` overrides
+# the period and CTA. One function replaces a family of near-duplicates.
+extension html
+output_file ""
+
+context
+    tiers []
+end
+
+function tier
+    arg literal "tier"
+    arg capture name string
+    arg capture price string
+    arg capture period string default "/mo"
+    arg capture cta string default "Choose plan"
+    block_closer end
+    append context.tiers (decoded name)
+    template
+        <section class="tier" data-capy-line="${line}">
+          <h2>${escapeHtml (decoded name)}</h2>
+          <p class="price">${escapeHtml (decoded price)}<span>${escapeHtml (decoded period)}</span></p>
+          <ul>
+${indent 4 body}
+          </ul>
+          <button>${escapeHtml (decoded cta)}</button>
+        </section>
+    end
+end
+
+function feature
+    arg literal "feature"
+    arg capture text string
+    template
+        <li>${escapeHtml (decoded text)}</li>
+    end
+end
+
+function end
+end
+
+file_template
+    template
+        <!doctype html>
+        <html><head><meta charset="utf-8"><title>Pricing</title></head>
+        <body>
+          <h1>Pricing</h1>
+          <div class="grid">${body}</div>
+          <footer>${len context.tiers} plans.</footer>
+        </body></html>
+    end
+end

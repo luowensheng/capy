@@ -1,0 +1,15 @@
+release "v2.0.0" "2026-05-29"
+    change "Optional args with defaults" added
+    change "Introspection API for editors" added
+    change "decoded now round-trips embedded quotes" fixed
+    upgrade
+        go get example.com/capy@v2.0.0
+        # tidy after bumping the dependency
+        go mod tidy
+    end
+end
+
+release "v1.4.0" "2026-04-10"
+    change "block_verbatim preserves blank & comment lines" fixed
+    change "Dropped the YAML library format" removed
+end

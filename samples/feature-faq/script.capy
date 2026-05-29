@@ -1,0 +1,11 @@
+q "What is Capy?"
+    a "A target-agnostic transpiler — your DSL, your output."
+end
+
+q "Does it handle \"quotes\" & <markup>?" open
+    a "Yes. Captured prose is decoded then HTML-escaped, so \"quotes\" and <tags> render as text."
+end
+
+q "Can I omit the open/closed flag?"
+    a "Yes — the trailing arg has a default of \"closed\"."
+end

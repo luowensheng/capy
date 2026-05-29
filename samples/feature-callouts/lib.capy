@@ -1,0 +1,37 @@
+# feature-callouts — admonition callouts (note / tip / warning).
+# The `kind` is an optional trailing arg defaulting to "note", so
+# `callout "Heads up"` and `callout "Danger" warning` both work.
+extension html
+output_file ""
+
+function callout
+    arg literal "callout"
+    arg capture title string
+    arg capture kind string default "note"
+    block_closer end
+    template
+        <aside class="callout callout-${decoded kind}" data-capy-line="${line}">
+          <p class="callout-title">${escapeHtml (decoded title)}</p>
+${indent 2 body}
+        </aside>
+    end
+end
+
+function line
+    arg literal "line"
+    arg capture text string
+    template
+        <p>${escapeHtml (decoded text)}</p>
+    end
+end
+
+function end
+end
+
+file_template
+    template
+        <!doctype html>
+        <html><head><meta charset="utf-8"><title>Callouts</title></head>
+        <body>${body}</body></html>
+    end
+end

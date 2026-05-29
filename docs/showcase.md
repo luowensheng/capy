@@ -12,8 +12,45 @@ below the code** so you can see exactly what comes out.
 For non-renderable targets (Python, SQL, JSON, …) you see the
 source-and-generated pair.
 
-All 50 demos live in the [`samples/`](https://github.com/luowensheng/capy/tree/main/samples)
+All demos live in the [`samples/`](https://github.com/luowensheng/capy/tree/main/samples)
 directory if you want to clone and run them yourself.
+
+---
+
+## ✨ New-feature showcase — 21 examples in the playground
+
+The round-1 and round-2 language features each ship with a focused,
+runnable example. They're grouped under the **✨ Features** category at
+the top of the [playground](playground.md) dropdown — pick one, read
+the source, edit it live, and watch the output change. Every example
+below is a real `samples/<id>/` directory with a golden-tested output.
+
+| Example | Feature it shows off |
+|---|---|
+| [`template-sugar`](https://github.com/luowensheng/capy/tree/main/samples/template-sugar) | `template … end` instead of multi-line backtick `write` literals |
+| [`optional-args`](https://github.com/luowensheng/capy/tree/main/samples/optional-args) | trailing capture with a `default` — one function, many call shapes |
+| [`line-mapping`](https://github.com/luowensheng/capy/tree/main/samples/line-mapping) | `${line}` / `${col}` render locals for source↔output mapping |
+| [`string-decoded`](https://github.com/luowensheng/capy/tree/main/samples/string-decoded) | `${decoded}` round-trips `\n` / `\t` and embedded `\"` quotes |
+| [`verbatim-pre`](https://github.com/luowensheng/capy/tree/main/samples/verbatim-pre) | `block_verbatim` — raw byte-fidelity code blocks |
+| [`backtick-codespan`](https://github.com/luowensheng/capy/tree/main/samples/backtick-codespan) | escapable backticks so `` \`code\` `` survives inside a capture |
+| [`utf8-prose`](https://github.com/luowensheng/capy/tree/main/samples/utf8-prose) | bare UTF-8 prose (accents, CJK, emoji) — no quoting |
+| [`multiline-strings`](https://github.com/luowensheng/capy/tree/main/samples/multiline-strings) | multi-line backtick captures in user scripts |
+| [`inline-markdown`](https://github.com/luowensheng/capy/tree/main/samples/inline-markdown) | group types — `link [text](url)`, `bold **x**`, `strike ~~x~~` |
+| [`feature-faq`](https://github.com/luowensheng/capy/tree/main/samples/feature-faq) | FAQ: optional `open` flag + `template` + decode/escape |
+| [`feature-pricing`](https://github.com/luowensheng/capy/tree/main/samples/feature-pricing) | pricing tiers with optional period / CTA defaults |
+| [`feature-callouts`](https://github.com/luowensheng/capy/tree/main/samples/feature-callouts) | note / tip / warning callouts via one optional arg |
+| [`feature-svg-badge`](https://github.com/luowensheng/capy/tree/main/samples/feature-svg-badge) | inline SVG captured verbatim, byte-for-byte |
+| [`feature-menu-i18n`](https://github.com/luowensheng/capy/tree/main/samples/feature-menu-i18n) | multilingual menu — UTF-8 prose + `tail` capture |
+| [`feature-changelog`](https://github.com/luowensheng/capy/tree/main/samples/feature-changelog) | release notes: `${line}` + optional `kind` + verbatim block |
+| [`feature-social-card`](https://github.com/luowensheng/capy/tree/main/samples/feature-social-card) | social preview cards with an optional `theme` |
+| [`feature-stepper`](https://github.com/luowensheng/capy/tree/main/samples/feature-stepper) | onboarding stepper stamping `${line}` for scroll-sync |
+| [`feature-glossary`](https://github.com/luowensheng/capy/tree/main/samples/feature-glossary) | definition list: multi-line backticks + code spans |
+| [`feature-quiz`](https://github.com/luowensheng/capy/tree/main/samples/feature-quiz) | multiple-choice quiz with an optional `correct` flag |
+| [`mcp-widgets`](https://github.com/luowensheng/capy/tree/main/samples/mcp-widgets) | nested blocks + templates + decode/escape + context, together |
+| [`math-plots`](https://github.com/luowensheng/capy/tree/main/samples/math-plots) | `template … end` + canvas plots (rendered live below) |
+
+[Open the playground → ](playground.md) and choose the **✨ Features**
+category. New to the language features? Start with [What's new](whats-new.md).
 
 ---
 

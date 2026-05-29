@@ -1,0 +1,29 @@
+# feature-svg-badge — `badge … end` captures a raw SVG body verbatim
+# (block_verbatim), so angle brackets, attributes and blank lines are
+# preserved byte-for-byte with zero escaping. The label line above it
+# is ordinary captured prose.
+extension html
+output_file ""
+
+function badge
+    arg literal "badge"
+    arg capture label string
+    block_verbatim end
+    template
+        <figure class="badge" data-capy-line="${line}">
+          <figcaption>${escapeHtml (decoded label)}</figcaption>
+          ${body}
+        </figure>
+    end
+end
+
+function end
+end
+
+file_template
+    template
+        <!doctype html>
+        <html><head><meta charset="utf-8"><title>Badges</title></head>
+        <body>${body}</body></html>
+    end
+end

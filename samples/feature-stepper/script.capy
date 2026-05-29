@@ -1,0 +1,15 @@
+step "Install the CLI" done
+    detail "Grab the binary or `go install` it."
+end
+
+step "Write a library" done
+    detail "Declare your DSL's functions in lib.capy."
+end
+
+step "Write a script"
+    detail "Author content in your new DSL — quotes & <markup> are safe."
+end
+
+step "Render & ship"
+    detail "Run `capy run lib.capy script.capy` and deploy the output."
+end

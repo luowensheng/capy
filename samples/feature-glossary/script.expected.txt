@@ -1,0 +1,16 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Glossary</title></head>
+<body>
+  <h1>Glossary</h1>
+  <dl><dt data-capy-line="1">Library</dt>
+<dd>The set of functions that define a DSL.
+Run `capy run lib.capy script.capy` to apply it.</dd>
+<dt data-capy-line="3">Capture</dt>
+<dd>A typed slot in a function signature — e.g. a
+`string` capture binds the next quoted argument.</dd>
+<dt data-capy-line="5">Verbatim block</dt>
+<dd>A body captured as raw bytes; blank lines
+and `#` comment lines survive untouched.</dd>
+</dl>
+  <footer>3 terms.</footer>
+</body></html>

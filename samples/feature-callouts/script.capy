@@ -1,0 +1,11 @@
+callout "Good to know"
+    line "The kind defaults to \"note\" when omitted."
+end
+
+callout "Pro tip" tip
+    line "Pass a trailing word to pick the style — no extra function needed."
+end
+
+callout "Careful!" warning
+    line "Quotes & <markup> in the body are escaped: <script> is inert."
+end

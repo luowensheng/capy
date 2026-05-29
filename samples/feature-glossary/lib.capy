@@ -1,0 +1,33 @@
+# feature-glossary — a definition-list DSL. The definition body is a
+# multi-line backtick capture (user-script backticks now span lines),
+# and a backtick code span like \`capy run\` survives inside it thanks
+# to the escapable-backtick rule. `${decoded}` resolves the escapes.
+extension html
+output_file ""
+
+context
+    terms []
+end
+
+function term
+    arg literal "term"
+    arg capture name string
+    arg capture body string
+    append context.terms (decoded name)
+    template
+        <dt data-capy-line="${line}">${escapeHtml (decoded name)}</dt>
+        <dd>${escapeHtml (decoded body)}</dd>
+    end
+end
+
+file_template
+    template
+        <!doctype html>
+        <html><head><meta charset="utf-8"><title>Glossary</title></head>
+        <body>
+          <h1>Glossary</h1>
+          <dl>${body}</dl>
+          <footer>${len context.terms} terms.</footer>
+        </body></html>
+    end
+end

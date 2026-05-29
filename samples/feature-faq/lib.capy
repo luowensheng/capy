@@ -1,0 +1,51 @@
+# feature-faq — an FAQ DSL built from round-2 features:
+#   • `template … end`        — no backtick bookkeeping
+#   • optional arg + default  — `q "…" open` toggles <details open>
+#   • ${decoded} / ${escapeHtml} — quotes & markup in prose survive
+extension html
+output_file ""
+
+context
+    items []
+end
+
+function q
+    arg literal "q"
+    arg capture question string
+    arg capture state string default "closed"
+    block_closer end
+    append context.items (decoded question)
+    template
+        <details data-capy-line="${line}" class="faq-${decoded state}">
+          <summary>${escapeHtml (decoded question)}</summary>
+          <div class="answer">
+${indent 4 body}
+          </div>
+        </details>
+    end
+end
+
+function a
+    arg literal "a"
+    arg capture text string
+    template
+        <p>${escapeHtml (decoded text)}</p>
+    end
+end
+
+function end
+end
+
+file_template
+    template
+        <!doctype html>
+        <html lang="en">
+        <head><meta charset="utf-8"><title>FAQ</title></head>
+        <body>
+          <h1>Frequently asked questions</h1>
+          ${body}
+          <footer>${len context.items} questions answered.</footer>
+        </body>
+        </html>
+    end
+end

@@ -1,0 +1,52 @@
+# feature-menu-i18n — UTF-8 prose flows through the lexer untouched:
+# accented Latin, CJK and emoji all tokenise as ordinary idents, so a
+# restaurant menu reads naturally in any language. `dish` keeps the
+# name as a string capture (preserving punctuation) and reassembles the
+# free-text description with a `tail` capture.
+extension html
+output_file ""
+
+context
+    count 0
+end
+
+function section
+    arg literal "section"
+    arg capture title string
+    block_closer end
+    template
+        <section data-capy-line="${line}">
+          <h2>${escapeHtml (decoded title)}</h2>
+          <dl>
+${indent 4 body}
+          </dl>
+        </section>
+    end
+end
+
+function dish
+    arg literal "dish"
+    arg capture name string
+    arg capture price string
+    arg capture desc tail
+    set context.count (add context.count 1)
+    template
+        <dt>${escapeHtml (decoded name)} — ${escapeHtml (decoded price)}</dt>
+        <dd>${escapeHtml desc}</dd>
+    end
+end
+
+function end
+end
+
+file_template
+    template
+        <!doctype html>
+        <html lang="mul"><head><meta charset="utf-8"><title>Menu</title></head>
+        <body>
+          <h1>Menu · メニュー · 菜单</h1>
+          ${body}
+          <footer>${context.count} dishes.</footer>
+        </body></html>
+    end
+end

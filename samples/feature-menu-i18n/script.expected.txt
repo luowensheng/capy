@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="mul"><head><meta charset="utf-8"><title>Menu</title></head>
+<body>
+  <h1>Menu · メニュー · 菜单</h1>
+          <section data-capy-line="1">
+          <h2>Entrées</h2>
+          <dl>
+    <dt>Crème brûlée — $8</dt>
+    <dd>Vanilla custard with a caramelised sugar crust.</dd>
+    <dt>Naïve salad — $7</dt>
+    <dd>Café greens, olive oil, a pinch of sel de mer.</dd>
+
+          </dl>
+        </section>
+        <section data-capy-line="6">
+          <h2>メイン · 主菜</h2>
+          <dl>
+    <dt>ラーメン — ¥900</dt>
+    <dd>醤油 broth, soft egg, spring onion.</dd>
+    <dt>北京烤鸭 — ¥1200</dt>
+    <dd>Crisp roast duck with thin pancakes.</dd>
+
+          </dl>
+        </section>
+        <section data-capy-line="11">
+          <h2>Dessert 🍮</h2>
+          <dl>
+    <dt>Gelato 🍦 — €4</dt>
+    <dd>Pistachio &amp; stracciatella — made fresh daily.</dd>
+
+          </dl>
+        </section>
+
+  <footer>5 dishes.</footer>
+</body></html>

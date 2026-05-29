@@ -1,0 +1,16 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Social cards</title></head>
+<body>        <article class="social social-light" data-capy-line="1">
+          <h2>Capy 2.0 — &quot;write once&quot; DSLs</h2>
+  <p class="meta">Optional args, introspection &amp; verbatim blocks land today.</p>
+  <span class="tag">#capy</span>
+  <span class="tag">#transpiler</span>
+
+        </article>
+        <article class="social social-dark" data-capy-line="7">
+          <h2>Dark mode preview</h2>
+  <p class="meta">Pass a trailing theme word; it defaults to &quot;light&quot; otherwise.</p>
+  <span class="tag">#ux</span>
+
+        </article>
+</body></html>

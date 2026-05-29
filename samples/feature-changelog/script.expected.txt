@@ -1,0 +1,28 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Changelog</title></head>
+<body>
+  <h1>Changelog</h1>
+          <section class="release" data-capy-line="1">
+          <h2>v2.0.0 <small>2026-05-29</small></h2>
+          <ul>
+    <li class="c-added"><span>added</span> Optional args with defaults</li>
+    <li class="c-added"><span>added</span> Introspection API for editors</li>
+    <li class="c-fixed"><span>fixed</span> decoded now round-trips embedded quotes</li>
+    <pre class="upgrade"><code>go get example.com/capy@v2.0.0
+    # tidy after bumping the dependency
+    go mod tidy
+    </code></pre>
+
+          </ul>
+        </section>
+        <section class="release" data-capy-line="12">
+          <h2>v1.4.0 <small>2026-04-10</small></h2>
+          <ul>
+    <li class="c-fixed"><span>fixed</span> block_verbatim preserves blank &amp; comment lines</li>
+    <li class="c-removed"><span>removed</span> Dropped the YAML library format</li>
+
+          </ul>
+        </section>
+
+  <footer>2 releases.</footer>
+</body></html>

@@ -1,0 +1,21 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Quiz</title></head>
+<body>
+  <h1>Quiz</h1>
+  <form>        <fieldset class="q" data-capy-line="1">
+          <legend>What does Capy compile?</legend>
+  <label class="choice choice-correct"><input type="radio"> Whatever your library targets</label>
+  <label class="choice choice-wrong"><input type="radio"> Only HTML</label>
+  <label class="choice choice-wrong"><input type="radio"> Only Python</label>
+
+        </fieldset>
+        <fieldset class="q" data-capy-line="7">
+          <legend>How do you mark an optional argument?</legend>
+  <label class="choice choice-correct"><input type="radio"> With a trailing &quot;default&quot; clause</label>
+  <label class="choice choice-wrong"><input type="radio"> It&#39;s impossible</label>
+  <label class="choice choice-wrong"><input type="radio"> By wrapping it in &lt;optional&gt;</label>
+
+        </fieldset>
+</form>
+  <footer>2 questions.</footer>
+</body></html>

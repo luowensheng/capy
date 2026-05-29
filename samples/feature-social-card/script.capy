@@ -1,0 +1,10 @@
+card "Capy 2.0 — \"write once\" DSLs"
+    meta "Optional args, introspection & verbatim blocks land today."
+    tag "capy"
+    tag "transpiler"
+end
+
+card "Dark mode preview" dark
+    meta "Pass a trailing theme word; it defaults to \"light\" otherwise."
+    tag "ux"
+end

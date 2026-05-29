@@ -1,0 +1,47 @@
+# feature-stepper — a how-to / onboarding stepper. Each `step` stamps
+# its own source line via the `${line}` render local, so a host editor
+# can scroll-sync the rendered step to the source line. An optional
+# `status` arg (default "todo") flips styling without a second function.
+extension html
+output_file ""
+
+context
+    steps []
+end
+
+function step
+    arg literal "step"
+    arg capture title string
+    arg capture status string default "todo"
+    block_closer end
+    append context.steps (decoded title)
+    template
+        <li class="step step-${decoded status}" data-capy-line="${line}">
+          <h3>${escapeHtml (decoded title)}</h3>
+${indent 2 body}
+        </li>
+    end
+end
+
+function detail
+    arg literal "detail"
+    arg capture text string
+    template
+        <p>${escapeHtml (decoded text)}</p>
+    end
+end
+
+function end
+end
+
+file_template
+    template
+        <!doctype html>
+        <html><head><meta charset="utf-8"><title>Getting started</title></head>
+        <body>
+          <h1>Getting started</h1>
+          <ol class="stepper">${body}</ol>
+          <footer>${len context.steps} steps.</footer>
+        </body></html>
+    end
+end

@@ -1,0 +1,21 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Badges</title></head>
+<body><figure class="badge" data-capy-line="1">
+  <figcaption>Build passing</figcaption>
+  <svg width="120" height="24" xmlns="http://www.w3.org/2000/svg">
+  <rect width="120" height="24" rx="4" fill="#2da44e"/>
+  <text x="60" y="16" fill="#fff" font-size="12"
+        text-anchor="middle">passing</text>
+</svg>
+
+</figure>
+<figure class="badge" data-capy-line="9">
+  <figcaption>Coverage</figcaption>
+  <svg width="120" height="24" xmlns="http://www.w3.org/2000/svg">
+  <rect width="120" height="24" rx="4" fill="#0969da"/>
+  <text x="60" y="16" fill="#fff" font-size="12"
+        text-anchor="middle">98%</text>
+</svg>
+
+</figure>
+</body></html>

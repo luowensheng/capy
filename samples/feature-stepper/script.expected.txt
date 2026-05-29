@@ -1,0 +1,27 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Getting started</title></head>
+<body>
+  <h1>Getting started</h1>
+  <ol class="stepper">        <li class="step step-done" data-capy-line="1">
+          <h3>Install the CLI</h3>
+  <p>Grab the binary or `go install` it.</p>
+
+        </li>
+        <li class="step step-done" data-capy-line="5">
+          <h3>Write a library</h3>
+  <p>Declare your DSL&#39;s functions in lib.capy.</p>
+
+        </li>
+        <li class="step step-todo" data-capy-line="9">
+          <h3>Write a script</h3>
+  <p>Author content in your new DSL — quotes &amp; &lt;markup&gt; are safe.</p>
+
+        </li>
+        <li class="step step-todo" data-capy-line="13">
+          <h3>Render &amp; ship</h3>
+  <p>Run `capy run lib.capy script.capy` and deploy the output.</p>
+
+        </li>
+</ol>
+  <footer>4 steps.</footer>
+</body></html>

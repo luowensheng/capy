@@ -1,0 +1,11 @@
+question "What does Capy compile?"
+    choice "Whatever your library targets" correct
+    choice "Only HTML"
+    choice "Only Python"
+end
+
+question "How do you mark an optional argument?"
+    choice "With a trailing \"default\" clause" correct
+    choice "It's impossible"
+    choice "By wrapping it in <optional>"
+end

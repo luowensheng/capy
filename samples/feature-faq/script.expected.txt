@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>FAQ</title></head>
+<body>
+  <h1>Frequently asked questions</h1>
+          <details data-capy-line="1" class="faq-closed">
+          <summary>What is Capy?</summary>
+          <div class="answer">
+    <p>A target-agnostic transpiler — your DSL, your output.</p>
+
+          </div>
+        </details>
+        <details data-capy-line="5" class="faq-open">
+          <summary>Does it handle &quot;quotes&quot; &amp; &lt;markup&gt;?</summary>
+          <div class="answer">
+    <p>Yes. Captured prose is decoded then HTML-escaped, so &quot;quotes&quot; and &lt;tags&gt; render as text.</p>
+
+          </div>
+        </details>
+        <details data-capy-line="9" class="faq-closed">
+          <summary>Can I omit the open/closed flag?</summary>
+          <div class="answer">
+    <p>Yes — the trailing arg has a default of &quot;closed&quot;.</p>
+
+          </div>
+        </details>
+
+  <footer>3 questions answered.</footer>
+</body>
+</html>

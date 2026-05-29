@@ -1,0 +1,46 @@
+# feature-quiz — a multiple-choice quiz DSL. `choice "…" correct`
+# marks the right answer via an optional trailing flag (default
+# "wrong"); each question stamps its source line for scroll-sync.
+extension html
+output_file ""
+
+context
+    questions 0
+end
+
+function question
+    arg literal "question"
+    arg capture prompt string
+    block_closer end
+    set context.questions (add context.questions 1)
+    template
+        <fieldset class="q" data-capy-line="${line}">
+          <legend>${escapeHtml (decoded prompt)}</legend>
+${indent 2 body}
+        </fieldset>
+    end
+end
+
+function choice
+    arg literal "choice"
+    arg capture text string
+    arg capture verdict string default "wrong"
+    template
+        <label class="choice choice-${decoded verdict}"><input type="radio"> ${escapeHtml (decoded text)}</label>
+    end
+end
+
+function end
+end
+
+file_template
+    template
+        <!doctype html>
+        <html><head><meta charset="utf-8"><title>Quiz</title></head>
+        <body>
+          <h1>Quiz</h1>
+          <form>${body}</form>
+          <footer>${context.questions} questions.</footer>
+        </body></html>
+    end
+end

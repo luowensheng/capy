@@ -1,0 +1,8 @@
+term "Library" `The set of functions that define a DSL.
+Run \`capy run lib.capy script.capy\` to apply it.`
+
+term "Capture" `A typed slot in a function signature — e.g. a
+\`string\` capture binds the next quoted argument.`
+
+term "Verbatim block" `A body captured as raw bytes; blank lines
+and \`#\` comment lines survive untouched.`

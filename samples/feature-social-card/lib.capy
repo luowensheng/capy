@@ -1,0 +1,46 @@
+# feature-social-card — Open Graph / social preview cards. Shows
+# `template … end` driving a self-contained card, `${decoded}` +
+# `${escapeHtml}` keeping arbitrary punctuation safe, and an optional
+# `theme` arg defaulting to "light".
+extension html
+output_file ""
+
+function card
+    arg literal "card"
+    arg capture title string
+    arg capture theme string default "light"
+    block_closer end
+    template
+        <article class="social social-${decoded theme}" data-capy-line="${line}">
+          <h2>${escapeHtml (decoded title)}</h2>
+${indent 2 body}
+        </article>
+    end
+end
+
+function meta
+    arg literal "meta"
+    arg capture text string
+    template
+        <p class="meta">${escapeHtml (decoded text)}</p>
+    end
+end
+
+function tag
+    arg literal "tag"
+    arg capture text string
+    template
+        <span class="tag">#${escapeHtml (decoded text)}</span>
+    end
+end
+
+function end
+end
+
+file_template
+    template
+        <!doctype html>
+        <html><head><meta charset="utf-8"><title>Social cards</title></head>
+        <body>${body}</body></html>
+    end
+end

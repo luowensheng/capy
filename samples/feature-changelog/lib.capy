@@ -1,0 +1,57 @@
+# feature-changelog — a release-notes DSL mixing several round-2
+# features: `${line}` source mapping, a verbatim code block for
+# upgrade snippets, and optional `kind` defaulting to "changed".
+extension html
+output_file ""
+
+context
+    releases []
+end
+
+function release
+    arg literal "release"
+    arg capture version string
+    arg capture date string default "unreleased"
+    block_closer end
+    append context.releases (decoded version)
+    template
+        <section class="release" data-capy-line="${line}">
+          <h2>${escapeHtml (decoded version)} <small>${escapeHtml (decoded date)}</small></h2>
+          <ul>
+${indent 4 body}
+          </ul>
+        </section>
+    end
+end
+
+function change
+    arg literal "change"
+    arg capture text string
+    arg capture kind string default "changed"
+    template
+        <li class="c-${decoded kind}"><span>${decoded kind}</span> ${escapeHtml (decoded text)}</li>
+    end
+end
+
+function upgrade
+    arg literal "upgrade"
+    block_verbatim end
+    template
+        <pre class="upgrade"><code>${escapeHtml body}</code></pre>
+    end
+end
+
+function end
+end
+
+file_template
+    template
+        <!doctype html>
+        <html><head><meta charset="utf-8"><title>Changelog</title></head>
+        <body>
+          <h1>Changelog</h1>
+          ${body}
+          <footer>${len context.releases} releases.</footer>
+        </body></html>
+    end
+end

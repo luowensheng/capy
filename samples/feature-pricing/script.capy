@@ -1,0 +1,16 @@
+tier "Starter" "$0"
+    feature "1 project"
+    feature "Community support"
+end
+
+tier "Pro" "$29"
+    feature "Unlimited projects"
+    feature "Email support"
+    feature "Custom domains"
+end
+
+tier "Team" "$290" "/yr" "Contact sales"
+    feature "Everything in Pro"
+    feature "SSO & audit logs"
+    feature "Priority support"
+end
