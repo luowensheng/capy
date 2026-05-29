@@ -217,7 +217,7 @@ func tokenizeLine(line string, lineNo int, commentMarkers []string, startCol int
 			if err != nil {
 				return nil, 0, fmt.Errorf("line %d: %v", lineNo, err)
 			}
-			toks = append(toks, domain.Token{Kind: domain.TokString, Text: s, Line: lineNo, Col: col})
+			toks = append(toks, domain.Token{Kind: domain.TokString, Text: s, Line: lineNo, Col: col, Width: n})
 			i += n
 			col += n
 		case r == '`':
@@ -225,53 +225,53 @@ func tokenizeLine(line string, lineNo int, commentMarkers []string, startCol int
 			if err != nil {
 				return nil, 0, fmt.Errorf("line %d: %v", lineNo, err)
 			}
-			toks = append(toks, domain.Token{Kind: domain.TokTemplate, Text: s, Line: lineNo, Col: col})
+			toks = append(toks, domain.Token{Kind: domain.TokTemplate, Text: s, Line: lineNo, Col: col, Width: n})
 			i += n
 			col += n
 		case r == '(':
-			toks = append(toks, domain.Token{Kind: domain.TokLParen, Text: "(", Line: lineNo, Col: col})
+			toks = append(toks, domain.Token{Kind: domain.TokLParen, Text: "(", Line: lineNo, Col: col, Width: 1})
 			i++
 			col++
 			open++
 		case r == ')':
-			toks = append(toks, domain.Token{Kind: domain.TokRParen, Text: ")", Line: lineNo, Col: col})
+			toks = append(toks, domain.Token{Kind: domain.TokRParen, Text: ")", Line: lineNo, Col: col, Width: 1})
 			i++
 			col++
 			open--
 		case r == '[':
-			toks = append(toks, domain.Token{Kind: domain.TokLBrack, Text: "[", Line: lineNo, Col: col})
+			toks = append(toks, domain.Token{Kind: domain.TokLBrack, Text: "[", Line: lineNo, Col: col, Width: 1})
 			i++
 			col++
 			open++
 		case r == ']':
-			toks = append(toks, domain.Token{Kind: domain.TokRBrack, Text: "]", Line: lineNo, Col: col})
+			toks = append(toks, domain.Token{Kind: domain.TokRBrack, Text: "]", Line: lineNo, Col: col, Width: 1})
 			i++
 			col++
 			open--
 		case r == '{':
-			toks = append(toks, domain.Token{Kind: domain.TokLBrace, Text: "{", Line: lineNo, Col: col})
+			toks = append(toks, domain.Token{Kind: domain.TokLBrace, Text: "{", Line: lineNo, Col: col, Width: 1})
 			i++
 			col++
 			open++
 		case r == '}':
-			toks = append(toks, domain.Token{Kind: domain.TokRBrace, Text: "}", Line: lineNo, Col: col})
+			toks = append(toks, domain.Token{Kind: domain.TokRBrace, Text: "}", Line: lineNo, Col: col, Width: 1})
 			i++
 			col++
 			open--
 		case unicode.IsDigit(r) || (r == '-' && i+1 < len(line) && unicode.IsDigit(rune(line[i+1])) && (i == 0 || !isPunct(line[i-1]) && line[i-1] != ' ' && line[i-1] != '\t' || true)):
 			n := readNumber(line[i:])
-			toks = append(toks, domain.Token{Kind: domain.TokNumber, Text: line[i : i+n], Line: lineNo, Col: col})
+			toks = append(toks, domain.Token{Kind: domain.TokNumber, Text: line[i : i+n], Line: lineNo, Col: col, Width: n})
 			i += n
 			col += n
 		case isIdentStart(r):
 			n := readIdent(line[i:])
 			text := line[i : i+n]
-			toks = append(toks, domain.Token{Kind: domain.TokIdent, Text: text, Line: lineNo, Col: col})
+			toks = append(toks, domain.Token{Kind: domain.TokIdent, Text: text, Line: lineNo, Col: col, Width: n})
 			i += n
 			col += n
 		case r < 0x80 && isPunct(byte(r)):
 			n := readPunct(line[i:])
-			toks = append(toks, domain.Token{Kind: domain.TokPunct, Text: line[i : i+n], Line: lineNo, Col: col})
+			toks = append(toks, domain.Token{Kind: domain.TokPunct, Text: line[i : i+n], Line: lineNo, Col: col, Width: n})
 			i += n
 			col += n
 		default:

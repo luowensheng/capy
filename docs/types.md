@@ -15,7 +15,7 @@ These are always available and don't need a `type` declaration:
 | `raw`          | An identifier OR a string token; bound as a string (no quotes).         |
 | `word`         | A shell-style **bare word** — a maximal run of adjacent tokens with no source whitespace. Captures `--oneline`, `-f`, `k8s/deploy.yaml`, `name=^web$`, `restart-api` as ONE value even though the lexer splits them on `-`, `/`, `=`, `.`. Stops at the first whitespace gap. |
 | `dotted_ident` | A dotted identifier path — `IDENT ( "." IDENT )*` — captured as one string. Lets `match err.kind` work bare instead of `match "${err.kind}"`. |
-| `tail`         | **Every** remaining token on the statement, rejoined with source-accurate spacing. One value, one-or-more tokens. Great for free-form trailing argv / CSS values. |
+| `tail`         | **Every** remaining token on the statement, rejoined with source-accurate spacing. One value, one-or-more tokens. Great for free-form trailing argv / CSS values. Quoted tokens keep their quotes, so a spaced quoted argument stays one slot: `cmd -m "fix the bug"` → `-m "fix the bug"`, not `-m fix the bug`. |
 | `string`       | A quoted string literal — or a bare ident (transpile-mode permissive).  |
 | `int`          | An integer literal — or a bare ident.                                   |
 | `float`        | A float literal — or a bare ident.                                      |

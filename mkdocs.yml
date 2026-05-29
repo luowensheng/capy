@@ -107,6 +107,7 @@ nav:
 
   # Integrate — connect Capy to other systems.
   - Integrate:
+    - Integration guide (any project): integration-guide.md
     - Embed in your Go program: embedding.md
     - Compile a library to a standalone binary: compiling-libraries.md
     - "Compile cookbook (CLI, WASM, Docker, npm, …)": cookbook-compile.md

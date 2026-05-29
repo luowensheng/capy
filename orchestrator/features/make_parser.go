@@ -440,7 +440,14 @@ func (p *outerP) captureValue(t string, stop []string) (domain.CaptureValue, err
 		// column positions so `20px` (no source whitespace) stays
 		// joined as `20px` while `1px solid red` keeps its spaces.
 		// Useful for free-form trailing values like CSS property
-		// values.
+		// values and shell-style argv.
+		//
+		// Quoted tokens are re-emitted WITH their quotes so a spaced,
+		// quoted argument survives as one slot: `git commit -m "fix the
+		// bug"` rebuilds as `commit -m "fix the bug"`, not the
+		// boundary-losing `commit -m fix the bug`. Spacing is computed
+		// from each token's source Width (which counts the quotes),
+		// independent of how long the re-emitted text is.
 		var b strings.Builder
 		prevEnd := -1
 		for {
@@ -453,8 +460,8 @@ func (p *outerP) captureValue(t string, stop []string) (domain.CaptureValue, err
 				// Preserve only as many spaces as appeared in source.
 				b.WriteString(strings.Repeat(" ", tok.Col-prevEnd))
 			}
-			b.WriteString(tok.Text)
-			prevEnd = tok.Col + len(tok.Text)
+			b.WriteString(tokenSourceText(tok))
+			prevEnd = tok.Col + tokenWidth(tok)
 		}
 		if b.Len() == 0 {
 			return domain.CaptureValue{}, fmt.Errorf("expected tail value, got end of line")
@@ -544,6 +551,55 @@ func (p *outerP) captureValue(t string, stop []string) (domain.CaptureValue, err
 		return domain.CaptureValue{}, err
 	}
 	return domain.CaptureValue{IsExpr: true, Expr: x, Text: ExprToText(x)}, nil
+}
+
+// tokenWidth returns the raw source span of a token in bytes, falling
+// back to len(Text) for tokens a lexer left Width unset on (Width is
+// authoritative for quoted strings, where Text has the quotes stripped).
+func tokenWidth(tok domain.Token) int {
+	if tok.Width > 0 {
+		return tok.Width
+	}
+	return len(tok.Text)
+}
+
+// tokenSourceText returns a token's text the way it appeared in source.
+// For string/template tokens the lexer strips the surrounding quotes from
+// Text; this re-adds them so a `tail` capture preserves the slot boundary
+// of a spaced, quoted argument. readString keeps inner escape sequences
+// verbatim, so re-wrapping is faithful; any bare quote (possible only if
+// the source used the other quote style) is escaped so the result stays
+// well-formed.
+func tokenSourceText(tok domain.Token) string {
+	switch tok.Kind {
+	case domain.TokString:
+		return requote(tok.Text, '"')
+	case domain.TokTemplate:
+		return requote(tok.Text, '`')
+	default:
+		return tok.Text
+	}
+}
+
+func requote(inner string, quote byte) string {
+	var b strings.Builder
+	b.WriteByte(quote)
+	for i := 0; i < len(inner); i++ {
+		c := inner[i]
+		if c == '\\' && i+1 < len(inner) {
+			// Preserve an existing escape sequence as-is.
+			b.WriteByte(c)
+			b.WriteByte(inner[i+1])
+			i++
+			continue
+		}
+		if c == quote {
+			b.WriteByte('\\')
+		}
+		b.WriteByte(c)
+	}
+	b.WriteByte(quote)
+	return b.String()
 }
 
 // captureGroup walks tokens between a group type's open and close

@@ -151,7 +151,7 @@ end
 | `raw`    | Identifier OR string.                                 |
 | `word`   | Shell-style bare word — a maximal run of adjacent tokens with no source whitespace. Captures `--oneline`, `k8s/deploy.yaml`, `name=^web$`, `restart-api` as ONE value. |
 | `dotted_ident` | `IDENT(.IDENT)*` captured as one string, e.g. `err.kind`. |
-| `tail`   | Every remaining token on the statement, joined with original column spacing. For free-form trailing values like `20px` or `1px solid red`. |
+| `tail`   | Every remaining token on the statement, joined with original column spacing. For free-form trailing values like `20px` or `1px solid red`. Quoted tokens keep their quotes — `-m "fix the bug"` stays one slot, not `-m fix the bug`. |
 | `string` | A quoted string — OR a bare identifier.               |
 | `int`    | An integer literal — OR a bare identifier.            |
 | `float`  | A float literal — OR a bare identifier.               |

@@ -4,6 +4,31 @@ title: What's new — engine primitives shipped in this release
 
 # What's new
 
+## Round 5 — `tail` preserves quoted slots
+
+A follow-up to the `tail` capture (Round 3, §6). Previously `tail`
+rebuilt its value from de-quoted tokens, so a spaced, quoted argument
+lost its slot boundary: `exec git commit -m "fix the bug"` collapsed to
+`commit -m fix the bug`, indistinguishable from four separate tokens.
+
+Now quoted tokens are re-emitted **with** their quotes, and inter-token
+spacing is computed from each token's true source width (which counts
+the quotes). So the boundary survives:
+
+```
+exec git commit -m "fix the bug"   →  argv = git commit -m "fix the bug"
+```
+
+A quote-aware split on the value now recovers `"fix the bug"` as one
+argument. Bare flags/paths/globs are unchanged, and no existing library
+breaks (only quoted tokens inside a `tail` change, and none of the
+samples relied on the old quote-stripping). This lets a single `tail`
+function replace a hand-written `word`-ladder for shell-style argv.
+
+Tests: [`missing_features_test.go`](https://github.com/luowensheng/capy/blob/main/missing_features_test.go) (`TestTailPreservesQuotedSlots`).
+
+---
+
 ## Round 4 — context-sensitive grammar & multi-section blocks
 
 The last two open items from the automation-DSL audit — both grammar

@@ -46,6 +46,44 @@ end
 	}
 }
 
+// §6 — `tail` collects every remaining token, and quoted tokens are
+// re-emitted WITH their quotes so a spaced, quoted argument survives as
+// one slot (perch's capy-limitations.md §6: `git commit -m "fix the bug"`
+// must NOT collapse to the boundary-losing `commit -m fix the bug`).
+func TestTailPreservesQuotedSlots(t *testing.T) {
+	lib, err := capy.NewLibrary(`
+extension txt
+function exec
+    arg literal "exec"
+    arg capture argv tail
+    write ` + bt + `[${argv}]
+` + bt + `
+end
+`)
+	if err != nil {
+		t.Fatalf("NewLibrary: %v", err)
+	}
+	cases := map[string]string{
+		// The quoted, spaced argument keeps its quotes → one slot.
+		`exec git commit -m "fix the bug"`: "[git commit -m \"fix the bug\"]\n",
+		// Bare flags/paths are untouched (no quotes added).
+		`exec git log --oneline -10`: "[git log --oneline -10]\n",
+		// An embedded escaped quote round-trips intact.
+		`exec echo "a\"b" plain`: "[echo \"a\\\"b\" plain]\n",
+		// Adjacent (no-whitespace) tokens still join with no space.
+		`exec set x=1`: "[set x=1]\n",
+	}
+	for src, want := range cases {
+		out, err := lib.Run(src)
+		if err != nil {
+			t.Fatalf("Run(%q): %v", src, err)
+		}
+		if out != want {
+			t.Errorf("Run(%q) = %q, want %q", src, out, want)
+		}
+	}
+}
+
 // §9 — `dotted_ident` consumes an IDENT(.IDENT)* chain as one value, so
 // `match err.kind` works bare instead of needing the string workaround.
 func TestDottedIdentCapture(t *testing.T) {

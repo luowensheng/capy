@@ -28,4 +28,11 @@ type Token struct {
 	Text string
 	Line int
 	Col  int
+	// Width is the raw byte width of the lexeme as it appeared in source,
+	// including any surrounding quotes for string/template tokens. Text
+	// for a string strips the quotes, so Width (not len(Text)) is the
+	// authoritative source span — `tail` uses it to compute inter-token
+	// spacing and to know a token was quoted. Zero means "unset"; consumers
+	// should fall back to len(Text).
+	Width int
 }
