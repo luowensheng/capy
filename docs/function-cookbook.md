@@ -45,36 +45,63 @@ ${toJSON (split argv " ")}    # split a string, then JSON-encode the list
 The same helpers are available in inner-DSL expressions, so
 `set context.total (add context.total n)` works identically.
 
-## Quick reference
+## Full signature reference
 
-| Function | Signature | One-liner |
-|----------|-----------|-----------|
-| [`indent`](#indent) | `indent N str` | Indent every non-blank line by N spaces |
-| [`lower`](#lower-upper) | `lower str` | Lowercase |
-| [`upper`](#lower-upper) | `upper str` | Uppercase |
-| [`pascalCase`](#pascalcase-camelcase-snakecase) | `pascalCase str` | `Display Name` → `DisplayName` |
-| [`camelCase`](#pascalcase-camelcase-snakecase) | `camelCase str` | `Display Name` → `displayName` |
-| [`snakeCase`](#pascalcase-camelcase-snakecase) | `snakeCase str` | `Display Name` → `display_name` |
-| [`dasherize`](#dasherize) | `dasherize str` | `_` → `-` (snake → kebab) |
-| [`unquote`](#unquote) | `unquote str` | Strip one layer of surrounding quotes |
-| [`unescape`](#unescape) | `unescape str` | Reverse Go string escaping |
-| [`decoded`](#decoded) | `decoded str` | User-intended string: unquote + resolve escapes |
-| [`escapeHtml`](#escapehtml) | `escapeHtml str` | Neutralise `& < > " '` for HTML |
-| [`toQuoted`](#toquoted) | `toQuoted str` | Wrap in JSON-style double quotes |
-| [`asString`](#asstring) | `asString str` | Normalise any capture to exactly one JSON string |
-| [`trimSuffix`](#trimsuffix-trimprefix) | `trimSuffix suf str` | Drop a trailing substring |
-| [`trimPrefix`](#trimsuffix-trimprefix) | `trimPrefix pre str` | Drop a leading substring |
-| [`join`](#join) | `join sep list` | Join a list with a separator |
-| [`split`](#split) | `split str sep` | Split a string into a list |
-| [`nonEmpty`](#nonempty) | `nonEmpty list` | Drop blank entries from a string list |
-| [`toJSON`](#tojson-tojsonindent) | `toJSON value` | Compact JSON |
-| [`toJSONIndent`](#tojson-tojsonindent) | `toJSONIndent value` | Pretty-printed JSON |
-| [`toPyLit`](#topylit) | `toPyLit value` | Format a value as a Python literal |
-| [`add`](#add-sub-mul) | `add a b` | Integer `a + b` |
-| [`sub`](#add-sub-mul) | `sub a b` | Integer `a - b` |
-| [`mul`](#add-sub-mul) | `mul a b` | Integer `a * b` |
-| [`percent`](#percent) | `percent n d` | `n/d * 100`, clamped to 0–100 |
-| [`stars`](#stars) | `stars n` | `n` filled stars + the rest outlined, out of 5 |
+Every helper, its **parameters with types**, **arity**, and **return
+type** — taken directly from the `funcs` map and the `ApplyHelper`
+dispatch in `infra/helpers.go`. Call order matches the parameter order
+(prefix style, space-separated). See the [type glossary](#parameter--return-types)
+below the table.
+
+| Function | Parameters (in order) | Args | Returns | Summary |
+|----------|-----------------------|:----:|---------|---------|
+| [`indent`](#indent) | `n int`, `s string` | 2 | `string` | Indent every non-blank line of `s` by `n` spaces |
+| [`lower`](#lower-upper) | `s string` | 1 | `string` | Lowercase |
+| [`upper`](#lower-upper) | `s string` | 1 | `string` | Uppercase |
+| [`pascalCase`](#pascalcase-camelcase-snakecase) | `s any` | 1 | `string` | `display name` → `DisplayName` |
+| [`camelCase`](#pascalcase-camelcase-snakecase) | `s any` | 1 | `string` | `display name` → `displayName` |
+| [`snakeCase`](#pascalcase-camelcase-snakecase) | `s any` | 1 | `string` | `display name` → `display_name` |
+| [`dasherize`](#dasherize) | `s any` | 1 | `string` | `_` → `-` (snake → kebab) |
+| [`unquote`](#unquote) | `s any` | 1 | `string` | Strip one layer of surrounding quotes |
+| [`unescape`](#unescape) | `s any` | 1 | `string` | Reverse Go string escaping (`strconv.Unquote`) |
+| [`decoded`](#decoded) | `s any` | 1 | `string` | User-intended string: unquote + resolve escapes |
+| [`escapeHtml`](#escapehtml) | `s any` | 1 | `string` | Neutralise `& < > " '` for HTML |
+| [`toQuoted`](#toquoted) | `s any` | 1 | `string` | Wrap in JSON-style double quotes |
+| [`asString`](#asstring) | `s any` | 1 | `string` | Normalise any capture to exactly one JSON string |
+| [`toPyLit`](#topylit) | `v any` | 1 | `string` | Format a value as a Python literal |
+| [`toJSON`](#tojson-tojsonindent) | `v any` | 1 | `string` | Compact JSON |
+| [`toJSONIndent`](#tojson-tojsonindent) | `v any` | 1 | `string` | Pretty-printed JSON (2-space indent) |
+| [`trimSuffix`](#trimsuffix-trimprefix) | `suffix string`, `s any` | 2 | `string` | Drop a trailing substring from `s` |
+| [`trimPrefix`](#trimsuffix-trimprefix) | `prefix string`, `s any` | 2 | `string` | Drop a leading substring from `s` |
+| [`join`](#join) | `sep string`, `items []any` | 2 | `string` | Join a list with `sep` between items |
+| [`split`](#split) | `s any`, `sep string` | 2 | `[]string` | Split `s` into a list at each `sep` |
+| [`nonEmpty`](#nonempty) | `items []string` | 1 | `[]string` | Drop blank entries from a string list |
+| [`add`](#add-sub-mul) | `a any`, `b any` | 2 | `int64` | Integer `a + b` |
+| [`sub`](#add-sub-mul) | `a any`, `b any` | 2 | `int64` | Integer `a - b` |
+| [`mul`](#add-sub-mul) | `a any`, `b any` | 2 | `int64` | Integer `a * b` |
+| [`percent`](#percent) | `n any`, `d any` | 2 | `int64` | `n / d * 100`, clamped to 0–100 |
+| [`stars`](#stars) | `n any` | 1 | `string` | `n` filled stars + the rest outlined, out of 5 |
+
+### Parameter & return types
+
+The types above are the actual Go types each helper accepts; here's what
+each means at a Capy call site:
+
+| Type | At the call site | Notes |
+|------|------------------|-------|
+| `any` | any captured value — a string capture, a number, a context value | String helpers stringify it (and most strip one surrounding quote layer themselves); numeric helpers coerce it to an integer (`int`/`int64`/`float`, or a digit-string like `"42"`). |
+| `string` | a value used as a fixed string — usually a literal you type (`","`, `".go"`) | A capture passed here is stringified first. |
+| `int` | a whole number — only `indent`'s `n` | Coerced from `int`/`int64`/`float`/digit-string. |
+| `int64` | **return** type of the arithmetic helpers | Renders as a plain integer. |
+| `[]any` / `[]string` | a **list** value | Produced by a context list you built with `set`/`append`/`range`, or by [`split`](#split). Reference it by name (`context.models`); you can't write a list literal inline. |
+
+**Arity is enforced.** Passing the wrong number of arguments is an error
+(`helper "join": expected 2 args, got 1`), so the *Args* column is exact.
+
+> **Tip — composing list helpers.** `split` returns `[]string` while
+> `join` expects `[]any`, so they don't chain directly. Use `join` on a
+> context list you built (`${join ", " context.models}`) and use `split`
+> to *drive* a loop (`for x in (split s ",")`), not to feed `join`.
 
 ---
 
