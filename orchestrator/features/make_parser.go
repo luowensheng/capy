@@ -207,6 +207,17 @@ func (p *outerP) parseStmt() (domain.FuncCall, error) {
 			continue
 		}
 		p.consumeNewlines()
+		// §5 lookahead: gate the candidate on whether an indented block
+		// follows. Lets a flat keyword (when_not_followed_by indent) and a
+		// block keyword (when_followed_by indent) share the same literal
+		// and disambiguate purely by position.
+		if fn.Lookahead != nil {
+			isIndent := p.Peek().Kind == domain.TokIndent
+			if (fn.Lookahead.RequireIndent && !isIndent) || (fn.Lookahead.ForbidIndent && isIndent) {
+				p.Restore(saved)
+				continue
+			}
+		}
 		if fn.Block != nil {
 			if fn.Block.IsVerbatim {
 				text, closer, err := p.parseVerbatimBody(fn.Block.Closer, startLine)
@@ -222,6 +233,18 @@ func (p *outerP) parseStmt() (domain.FuncCall, error) {
 				// field carries the text. The renderer surfaces this
 				// via `${body}` exactly like a parsed block body.
 				inst.Body = &domain.Block{VerbatimText: text, IsVerbatim: true}
+				inst.Closer = closer
+			} else if len(fn.Block.Sections) > 0 {
+				body, sections, closer, err := p.parseSectionedBody(fn.Block.Sections, fn.Block.Closer)
+				if err != nil {
+					if blockErr == nil {
+						blockErr = err
+					}
+					p.Restore(saved)
+					continue
+				}
+				inst.Body = body
+				inst.Sections = sections
 				inst.Closer = closer
 			} else {
 				body, closer, err := p.parseBlockBody(fn.Block.Closer)
@@ -776,4 +799,98 @@ func (p *outerP) parseBlockBody(closerName string) (domain.Block, *domain.FuncCa
 	}
 	p.consumeNewlines()
 	return body, &closerInst, nil
+}
+
+// parseIndentedRegion consumes one INDENT…DEDENT region as a nested
+// program. The caller must have already verified the next token is an
+// INDENT. Used by sectioned blocks for the main body and each section's
+// sub-body.
+func (p *outerP) parseIndentedRegion() (*domain.Block, error) {
+	if p.Peek().Kind != domain.TokIndent {
+		return nil, fmt.Errorf("line %d: expected indented body", p.Peek().Line)
+	}
+	p.Advance()
+	body, err := p.parseProgram(true, "")
+	if err != nil {
+		return nil, err
+	}
+	if p.Peek().Kind != domain.TokDedent {
+		return nil, fmt.Errorf("line %d: expected end of indented body", p.Peek().Line)
+	}
+	p.Advance()
+	return &body, nil
+}
+
+// parseSectionedBody parses a multi-section block (missing.md §8):
+//
+//	try
+//	    <main body>
+//	rescue
+//	    <rescue body>
+//	finally
+//	    <finally body>
+//	end
+//
+// The opener's main body (if any) comes first as an indented region, then
+// zero or more interior section keywords (each at the opener's indent,
+// each introducing its own indented sub-body), then the closer keyword.
+// Sections may appear in any order and any subset; each may appear at most
+// once. Returns the main body, a map of section keyword → sub-body, and
+// the matched closer FuncCall.
+func (p *outerP) parseSectionedBody(sections []string, closerName string) (*domain.Block, map[string]*domain.Block, *domain.FuncCall, error) {
+	isSection := make(map[string]bool, len(sections))
+	for _, s := range sections {
+		isSection[s] = true
+	}
+
+	var mainBody *domain.Block
+	if p.Peek().Kind == domain.TokIndent {
+		b, err := p.parseIndentedRegion()
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		mainBody = b
+	}
+
+	secBodies := map[string]*domain.Block{}
+	for {
+		tok := p.Peek()
+		if tok.Kind == domain.TokIdent && isSection[tok.Text] {
+			name := tok.Text
+			if _, dup := secBodies[name]; dup {
+				return nil, nil, nil, fmt.Errorf("line %d: duplicate section %q", tok.Line, name)
+			}
+			p.Advance()
+			if p.Peek().Kind != domain.TokNewline {
+				return nil, nil, nil, fmt.Errorf("line %d: section %q must be alone on its line", tok.Line, name)
+			}
+			p.consumeNewlines()
+			if p.Peek().Kind == domain.TokIndent {
+				b, err := p.parseIndentedRegion()
+				if err != nil {
+					return nil, nil, nil, err
+				}
+				secBodies[name] = b
+			} else {
+				secBodies[name] = &domain.Block{}
+			}
+			continue
+		}
+		// Not a section — must be the closer.
+		cp, ok := p.byName[closerName]
+		if !ok {
+			return nil, nil, nil, fmt.Errorf("library function %q (closer) not found", closerName)
+		}
+		saved := p.Save()
+		closerInst, err := p.tryMatch(cp)
+		if err != nil {
+			p.Restore(saved)
+			return nil, nil, nil, fmt.Errorf("line %d: expected closer %q or one of sections %v", tok.Line, closerName, sections)
+		}
+		if p.Peek().Kind != domain.TokNewline && p.Peek().Kind != domain.TokEOF {
+			return nil, nil, nil, fmt.Errorf("line %d: closer must end the line", p.Peek().Line)
+		}
+		p.consumeNewlines()
+		return mainBody, secBodies, &closerInst, nil
+	}
 }

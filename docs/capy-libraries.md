@@ -78,6 +78,9 @@ function <NAME>
     arg capture <NAME> <TYPE>             # capture a token: any | ident | int | string | ...
     block_closer <NAME>                   # block opener: body runs until <NAME> appears
     block_open <STR> close <STR>          # OR: explicit delimiters
+    block_sections <S>... closer <NAME>   # OR: multi-section block (try/rescue/finally)
+    when_followed_by indent               # only match when an indented body follows
+    when_not_followed_by indent           # only match when one does NOT (context-sensitive)
 
     # Function body — inner-DSL statements interleaved freely:
     write `text ${capture} ${helper x}`   # emit + ${EXPR} interpolation

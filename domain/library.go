@@ -128,6 +128,11 @@ type FuncDef struct {
 
 	Block    *BlockSpec
 	Priority int
+
+	// Lookahead, when non-nil, is a predicate the parser checks after the
+	// header matches: the candidate only applies if the token following
+	// its statement satisfies the predicate. See Lookahead (missing.md §5).
+	Lookahead *Lookahead
 }
 
 // ArgEntry is a single args-list entry with an explicit Kind discriminator.
@@ -161,6 +166,25 @@ type BlockSpec struct {
 	Close      string
 	IsDedent   bool
 	IsVerbatim bool
+	// Sections, when non-empty, makes this a multi-section block (e.g.
+	// `try … rescue … finally … end`). Each entry is an interior section
+	// keyword that appears at the opener's indent and introduces its own
+	// indented sub-body. The main body and each section body are rendered
+	// independently and exposed to the template as `${body}` and a local
+	// named after each section keyword (`${rescue}`, `${finally}`). The
+	// block is closed by Closer. Enables try/rescue/finally (missing.md §8).
+	Sections []string
+}
+
+// Lookahead gates a candidate on what follows its header, after the
+// trailing newline. It enables context-sensitive keyword reuse
+// (missing.md §5): e.g. a flat `os "X"` allowlist entry
+// (`when_not_followed_by indent`) coexisting with an `os "X"` that opens
+// an indented conditional block (`when_followed_by indent`). At most one
+// of the two fields is set.
+type Lookahead struct {
+	RequireIndent bool // when_followed_by indent
+	ForbidIndent  bool // when_not_followed_by indent
 }
 
 // PatternElement is one compiled token in the function's match shape.

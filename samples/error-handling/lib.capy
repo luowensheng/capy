@@ -1,0 +1,47 @@
+# error-handling — exercises the round-4 grammar features (missing.md):
+#   * block_sections  — a multi-section try/rescue/finally block (§8)
+#   * when_followed_by / when_not_followed_by indent — context-sensitive
+#     keyword reuse: `step "x"` is a flat line, `step "x"` + an indented
+#     body is a nested group, sharing the one `step` keyword (§5)
+extension txt
+
+comments
+    line "#"
+end
+
+# try … rescue … finally … end — each section renders independently and
+# is placed by name in the template.
+function try
+    arg literal "try"
+    block_sections rescue finally closer end
+    write `try:
+${body}rescue:
+${rescue}finally:
+${finally}`
+end
+
+function end
+end
+
+# `step "X"` followed by an indented body opens a nested group; the same
+# keyword with no indented body is a flat leaf. Pure positional
+# disambiguation — no separate keyword needed.
+function step_group
+    arg literal "step"
+    arg capture name string
+    when_followed_by indent
+    block_closer done
+    write `  [${unquote name}]
+${body}`
+end
+
+function done
+end
+
+function step_leaf
+    arg literal "step"
+    arg capture name string
+    when_not_followed_by indent
+    write `  - ${unquote name}
+`
+end

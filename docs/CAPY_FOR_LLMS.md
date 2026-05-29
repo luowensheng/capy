@@ -69,6 +69,13 @@ function <NAME>              # one DSL statement shape
     block_verbatim <NAME>    # alternative: body captured as raw source
                              # bytes (no nested parsing) until <NAME>.
                              # For code blocks, embedded HTML/SVG.
+    block_sections rescue finally closer end  # alternative: multi-section
+                             # block. Main body + each section render to
+                             # ${body} / ${rescue} / ${finally}. (try/rescue)
+    when_followed_by indent      # gate: match only if an indented block follows
+    when_not_followed_by indent  # gate: match only if one does NOT follow
+                             # (context-sensitive keyword reuse — a flat and a
+                             # block function can share one leading keyword)
 
     # Function body — sequence of inner-DSL statements:
     write `Hello, ${name}!\n`        # emit literal text + interpolations

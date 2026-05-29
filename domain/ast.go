@@ -19,6 +19,10 @@ type FuncCall struct {
 	Captures map[string]CaptureValue
 	Body     *Block    // when Func.Block != nil
 	Closer   *FuncCall // when Func.Block != nil
+	// Sections holds the parsed sub-bodies of a multi-section block
+	// (Func.Block.Sections), keyed by section keyword. Absent sections
+	// are not present in the map; the renderer defaults them to "".
+	Sections map[string]*Block
 	// Line / Col are the 1-indexed source position of the statement's
 	// first token. Exposed to templates as the render locals `line`
 	// and `col` so a library can stamp source-mapping attributes

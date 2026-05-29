@@ -151,10 +151,20 @@ func renderFunc(b *strings.Builder, fn *FuncDef) {
 	}
 
 	if fn.Block != nil {
-		if fn.Block.Closer != "" {
+		if len(fn.Block.Sections) > 0 {
+			fmt.Fprintf(b, "**Opens a multi-section block** — sections `%s`, closed by `%s`.\n\n", strings.Join(fn.Block.Sections, "`, `"), fn.Block.Closer)
+		} else if fn.Block.Closer != "" {
 			fmt.Fprintf(b, "**Opens an indented block** — body runs until `%s`.\n\n", fn.Block.Closer)
 		} else if fn.Block.Open != "" {
 			fmt.Fprintf(b, "**Opens a delimited block** — `%s` … `%s`.\n\n", fn.Block.Open, fn.Block.Close)
+		}
+	}
+	if fn.Lookahead != nil {
+		switch {
+		case fn.Lookahead.RequireIndent:
+			b.WriteString("*Matches only when followed by an indented block.*\n\n")
+		case fn.Lookahead.ForbidIndent:
+			b.WriteString("*Matches only when not followed by an indented block.*\n\n")
 		}
 	}
 	if fn.Priority > 0 {

@@ -33,6 +33,7 @@ package capy
 
 import (
 	"sort"
+	"strings"
 
 	"github.com/luowensheng/capy/domain"
 	"github.com/luowensheng/capy/features"
@@ -263,6 +264,8 @@ func (l *Library) Introspect() []FunctionInfo {
 			switch {
 			case b.IsVerbatim:
 				fi.Block = "verbatim:" + b.Closer
+			case len(b.Sections) > 0:
+				fi.Block = "sections:" + strings.Join(b.Sections, ",") + " closer:" + b.Closer
 			case b.IsDedent:
 				fi.Block = "dedent"
 			case b.Open != "":

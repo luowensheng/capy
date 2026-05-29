@@ -663,6 +663,18 @@ func (p *capyLibParser) parseFunction() (RawFunction, error) {
 				return fn, p.errf("bare takes no arguments")
 			}
 			fn.Bare = true
+		case "when_followed_by":
+			p.nextLine()
+			if len(tokens) != 2 || tokens[1] != "indent" {
+				return fn, p.errf("when_followed_by currently supports only `indent` (e.g. `when_followed_by indent`)")
+			}
+			fn.FollowedByIndent = true
+		case "when_not_followed_by":
+			p.nextLine()
+			if len(tokens) != 2 || tokens[1] != "indent" {
+				return fn, p.errf("when_not_followed_by currently supports only `indent` (e.g. `when_not_followed_by indent`)")
+			}
+			fn.NotFollowedByIndent = true
 		case "arg":
 			p.nextLine()
 			if len(tokens) < 2 {
@@ -739,6 +751,19 @@ func (p *capyLibParser) parseFunction() (RawFunction, error) {
 			}
 			block.Closer = tokens[1]
 			block.IsVerbatim = true
+			blockSet = true
+		case "block_sections":
+			// `block_sections SECTION... closer CLOSER` — a multi-section
+			// block (try/rescue/finally). Each SECTION keyword appears at
+			// the opener's indent and introduces its own indented sub-body;
+			// the block ends at CLOSER. Renders to `${body}` (main) plus a
+			// local per section (`${rescue}`, `${finally}`).
+			p.nextLine()
+			if len(tokens) < 4 || tokens[len(tokens)-2] != "closer" {
+				return fn, p.errf("block_sections SECTION... closer CLOSER (e.g. `block_sections rescue finally closer end`)")
+			}
+			block.Closer = tokens[len(tokens)-1]
+			block.Sections = append([]string(nil), tokens[1:len(tokens)-2]...)
 			blockSet = true
 		case "block_open":
 			p.nextLine()

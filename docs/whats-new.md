@@ -4,6 +4,29 @@ title: What's new — engine primitives shipped in this release
 
 # What's new
 
+## Round 4 — context-sensitive grammar & multi-section blocks
+
+The last two open items from the automation-DSL audit — both grammar
+features rather than tokenizer fixes. Additive and opt-in:
+
+| Feature | What it gives you |
+|---|---|
+| `when_followed_by indent` / `when_not_followed_by indent` | **Context-sensitive keyword reuse.** A function matches only when an indented block does (or doesn't) follow, so a flat `os "linux"` allowlist entry and an `os "…" … end` conditional block can share the one `os` keyword and disambiguate purely by position — no rename needed. |
+| `block_sections <S>... closer <NAME>` | **Multi-section blocks** — `try … rescue … finally … end`. The main body and each interior section render independently and land in the template as `${body}`, `${rescue}`, `${finally}`. Omitted sections render empty; order and subset are free. |
+
+```
+function try
+    arg literal "try"
+    block_sections rescue finally closer end
+    write `try { ${body} } rescue { ${rescue} } finally { ${finally} }`
+end
+```
+
+Tests: [`context_blocks_test.go`](https://github.com/luowensheng/capy/blob/main/context_blocks_test.go).
+Sample: [`samples/error-handling/`](https://github.com/luowensheng/capy/tree/main/samples/error-handling).
+
+---
+
 ## Round 3 — automation-DSL parser hardening
 
 A third wave, driven by building a shell-/automation-style DSL on Capy

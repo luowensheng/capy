@@ -112,6 +112,12 @@ type RawFunction struct {
 	// `write` calls. The loader parses it into the FuncDef's
 	// TemplateAST + RunAST.
 	Body string
+
+	// FollowedByIndent / NotFollowedByIndent capture the
+	// `when_followed_by indent` / `when_not_followed_by indent` lookahead
+	// predicates (missing.md §5). At most one is set.
+	FollowedByIndent    bool
+	NotFollowedByIndent bool
 }
 
 type RawBlock struct {
@@ -126,6 +132,10 @@ type RawBlock struct {
 	// parsing) until the named `Closer` keyword. Used for code blocks,
 	// embedded HTML, or anywhere the body is data not grammar.
 	IsVerbatim bool
+	// Sections: interior section keywords for a multi-section block
+	// (e.g. ["rescue","finally"]). When set, the block is closed by
+	// Closer and each section introduces its own indented sub-body.
+	Sections []string
 }
 
 // RawArg is an args-list entry. The Kind discriminator is required.

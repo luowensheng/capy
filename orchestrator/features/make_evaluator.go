@@ -137,7 +137,24 @@ func (e *outerEval) renderFuncCallAt(c domain.FuncCall, depth int) (string, erro
 			bodyOutput = s
 		}
 	}
-	out, err := e.renderTemplateAt(c, bodyOutput, depth)
+	// Multi-section blocks (try/rescue/finally): render each parsed
+	// section sub-body independently so the template can place them via a
+	// local named after the section keyword (${rescue}, ${finally}).
+	var sectionOutputs map[string]string
+	if len(c.Sections) > 0 {
+		sectionOutputs = make(map[string]string, len(c.Sections))
+		for name, blk := range c.Sections {
+			if blk == nil {
+				continue
+			}
+			s, err := e.renderBlockAt(*blk, depth+1)
+			if err != nil {
+				return "", err
+			}
+			sectionOutputs[name] = s
+		}
+	}
+	out, err := e.renderTemplateAt(c, bodyOutput, sectionOutputs, depth)
 	if err != nil {
 		return "", err
 	}
@@ -166,10 +183,10 @@ func (e *outerEval) renderFuncCallAt(c domain.FuncCall, depth int) (string, erro
 }
 
 func (e *outerEval) renderTemplate(c domain.FuncCall, body string) (string, error) {
-	return e.renderTemplateAt(c, body, e.depth)
+	return e.renderTemplateAt(c, body, nil, e.depth)
 }
 
-func (e *outerEval) renderTemplateAt(c domain.FuncCall, body string, depth int) (string, error) {
+func (e *outerEval) renderTemplateAt(c domain.FuncCall, body string, sections map[string]string, depth int) (string, error) {
 	if c.Func.TemplateAST == nil {
 		return "", nil
 	}
@@ -179,6 +196,17 @@ func (e *outerEval) renderTemplateAt(c domain.FuncCall, body string, depth int) 
 		"top_level": depth == 0,
 		"line":      int64(c.Line),
 		"col":       int64(c.Col),
+	}
+	// Seed every declared section local to "" so a template referencing
+	// `${rescue}` renders empty (not undefined) when that section is
+	// omitted at the call site, then overlay the rendered sub-bodies.
+	if c.Func.Block != nil {
+		for _, name := range c.Func.Block.Sections {
+			locals[name] = ""
+		}
+	}
+	for k, v := range sections {
+		locals[k] = v
 	}
 	for k, v := range c.Captures {
 		// Templates always see the source-text form of a capture.

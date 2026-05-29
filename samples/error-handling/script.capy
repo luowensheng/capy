@@ -1,0 +1,11 @@
+# A try/rescue/finally with nested and flat steps inside.
+try
+    step "open file"
+    step "parse"
+        step "tokenize"
+    done
+rescue
+    step "log error"
+finally
+    step "close file"
+end

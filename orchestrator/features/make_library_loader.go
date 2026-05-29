@@ -430,7 +430,13 @@ func compileFunction(name string, f infra.RawFunction, tokenize func(string) ([]
 		Priority:    f.Priority,
 	}
 	if f.Block != nil {
-		fd.Block = &domain.BlockSpec{Closer: f.Block.Closer, Open: f.Block.Open, Close: f.Block.Close, IsDedent: f.Block.IsDedent, IsVerbatim: f.Block.IsVerbatim}
+		fd.Block = &domain.BlockSpec{Closer: f.Block.Closer, Open: f.Block.Open, Close: f.Block.Close, IsDedent: f.Block.IsDedent, IsVerbatim: f.Block.IsVerbatim, Sections: f.Block.Sections}
+	}
+	if f.FollowedByIndent && f.NotFollowedByIndent {
+		return nil, fmt.Errorf("function %q: cannot set both when_followed_by and when_not_followed_by", name)
+	}
+	if f.FollowedByIndent || f.NotFollowedByIndent {
+		fd.Lookahead = &domain.Lookahead{RequireIndent: f.FollowedByIndent, ForbidIndent: f.NotFollowedByIndent}
 	}
 
 	if strings.TrimSpace(run) != "" {
