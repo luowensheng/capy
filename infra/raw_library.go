@@ -163,11 +163,17 @@ type RawArg struct {
 	// `default "…"` suffix on an `arg capture` line.
 	Optional bool
 	Default  string
-	// Repeat / Sep apply to function-typed captures (named nonterminals):
-	// Repeat is "" / "*" / "+" (set by a `*` or `+` suffix on the type);
-	// Sep is the optional separator literal from a trailing `sep "X"`.
+	// Repeat / Sep / Join apply to function-typed captures (named
+	// nonterminals): Repeat is "" / "*" / "+" (set by a `*` or `+` suffix
+	// on the type); Sep is the optional INPUT separator literal from a
+	// trailing `sep "X"` (consumed between repetitions while parsing);
+	// Join is the optional OUTPUT separator from a trailing `join "X"`
+	// (inserted between rendered sub-results). Sep and Join are
+	// independent — `sep "," join ", "` parses comma-separated input and
+	// renders a comma-space-separated list.
 	Repeat string
 	Sep    string
+	Join   string
 }
 
 type RawType struct {

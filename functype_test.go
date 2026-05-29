@@ -228,3 +228,60 @@ func TestFuncTypeExactlyOne(t *testing.T) {
 		t.Errorf("Run(wrap): expected error for missing mandatory nonterminal")
 	}
 }
+
+// joinLib exercises the `join "X"` render separator, which is independent
+// of the `sep ","` input separator: the input is comma-separated but the
+// output is inserted with " | " between rendered cells. Zero/one items
+// must NOT emit a trailing/leading separator.
+const joinLib = `
+extension txt
+
+function row
+    arg literal "row"
+    arg capture items cell* sep "," join " | "
+    write ` + bt + `[${items}]` + bt + `
+end
+
+function cell
+    arg literal "#"
+    arg capture v int
+    write ` + bt + `${v}` + bt + `
+end
+`
+
+func TestFuncTypeJoinSeparator(t *testing.T) {
+	lib, err := capy.NewLibrary(joinLib)
+	if err != nil {
+		t.Fatalf("NewLibrary: %v", err)
+	}
+	cases := map[string]string{
+		`row`:            `[]`,
+		`row #1`:         `[1]`,
+		`row #1, #2, #3`: `[1 | 2 | 3]`,
+	}
+	for src, want := range cases {
+		out, err := lib.Run(src)
+		if err != nil {
+			t.Fatalf("Run(%q): %v", src, err)
+		}
+		if got := strings.TrimSpace(out); got != want {
+			t.Errorf("Run(%q) = %q, want %q", src, got, want)
+		}
+	}
+}
+
+// `join` on a non-function-typed capture is a load-time error.
+func TestFuncTypeJoinRequiresFunctionType(t *testing.T) {
+	src := `
+extension txt
+
+function bad
+    arg literal "bad"
+    arg capture x int join ", "
+    write ` + bt + `${x}` + bt + `
+end
+`
+	if _, err := capy.NewLibrary(src); err == nil {
+		t.Errorf("expected load error for `join` on a non-function-typed capture, got nil")
+	}
+}

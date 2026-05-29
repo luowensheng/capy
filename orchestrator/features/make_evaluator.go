@@ -213,11 +213,23 @@ func (e *outerEval) renderTemplateAt(c domain.FuncCall, body string, sections ma
 		// matched sub-FuncCall and concatenate. The result is the
 		// target text the sub-construct produces.
 		if v.Sub != nil {
+			// An optional `join "X"` on the capture inserts X between the
+			// rendered sub-results (default: no separator).
+			var join string
+			for _, a := range c.Func.Args {
+				if a.Kind == "capture" && a.Name == k {
+					join = a.Join
+					break
+				}
+			}
 			var sb strings.Builder
-			for _, sub := range v.Sub {
+			for i, sub := range v.Sub {
 				s, err := e.renderFuncCallAt(sub, depth)
 				if err != nil {
 					return "", err
+				}
+				if i > 0 {
+					sb.WriteString(join)
 				}
 				sb.WriteString(s)
 			}

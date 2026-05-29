@@ -1,0 +1,4 @@
+add(a: int, b: int): int
+greet(name: string): string
+clamp(x: float, lo: float, hi: float): float
+now(): int

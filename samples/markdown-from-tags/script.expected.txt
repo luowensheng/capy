@@ -1,0 +1,6 @@
+# Capy to Markdown
+One source language, **many** targets — even *Markdown*.
+
+## Why it works
+The same sequence-closer parses the tags; the template alone decides the target.
+

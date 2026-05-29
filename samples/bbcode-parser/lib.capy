@@ -1,0 +1,54 @@
+# bbcode-parser — matched-pair tags with NON-ANGLE delimiters.
+#
+# `block_close_seq` is delimiter-agnostic: the closer is just a sequence of
+# tokens, so the same primitive that parses `<p>…</p>` parses BBCode-style
+# `[b]…[/b]`. Each tag is its own function with a LITERAL sequence closer
+# (`block_close_seq "[/b]"`) and its OWN target template — so `[b]` becomes
+# `<strong>`, `[i]` becomes `<em>`, `[quote]` becomes `<blockquote>`.
+#
+# `[url="…"]…[/url]` shows an attribute captured on the opener. Mismatched
+# nesting (`[b]…[/quote]`) is a hard parse error, because each opener can
+# only be closed by its own matching close sequence.
+extension bbcode
+
+function bold
+    arg literal "["
+    arg literal "b"
+    arg literal "]"
+    block_close_seq "[/b]"
+    write `<strong>${body}</strong>`
+end
+
+function italic
+    arg literal "["
+    arg literal "i"
+    arg literal "]"
+    block_close_seq "[/i]"
+    write `<em>${body}</em>`
+end
+
+function quote
+    arg literal "["
+    arg literal "quote"
+    arg literal "]"
+    block_close_seq "[/quote]"
+    write `<blockquote>${body}</blockquote>`
+end
+
+function url
+    arg literal "["
+    arg literal "url"
+    arg literal "="
+    arg capture href raw
+    arg literal "]"
+    block_close_seq "[/url]"
+    write `<a href="${href}">${body}</a>`
+end
+
+# Text node: a quoted string becomes escaped literal content (`raw` consumes
+# exactly one token, so the `[` that opens the next tag stays a tag).
+function text
+    bare
+    arg capture s raw
+    write `${escapeHtml s}`
+end

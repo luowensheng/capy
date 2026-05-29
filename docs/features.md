@@ -249,15 +249,22 @@ Mode-B and vice versa).
 
 A capture's type may name **another library function** instead of a
 built-in type. The capture then matches that function's shape and renders
-its template. Add a quantifier to repeat it, and `sep "X"` for a
-separator literal:
+its template. Add a quantifier to repeat it, plus two **independent**
+separators: `sep "X"` (consumed between repetitions on INPUT while
+parsing) and `join "Y"` (inserted between rendered sub-results on
+OUTPUT):
 
 | Form | Meaning |
 |------|---------|
 | `arg capture x SomeFunc` | exactly one `SomeFunc` (mandatory) |
 | `arg capture xs SomeFunc*` | zero or more |
 | `arg capture xs SomeFunc+` | one or more |
-| `arg capture xs SomeFunc+ sep ","` | one or more, comma-separated |
+| `arg capture xs SomeFunc+ sep ","` | one or more, comma-separated input |
+| `arg capture xs SomeFunc* sep "," join ", "` | comma in, `", "` out |
+
+A pure-capture nonterminal (no `arg literal`) must be declared `bare`
+to opt out of the auto-prepended name keyword. See
+[block-functions](block-functions.md#function-as-type-captures-named-nonterminals).
 
 ## CLI
 

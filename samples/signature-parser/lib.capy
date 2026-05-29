@@ -1,0 +1,43 @@
+# signature-parser — named-nonterminal repetition with `sep` + `join`.
+#
+# Parses a function-signature DSL into a typed, formatted declaration:
+#
+#   func add(a int, b int) -> int   →   add(a: int, b: int): int
+#
+# The parameter list is matched with a FUNCTION-TYPED REPETITION:
+#
+#   arg capture params param* sep "," join ", "
+#
+#   - `param*`     — zero or more `param` nonterminals;
+#   - `sep ","`    — the INPUT separator consumed between parameters
+#                    while parsing (so `a int, b int` splits cleanly);
+#   - `join ", "`  — the OUTPUT separator inserted between the rendered
+#                    params (so the result reads `a: int, b: int`).
+#
+# `sep` and `join` are independent: the input is comma-separated but the
+# output is comma-SPACE-separated. With no params (`now()`), the list
+# renders empty — `join` only appears BETWEEN items.
+extension sig
+
+function signature
+    arg literal "func"
+    arg capture name ident
+    arg literal "("
+    arg capture params param* sep "," join ", "
+    arg literal ")"
+    arg literal "->"
+    arg capture ret ident
+    write `${name}(${params}): ${ret}
+`
+end
+
+# A parameter is a pure-capture nonterminal: `NAME TYPE`. Because it has
+# no leading keyword, it MUST be declared `bare` — otherwise Capy would
+# auto-prepend the function name ("param") as a required keyword and the
+# nonterminal could never match bare `a int` pairs.
+function param
+    bare
+    arg capture pname ident
+    arg capture ptype ident
+    write `${pname}: ${ptype}`
+end

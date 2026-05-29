@@ -1,0 +1,64 @@
+# markdown-from-tags — matched-pair tags that target MARKDOWN, not HTML.
+#
+# Capy is target-agnostic: the sequence-closer primitive parses the tag
+# tree, and the per-tag template decides what comes out. Here the SAME
+# `<h1>…</h1>` / `<p>…</p>` / `<b>…</b>` markup that `html-xml-parser`
+# turns into HTML is rewritten into Markdown instead — headings become
+# `#` / `##`, bold becomes `**…**`, italic becomes `*…*`.
+#
+# Each tag is a block function with a LITERAL `block_close_seq` (e.g.
+# `block_close_seq "</h1>"`) and its own Markdown template. Inline tags
+# (`<b>`, `<i>`) nest inside block tags (`<p>`) because every opener is
+# matched to its own close sequence.
+extension mdtags
+
+function h1
+    arg literal "<"
+    arg literal "h1"
+    arg literal ">"
+    block_close_seq "</h1>"
+    write `# ${body}
+`
+end
+
+function h2
+    arg literal "<"
+    arg literal "h2"
+    arg literal ">"
+    block_close_seq "</h2>"
+    write `## ${body}
+`
+end
+
+function para
+    arg literal "<"
+    arg literal "p"
+    arg literal ">"
+    block_close_seq "</p>"
+    write `${body}
+
+`
+end
+
+function bold
+    arg literal "<"
+    arg literal "b"
+    arg literal ">"
+    block_close_seq "</b>"
+    write `**${body}**`
+end
+
+function italic
+    arg literal "<"
+    arg literal "i"
+    arg literal ">"
+    block_close_seq "</i>"
+    write `*${body}*`
+end
+
+# Text node: a quoted string becomes literal Markdown content.
+function text
+    bare
+    arg capture s raw
+    write `${s}`
+end

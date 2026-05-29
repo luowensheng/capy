@@ -324,6 +324,13 @@ func mapLibrary(r infra.RawLibrary, tokenize func(string) ([]domain.Token, error
 			// (function-as-type / named nonterminal). That's valid even
 			// though it's neither a built-in nor a declared `type`.
 			if _, isFunc := lib.Functions[a.Type]; isFunc {
+				// `sep` / `join` only have meaning when the capture repeats.
+				if a.Repeat == "" && a.Sep != "" {
+					return lib, fmt.Errorf("function %q: capture %q uses `sep` but is not repeated (add `*` or `+`)", fd.Name, a.Name)
+				}
+				if a.Repeat == "" && a.Join != "" {
+					return lib, fmt.Errorf("function %q: capture %q uses `join` but is not repeated (add `*` or `+`)", fd.Name, a.Name)
+				}
 				continue
 			}
 			// Repetition (`type*` / `type+`) and `sep` only make sense for
@@ -333,6 +340,9 @@ func mapLibrary(r infra.RawLibrary, tokenize func(string) ([]domain.Token, error
 			}
 			if a.Sep != "" {
 				return lib, fmt.Errorf("function %q: capture %q uses `sep` but its type %q is not a library function", fd.Name, a.Name, a.Type)
+			}
+			if a.Join != "" {
+				return lib, fmt.Errorf("function %q: capture %q uses `join` but its type %q is not a library function", fd.Name, a.Name, a.Type)
 			}
 			if !validType(a.Type, lib.Types) {
 				ce := &domain.CapyError{Msg: fmt.Sprintf("function %q: capture %q has unknown type %q", fd.Name, a.Name, a.Type)}
@@ -573,7 +583,7 @@ func compileArgs(raws []infra.RawArg, fname string) ([]domain.ArgEntry, error) {
 			if t == "" {
 				t = "any"
 			}
-			out = append(out, domain.ArgEntry{Kind: "capture", Name: r.Name, Type: t, Description: r.Description, Optional: r.Optional, Default: r.Default, Repeat: r.Repeat, Sep: r.Sep})
+			out = append(out, domain.ArgEntry{Kind: "capture", Name: r.Name, Type: t, Description: r.Description, Optional: r.Optional, Default: r.Default, Repeat: r.Repeat, Sep: r.Sep, Join: r.Join})
 		default:
 			return nil, fmt.Errorf("function %q arg %d: unknown or missing kind %q (must be \"literal\" or \"capture\")", fname, i, r.Kind)
 		}
@@ -589,7 +599,7 @@ func compileElements(args []domain.ArgEntry) []domain.PatternElement {
 			// outer lexer tokenises them.
 			out = append(out, splitLiteral(a.Value)...)
 		} else {
-			out = append(out, domain.PatternElement{IsCapture: true, Name: a.Name, CapType: a.Type, Optional: a.Optional, Default: a.Default, Repeat: a.Repeat, Sep: a.Sep})
+			out = append(out, domain.PatternElement{IsCapture: true, Name: a.Name, CapType: a.Type, Optional: a.Optional, Default: a.Default, Repeat: a.Repeat, Sep: a.Sep, Join: a.Join})
 		}
 	}
 	return out

@@ -200,22 +200,36 @@ end
 | `*`    | zero or more       |
 | `+`    | one or more        |
 
-An optional `sep "X"` declares a separator literal required between
-repetitions:
+Two optional separators control repetition — they are **independent**:
+
+| Directive | Role | Applied |
+|-----------|------|---------|
+| `sep "X"`  | **input** separator | consumed between repetitions while parsing |
+| `join "Y"` | **output** separator | inserted between rendered sub-results |
 
 ```
-arg capture items cell+ sep ","       # one-or-more cells, comma-separated
+arg capture items cell+ sep ","                # comma-separated input
+arg capture params param* sep "," join ", "    # comma in, ", " out
 ```
 
 On interpolation (`${attrs}`, `${items}`) the matched sub-results are
-rendered and concatenated. A `+` capture that matches nothing is a parse
-error; a `*` capture that matches nothing renders empty.
+rendered and concatenated — with `join`'s value inserted between them when
+set (default: no separator). A `+` capture that matches nothing is a parse
+error; a `*` capture that matches nothing renders empty (and `join` never
+appears, since there's nothing to separate).
 
 > **Type tip.** A nonterminal's *trailing* capture has no following
 > literal to stop on, so prefer single-token types (`raw`, `ident`,
 > `word`) over `string` there — a `string` capture runs through the
 > expression parser, which can swallow a following delimiter like `>` as
 > a comparison operator.
+
+> **`bare` for pure-capture nonterminals.** A function with no `arg
+> literal` gets its name auto-prepended as a leading keyword (so `param`
+> would require the literal token `param`). If your nonterminal is meant
+> to match bare values — e.g. a `param` that matches `a int` — declare it
+> `bare` to opt out of the auto-keyword. Nonterminals that already contain
+> a literal (like `attribute`'s `=`) need no `bare`.
 
 ## Loader validation
 

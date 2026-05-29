@@ -151,9 +151,11 @@ type ArgEntry struct {
 	// Repeat is the repetition quantifier for a function-typed capture:
 	// "" (exactly one), "*" (zero or more), or "+" (one or more). Only
 	// meaningful when Type names a library function. Sep, when set, is a
-	// required separator literal between repetitions.
+	// required input separator literal between repetitions. Join, when
+	// set, is inserted between the rendered sub-results on output.
 	Repeat string
 	Sep    string
+	Join   string
 }
 
 // BlockSpec marks a function as a block opener. There are two modes:
@@ -230,12 +232,15 @@ type PatternElement struct {
 	// matcher binds Default instead of consuming a token.
 	Optional bool
 	Default  string
-	// Repeat / Sep apply to function-typed captures (named nonterminals):
-	// Repeat is "" / "*" / "+"; Sep is an optional separator literal
-	// between repetitions. IsFunc marks that CapType names a library
-	// function (resolved at load time) rather than a built-in/declared type.
+	// Repeat / Sep / Join apply to function-typed captures (named
+	// nonterminals): Repeat is "" / "*" / "+"; Sep is an optional input
+	// separator literal between repetitions; Join is an optional output
+	// separator inserted between rendered sub-results. IsFunc marks that
+	// CapType names a library function (resolved at load time) rather than
+	// a built-in/declared type.
 	Repeat string
 	Sep    string
+	Join   string
 	IsFunc bool
 }
 

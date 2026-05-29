@@ -44,6 +44,9 @@ Compact DSLs that produce substantial frontend assets.
 | [transpile-landing-page/](transpile-landing-page/)     | HTML page         | Responsive landing page with embedded CSS, hero, features, CTAs. |
 | [html-component/](html-component/)                     | HTML              | Mode-B `{...}` blocks for component DSLs. |
 | [html-xml-parser/](html-xml-parser/)                   | HTML / XML        | Parse any well-formed `<tag>…</tag>` with ONE generic function — capture-bound `block_close_seq` + `attribute*` nonterminal; mismatched nesting errors. |
+| [bbcode-parser/](bbcode-parser/)                       | HTML              | `[b]…[/b]` BBCode tags → HTML via per-tag literal `block_close_seq`; bracket close-sequences; mismatch errors. |
+| [markdown-from-tags/](markdown-from-tags/)             | Markdown          | The SAME `<tag>…</tag>` markup retargeted to Markdown — proves close-seq parsing is target-agnostic; template alone picks the output. |
+| [signature-parser/](signature-parser/)                 | Text              | Function-signature DSL: `param* sep "," join ", "` repeats a `bare` nonterminal — `sep` (input) and `join` (output) separators are independent. |
 | [transpile-form/](transpile-form/)                     | HTML form         | Form block wraps field/textarea statements. |
 | [transpile-email-html/](transpile-email-html/)         | HTML email        | Inline-styled email that survives every client. |
 

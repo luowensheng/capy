@@ -1,0 +1,4 @@
+func add(a int, b int) -> int
+func greet(name string) -> string
+func clamp(x float, lo float, hi float) -> float
+func now() -> int

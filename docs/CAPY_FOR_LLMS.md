@@ -66,7 +66,11 @@ function <NAME>              # one DSL statement shape
                              # capture matches that function's shape and
                              # renders its template.
     arg capture <NAME> <FUNC>*  # repeated nonterminal: * (zero+) / + (one+)
-    arg capture <NAME> <FUNC>+ sep "," # repeated with a separator literal
+    arg capture <NAME> <FUNC>+ sep "," # repeated, "," consumed between
+                             # repetitions on INPUT while parsing
+    arg capture <NAME> <FUNC>* sep "," join ", " # sep=input separator,
+                             # join=OUTPUT separator inserted between
+                             # rendered sub-results (independent of sep)
     block_closer <NAME>      # block opener: body runs until <NAME> appears
     block_open "OPEN" close "CLOSE"   # alternative: explicit delimiters
     block_dedent             # alternative: body ends at first DEDENT,

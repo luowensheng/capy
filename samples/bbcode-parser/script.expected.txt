@@ -1,0 +1,1 @@
+<blockquote><strong>Capy</strong> parses <em>bracket</em> tags with the same primitive as HTML.</blockquote><a href="https://example.com">Visit the site</a>

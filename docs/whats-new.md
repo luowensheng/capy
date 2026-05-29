@@ -37,10 +37,29 @@ separator literal:
 
 ```
 arg capture attrs attribute*          # zero or more attributes
-arg capture items cell+ sep ","       # one or more, comma-separated
+arg capture items cell+ sep ","       # one or more, comma-separated input
+arg capture params param* sep "," join ", "   # comma input, ", " output
 ```
 
-Both are additive — no existing library changes behaviour.
+`sep` is the **input** separator (consumed between repetitions while
+parsing); `join` is the **output** separator (inserted between the rendered
+sub-results). They're independent — `sep "," join ", "` parses
+comma-separated input and renders a comma-**space**-separated list. A
+pure-capture nonterminal (one with no leading keyword, like `param NAME
+TYPE`) must be declared `bare`, otherwise Capy auto-prepends the function
+name as a required keyword.
+
+Both primitives are additive — no existing library changes behaviour.
+
+Four runnable demos, all in the [playground](playground.md) under
+**✨ Features**:
+
+| Demo | Shows |
+|---|---|
+| [`html-xml-parser`](https://github.com/luowensheng/capy/tree/main/samples/html-xml-parser) | One generic `element` parses any `<tag>` — capture-bound `</NAME>` closer + `attribute*` |
+| [`bbcode-parser`](https://github.com/luowensheng/capy/tree/main/samples/bbcode-parser) | Same primitive, **bracket** delimiters: `[b]…[/b]` with literal close-seqs |
+| [`markdown-from-tags`](https://github.com/luowensheng/capy/tree/main/samples/markdown-from-tags) | The same tag markup rewritten to **Markdown** — target-agnostic |
+| [`signature-parser`](https://github.com/luowensheng/capy/tree/main/samples/signature-parser) | Param lists via `param* sep "," join ", "` |
 
 Tests: [`functype_test.go`](https://github.com/luowensheng/capy/blob/main/functype_test.go),
 [`multitoken_closer_test.go`](https://github.com/luowensheng/capy/blob/main/multitoken_closer_test.go).

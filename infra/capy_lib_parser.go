@@ -702,7 +702,7 @@ func (p *capyLibParser) parseFunction() (RawFunction, error) {
 				// Optional TYPE, with an optional repetition suffix
 				// (`type*` / `type+`) for function-typed captures. The
 				// token must not be the `default` or `sep` keyword.
-				if idx < len(rest) && rest[idx] != "default" && rest[idx] != "sep" {
+				if idx < len(rest) && rest[idx] != "default" && rest[idx] != "sep" && rest[idx] != "join" {
 					typ := rest[idx]
 					if strings.HasSuffix(typ, "*") {
 						a.Repeat = "*"
@@ -725,6 +725,15 @@ func (p *capyLibParser) parseFunction() (RawFunction, error) {
 						return fn, p.errf("arg capture: `sep` requires a value")
 					}
 					a.Sep = rest[idx+1]
+					idx += 2
+				}
+				// Optional `join "VALUE"` -- an OUTPUT separator inserted
+				// between rendered sub-results of a repeated capture.
+				if idx < len(rest) && rest[idx] == "join" {
+					if idx+1 >= len(rest) {
+						return fn, p.errf("arg capture: `join` requires a value")
+					}
+					a.Join = rest[idx+1]
 					idx += 2
 				}
 				// Optional `default "VALUE"` — marks the arg optional.
