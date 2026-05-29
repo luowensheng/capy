@@ -1,5 +1,5 @@
 site_name: Capy
-site_description: A transpiler engine driven by a YAML library. Define a tiny source language; get a code generator.
+site_description: A transpiler engine with zero default grammar. Define a tiny source language in a .capy library; get a code generator for any textual target — HTML, Python, Go, Terraform, and more.
 site_url: https://luowensheng.github.io/capy/
 repo_url: https://github.com/luowensheng/capy
 repo_name: luowensheng/capy

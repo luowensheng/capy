@@ -11,8 +11,10 @@ links; this page is a quick reference for "is X supported?".
 |---------|--------|-------|
 | Zero default grammar — every shape is library-defined | ✅ | [language-reference](language-reference.md) |
 | Single-binary Go engine, no runtime deps | ✅ | `go install github.com/luowensheng/capy/cmd/capy@latest` |
-| Programmatic Go API | ✅ | `orchestrator.Run(libPath, scriptPath)` and `orchestrator.RunStrings(libYAML, libPath, scriptSrc)` |
-| Caret-pointed error messages with line:col | ✅ | [`domain.CapyError`](https://github.com/luowensheng/capy/blob/main/domain/errors.go), `FormatWithSource` |
+| Programmatic Go API | ✅ | `capy.NewLibrary(src)` → `lib.Run(script)` / `lib.RunMulti(script)`. See [embedding](embedding.md). |
+| Library introspection (names, args, docstrings, optional/default flags) | ✅ | `lib.Introspect()` / `lib.CommentMarkers()` — see [embedding](embedding.md#introspection-the-library-describes-itself) |
+| Browser playground — same engine compiled to WebAssembly | ✅ | [playground](playground.md) |
+| Caret-pointed error messages with line:col + did-you-mean | ✅ | [`domain.CapyError`](https://github.com/luowensheng/capy/blob/main/domain/errors.go), [errors-and-debugging](errors-and-debugging.md) |
 
 ## Library schema
 
@@ -41,7 +43,24 @@ links; this page is a quick reference for "is X supported?".
 If `args:` contains zero `kind: literal` entries, the engine prepends a
 literal of the function's key. Add any literal and the function name
 disappears from the surface — that's how operator-style patterns
-(`<var> = <value>`, `<a> -> <b>`) work.
+(`<var> = <value>`, `<a> -> <b>`) work. Use `bare` to opt out and keep
+the function callable as plain prose.
+
+## Authoring ergonomics
+
+| Feature | What it gives you |
+|---------|-------------------|
+| `template … end` | Block sugar for a multi-line backtick `write` literal — same `${…}` interpolation, no backtick bookkeeping. |
+| Optional args with `default` | A trailing capture can declare `default "value"`, making it omittable. One `button` function serves `button "Save"` and `button "Save" "danger" "submit"`. Optional args must be trailing (checked at load time). |
+| Group types | `type X { group_open "[" group_close "]" }` lets a capture consume a delimited span, so `link [text](url)`, `bold **x**`, `~~strike~~` map onto one source line. See [types](types.md). |
+| Multi-line backtick captures | A `` `…` `` string capture in a **user script** spans newlines — wrap a paragraph across several lines. |
+| Escapable backticks | `` \` `` inside a backtick capture is a literal backtick, so a Markdown code span survives without closing the capture. |
+| UTF-8 prose | Accented Latin, CJK and emoji tokenise as ordinary idents — bare prose needs no quoting. |
+| `${line}` / `${col}` source mapping | Stamp the current statement's source position onto output for editor scroll-sync / inline errors. |
+
+These ship with focused, golden-tested examples — open the
+**✨ Features** category in the [playground](playground.md), or browse
+the [new-feature showcase](showcase.md#new-feature-showcase-21-examples-in-the-playground).
 
 ## Built-in capture types
 
@@ -54,7 +73,8 @@ disappears from the surface — that's how operator-style patterns
 | `int` | An integer literal — OR a bare identifier. |
 | `float` | A float literal — OR a bare identifier. |
 | `bool` | `true`/`false` — OR a bare identifier. |
-| `<library-type>` | Any name defined under `types:`. |
+| `tail` | Every remaining token on the line, joined as one source-text string (preserves source spacing). Great for free-form trailing values. |
+| `<library-type>` | Any name defined under `types:`, including [group types](types.md) (`group_open`/`group_close`) for inline syntax like `[text](url)`. |
 
 Bare identifiers always pass primitive type checks because the target
 language could resolve them as variables of any type at its own
@@ -118,17 +138,34 @@ or `${helper arg expr}`, in both per-function bodies and the top-level
 | Helper | Effect |
 |--------|--------|
 | `indent N` | Indent every line of a string by N spaces. |
+| `decoded` | Resolve escape sequences (`\n` `\t` `\"` `` \` `` `\xNN` `\uNNNN`) in a captured string — round-trips even when the text contains bare quotes. The inverse of source-text capture. |
+| `escapeHtml` | Neutralise HTML-special chars (`& < > " '`) — the safe way to interpolate user prose into HTML. |
 | `lower` / `upper` | Case conversion. |
-| `join SEP <list>` | Join a list of strings. |
-| `unquote` | Strip one layer of surrounding `"..."`, `'...'`, or `` `...` ``. |
+| `pascalCase` / `camelCase` / `snakeCase` | Identifier case conversion. |
 | `dasherize` | Replace underscores with hyphens (for CSS, etc.). |
+| `join SEP <list>` | Join a list of strings. |
+| `split SEP <string>` | Split a string into a list. |
+| `unquote` | Strip one layer of surrounding `"..."`, `'...'`, or `` `...` ``. |
+| `unescape` | Resolve standard Go escape sequences (legacy; prefer `decoded`). |
 | `toQuoted` | Wrap a string in JSON-style double quotes. |
 | `toPyLit` | Format a Go value as a Python literal (`True`/`False`/`None`/lists/dicts). |
-| `toJSON` | Marshal any value to compact JSON. |
-| `toJSONIndent` | Marshal any value to pretty JSON. |
+| `toJSON` / `toJSONIndent` | Marshal any value to compact / pretty JSON. |
+| `trimPrefix P` / `trimSuffix S` | Strip a leading / trailing substring. |
+| `nonEmpty` | True when the string is non-empty (handy in `if`). |
+| `add` / `sub` / `mul` | Integer arithmetic. |
+| `percent N D` | Format `N/D` as a percentage. |
+| `stars N` | Render `N` filled stars (★) — used by the reading-log demo. |
 
 Control flow (`if`, `for`) lives in the function body itself —
 not inside `${...}` interpolations.
+
+### Render locals — available inside every body / `template`
+
+| Local | What it is |
+|-------|-----------|
+| `${body}` | Inner block's rendered output (block-opener functions). |
+| `${line}` / `${col}` | Source line / column of the current statement — stamp onto output for source↔output mapping (editor scroll-sync, inline errors). A capture of the same name wins. |
+| `${depth}` / `${top_level}` | Nesting depth, and whether the statement is at the top level. |
 
 ## Block functions
 
@@ -159,7 +196,27 @@ block_close "}"
 
 Body delimited by the named tokens. No closer function needed.
 
-Nesting works freely in both modes, including mixed (Mode-A inside
+### Mode C — verbatim (raw bytes)
+
+```
+block_verbatim end
+```
+
+The body is captured as **raw source bytes** — not re-parsed as Capy.
+Blank lines and `#`-prefixed lines survive byte-for-byte. Ideal for
+code blocks, inline SVG, or embedded HTML. Pair with `${escapeHtml body}`
+to emit it safely. See [`samples/verbatim-pre`](showcase.md#new-feature-showcase-21-examples-in-the-playground).
+
+### Mode D — dedent
+
+```
+block_dedent
+```
+
+Body runs until the indentation returns to the opener's level — no
+explicit closer keyword.
+
+Nesting works freely across all modes, including mixed (Mode-A inside
 Mode-B and vice versa).
 
 ## CLI
@@ -169,7 +226,11 @@ Mode-B and vice versa).
 | `capy run <lib.capy> <script.capy>` | Transpile a script. Output to stdout unless `--out` or library `output_file`. |
 | `capy check <lib.capy>` | Validate a library; report functions and types. Exit 0 if valid. |
 | `capy docs <lib.capy>` | Render a Markdown reference doc from the library's `description` annotations. |
-| `capy init [<dir>]` | Scaffold a new library project. |
+| `capy build <lib.capy> [-o <out>]` | Compile a library into a standalone single-purpose CLI binary. See [compiling-libraries](compiling-libraries.md). |
+| `capy lib new <name>` | Scaffold a new library. |
+| `capy lib list` / `which` / `path` | Manage installed libraries on the `CAPY_LIBS` search path. See [library-commands](library-commands.md). |
+| `capy new <dir> --using <library>` | Scaffold a new project from a library. |
+| `capy <library> <command> [args]` | Dispatch a library-defined command (`command "run" … end`). |
 | `capy version` | Print build version. |
 | `capy help [<command>]` | Inline help. |
 
