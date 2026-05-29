@@ -135,6 +135,12 @@ type RawArg struct {
 	Name        string
 	Type        string
 	Description string
+	// Optional marks a trailing capture that may be omitted at the
+	// call site; Default is the source-form value bound when it's
+	// omitted. Only meaningful when Kind=capture. Set by the
+	// `default "…"` suffix on an `arg capture` line.
+	Optional bool
+	Default  string
 }
 
 type RawType struct {

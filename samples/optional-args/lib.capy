@@ -1,0 +1,15 @@
+# optional-args — a trailing capture can declare a `default`, making
+# it omittable at the call site. Collapses families of near-duplicate
+# components (button / button_link / submit) into one flexible
+# function (missing2.md §5, part 1). Optional args must be trailing.
+extension html
+
+function button
+    arg literal "button"
+    arg capture label string
+    arg capture variant string default "primary"
+    arg capture kind string default "button"
+    template
+        <button type="${decoded kind}" class="btn btn-${decoded variant}">${escapeHtml (decoded label)}</button>
+    end
+end

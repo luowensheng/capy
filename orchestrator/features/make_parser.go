@@ -3,6 +3,7 @@ package orchfeatures
 import (
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/luowensheng/capy/domain"
@@ -287,6 +288,19 @@ func (p *outerP) tryMatch(fn *domain.FuncDef) (domain.FuncCall, error) {
 			}
 			continue
 		}
+		// Optional capture: if the statement has ended (no value to
+		// consume), bind the declared default and fill any remaining
+		// optional captures with theirs. Optional args are validated
+		// to be trailing, so once we hit an end-of-statement boundary
+		// here every remaining element is an optional capture.
+		if el.Optional && p.atStatementEnd() {
+			for _, rest := range fn.Elements[i:] {
+				if rest.IsCapture {
+					caps[rest.Name] = defaultCapture(rest.CapType, rest.Default)
+				}
+			}
+			break
+		}
 		stop := nextLiterals(fn.Elements[i+1:])
 		val, err := p.captureValue(el.CapType, stop)
 		if err != nil {
@@ -295,6 +309,30 @@ func (p *outerP) tryMatch(fn *domain.FuncDef) (domain.FuncCall, error) {
 		caps[el.Name] = val
 	}
 	return domain.FuncCall{Func: fn, Captures: caps}, nil
+}
+
+// atStatementEnd reports whether the next token ends the current
+// statement — a NEWLINE, EOF, or a DEDENT/closer boundary. Used to
+// decide whether an optional capture should fall back to its default.
+func (p *outerP) atStatementEnd() bool {
+	switch p.Peek().Kind {
+	case domain.TokNewline, domain.TokEOF, domain.TokDedent:
+		return true
+	}
+	return false
+}
+
+// defaultCapture builds the CaptureValue bound when an optional arg is
+// omitted. The text is stored in the SAME source-text form a real
+// capture of that type would carry, so `${x}` and `${decoded x}`
+// behave identically whether the arg was supplied or defaulted: a
+// `string`-typed default is re-quoted (a real string capture's text
+// is the quoted source form); other kinds keep the raw value.
+func defaultCapture(capType, def string) domain.CaptureValue {
+	if capType == "string" {
+		return domain.CaptureValue{Text: strconv.Quote(def)}
+	}
+	return domain.CaptureValue{Text: def}
 }
 
 func nextLiterals(rest []domain.PatternElement) []string {

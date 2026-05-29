@@ -680,29 +680,34 @@ func (p *capyLibParser) parseFunction() (RawFunction, error) {
 				}
 				fn.Args = append(fn.Args, ra)
 			case "capture":
-				// `arg capture NAME [TYPE] [DESCRIPTION]`
-				if len(tokens) < 3 || len(tokens) > 5 {
-					return fn, p.errf("arg capture NAME [TYPE] [DESCRIPTION]")
+				// `arg capture NAME [TYPE] [default "VALUE"] [DESCRIPTION]`
+				if len(tokens) < 3 {
+					return fn, p.errf("arg capture NAME [TYPE] [default \"VALUE\"] [DESCRIPTION]")
 				}
 				a := RawArg{Kind: "capture", Name: tokens[2], Type: "any"}
-				if len(tokens) >= 4 {
-					// 4th token is TYPE unless it looks like a description
-					// (starts with a capital letter or contains spaces). Since
-					// our tokenizer already unquotes strings, we differentiate
-					// by checking if it looks like an ident.
-					t := tokens[3]
-					if isIdent(t) {
-						a.Type = t
-						if len(tokens) == 5 {
-							a.Description = tokens[4]
-						}
-					} else {
-						// 4th token is the description; type stays "any"
-						a.Description = t
-						if len(tokens) == 5 {
-							return fn, p.errf("arg capture: TYPE must precede DESCRIPTION")
-						}
+				rest := tokens[3:]
+				idx := 0
+				// Optional TYPE: an ident that isn't the `default` keyword.
+				if idx < len(rest) && isIdent(rest[idx]) && rest[idx] != "default" {
+					a.Type = rest[idx]
+					idx++
+				}
+				// Optional `default "VALUE"` — marks the arg optional.
+				if idx < len(rest) && rest[idx] == "default" {
+					if idx+1 >= len(rest) {
+						return fn, p.errf("arg capture: `default` requires a value")
 					}
+					a.Optional = true
+					a.Default = rest[idx+1]
+					idx += 2
+				}
+				// Optional trailing DESCRIPTION (one token).
+				if idx < len(rest) {
+					a.Description = rest[idx]
+					idx++
+				}
+				if idx < len(rest) {
+					return fn, p.errf("arg capture: unexpected extra tokens after NAME [TYPE] [default \"VALUE\"] [DESCRIPTION]")
 				}
 				fn.Args = append(fn.Args, a)
 			default:

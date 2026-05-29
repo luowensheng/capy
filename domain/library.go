@@ -139,6 +139,10 @@ type ArgEntry struct {
 	Name        string
 	Type        string
 	Description string // optional, only meaningful when Kind=capture
+	// Optional marks a trailing capture that may be omitted at the
+	// call site; Default is the source-form value bound when omitted.
+	Optional bool
+	Default  string
 }
 
 // BlockSpec marks a function as a block opener. There are two modes:
@@ -165,6 +169,11 @@ type PatternElement struct {
 	Literal   string
 	Name      string
 	CapType   string
+	// Optional / Default apply to optional trailing capture elements:
+	// when the statement ends before this element is reached, the
+	// matcher binds Default instead of consuming a token.
+	Optional bool
+	Default  string
 }
 
 // TypeDef is a library-defined argument type. Three optional fields applied

@@ -298,6 +298,24 @@ func mapLibrary(r infra.RawLibrary, tokenize func(string) ([]domain.Token, error
 
 	// Validate cross-references after all functions are loaded.
 	for _, fd := range lib.Functions {
+		// Optional captures must be trailing: once an optional arg is
+		// declared, every later arg must also be optional (otherwise
+		// the matcher couldn't know whether a supplied value fills the
+		// optional or the required-after-it).
+		seenOptional := false
+		for _, a := range fd.Args {
+			if a.Kind != "capture" {
+				if seenOptional {
+					return lib, fmt.Errorf("function %q: literal arg %q cannot follow an optional capture", fd.Name, a.Value)
+				}
+				continue
+			}
+			if a.Optional {
+				seenOptional = true
+			} else if seenOptional {
+				return lib, fmt.Errorf("function %q: required capture %q cannot follow an optional capture (optional args must be trailing)", fd.Name, a.Name)
+			}
+		}
 		for _, a := range fd.Args {
 			if a.Kind == "capture" && !validType(a.Type, lib.Types) {
 				ce := &domain.CapyError{Msg: fmt.Sprintf("function %q: capture %q has unknown type %q", fd.Name, a.Name, a.Type)}
@@ -453,7 +471,7 @@ func compileArgs(raws []infra.RawArg, fname string) ([]domain.ArgEntry, error) {
 			if t == "" {
 				t = "any"
 			}
-			out = append(out, domain.ArgEntry{Kind: "capture", Name: r.Name, Type: t, Description: r.Description})
+			out = append(out, domain.ArgEntry{Kind: "capture", Name: r.Name, Type: t, Description: r.Description, Optional: r.Optional, Default: r.Default})
 		default:
 			return nil, fmt.Errorf("function %q arg %d: unknown or missing kind %q (must be \"literal\" or \"capture\")", fname, i, r.Kind)
 		}
@@ -469,7 +487,7 @@ func compileElements(args []domain.ArgEntry) []domain.PatternElement {
 			// outer lexer tokenises them.
 			out = append(out, splitLiteral(a.Value)...)
 		} else {
-			out = append(out, domain.PatternElement{IsCapture: true, Name: a.Name, CapType: a.Type})
+			out = append(out, domain.PatternElement{IsCapture: true, Name: a.Name, CapType: a.Type, Optional: a.Optional, Default: a.Default})
 		}
 	}
 	return out
