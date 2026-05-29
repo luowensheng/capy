@@ -1,0 +1,24 @@
+# library-keywords — a minimal library exercising the core authoring
+# keywords documented in docs/library-keywords.md: `extension`,
+# `function`, `arg literal`, `arg capture`, `block_closer`, `write`,
+# `${indent N body}`, and a silent closer function. Its golden output is
+# checked in CI so the cookbook's canonical `if … end` example is real.
+extension py
+
+function if
+    arg literal "if"
+    arg capture cond any
+    block_closer end
+    write `if ${cond}:
+${indent 4 body}`
+end
+
+function say
+    arg literal "say"
+    arg capture msg string
+    write `print(${msg})
+`
+end
+
+function end
+end

@@ -4,6 +4,19 @@ title: What's new — engine primitives shipped in this release
 
 # What's new
 
+## Docs — library keyword cookbook
+
+A companion to the function cookbook: the
+[Library keyword cookbook](library-keywords.md) documents every keyword
+you write *inside* a `.capy` library — `function`, `arg literal`,
+`arg capture` (with `sep`/`join`/`default`), all six `block_*` body
+openers, `write`/`template`, the file-level directives (`extension`,
+`context`, `comments`, `command`, `import`, `file`, …), the built-in
+capture types, and `type` definitions. It also answers "how do I know a
+function can have a body?" — it declares exactly one `block_*` directive.
+The canonical `if … end` example is verified by
+[`samples/library-keywords/`](https://github.com/luowensheng/capy/tree/main/samples/library-keywords).
+
 ## Docs — built-in function cookbook
 
 Every built-in template helper (the functions you call inside `${ … }`)

@@ -90,6 +90,7 @@ nav:
   # Reference — everything technical you need when building a library.
   - Reference:
     - Library authoring: library-authoring.md
+    - Library keyword cookbook: library-keywords.md
     - ".capy library syntax": capy-libraries.md
     - Language reference (source side): language-reference.md
     - Templates: templates.md

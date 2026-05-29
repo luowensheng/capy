@@ -6,6 +6,12 @@ set of **built-in helper functions** you call inside `${ … }` (and inside
 `run`/`set` inner-DSL expressions). They are the only functions Capy
 itself defines; everything else you build.
 
+> **Looking for the library-authoring keywords** — `function`,
+> `arg literal`, `arg capture`, `block_closer`, `write`, `type`, … (the
+> vocabulary you write *inside a `.capy` library*)? Those are documented
+> in the [Library keyword cookbook](library-keywords.md). This page is
+> only the `${ … }` template helpers.
+
 This page documents **every** built-in helper, what it does, and a worked
 example. The examples are mirrored by a runnable sample —
 [`samples/builtin-functions/`](https://github.com/luowensheng/capy/tree/main/samples/builtin-functions)

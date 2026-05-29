@@ -27,8 +27,21 @@ built-in helper in `infra/helpers.go`, you MUST in the same change:
    `go run ./cmd/capy run samples/builtin-functions/lib.capy samples/builtin-functions/script.capy > samples/builtin-functions/script.expected.txt`
 3. Mention the change in `docs/whats-new.md`.
 
-The same rule applies to library-authoring directives (`docs/features.md`,
-`docs/CAPY_FOR_LLMS.md`) when you add/rename one.
+## Library-authoring keyword list — KEEP IT IN SYNC
+
+The keywords authors write *inside* a `.capy` library (`function`,
+`arg literal`, `arg capture`, the `block_*` openers, `write`, `type`, the
+file-level directives, capture types) are documented in
+**`docs/library-keywords.md`** (nav: Reference → "Library keyword
+cookbook"). Their source of truth is the directive switches in
+`infra/capy_lib_parser.go` (top-level, function-body, type-body) plus the
+capture-type list in `orchestrator/features/make_library_loader.go`
+(`case "any", "ident", …`) and `make_parser.go`.
+
+**RULE:** whenever you add/rename/remove a library directive or capture
+type, update `docs/library-keywords.md` (and `docs/features.md`,
+`docs/CAPY_FOR_LLMS.md`) in the same change. The canonical `if … end`
+example is verified by `samples/library-keywords/`.
 
 ## Repo conventions
 

@@ -30,6 +30,7 @@ plugs together.
 | [types/](types/)               | `pattern:` / `options:` / `base:` validation, with a failing-validation companion script. |
 | [scene-dsl/](scene-dsl/)       | A pure declarative DSL with no control flow defined. |
 | [builtin-functions/](builtin-functions/) | Live tour of every built-in template helper (`pascalCase`, `decoded`, `escapeHtml`, `percent`, `stars`, `indent`, …). Verifies the [function cookbook](../docs/function-cookbook.md). |
+| [library-keywords/](library-keywords/) | The canonical `if … end` block — `function` / `arg literal` / `arg capture` / `block_closer` / `write` / `${indent N body}`. Verifies the [library keyword cookbook](../docs/library-keywords.md). |
 
 ---
 
