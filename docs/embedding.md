@@ -65,12 +65,98 @@ func (l *Library) Run(scriptSrc string) (string, error)
 func (l *Library) Extension() string         // declared `extension:` field
 func (l *Library) OutputFile() string        // declared `output_file:` field
 func (l *Library) FunctionNames() []string   // declared function keys
+
+// Introspection — the library describes itself (see below).
+func (l *Library) Introspect() []FunctionInfo // every declared function
+func (l *Library) CommentMarkers() []string   // declared comment markers
 ```
 
 That's the whole package. Everything else is convention.
 
 `*Library` is safe to reuse across many `Run` calls (each call gets a
 fresh accumulating context).
+
+## Introspection — the library describes itself
+
+`Introspect()` returns the full declared shape of every function —
+name, doc string, argument list (literal vs. capture, capture type,
+per-arg description, and whether the arg is **optional** with a
+**default**), block kind, and priority. The data comes straight from
+the compiled library, so a tool can derive its metadata instead of
+hand-maintaining a parallel catalogue that silently drifts.
+
+This is what powers a live editor's autocomplete, hover-docs, syntax
+highlighting, and reference panel — all from one source of truth (the
+`.capy` library itself).
+
+```go
+type FunctionInfo struct {
+    Name        string    `json:"name"`
+    Description string    `json:"description,omitempty"`
+    Args        []ArgInfo `json:"args"`
+    Block       string    `json:"block,omitempty"`     // e.g. "verbatim:end", "dedent", "closer:end"
+    Priority    int       `json:"priority,omitempty"`
+}
+
+type ArgInfo struct {
+    Kind        string `json:"kind"`                  // "literal" or "capture"
+    Value       string `json:"value,omitempty"`       // literal token text
+    Name        string `json:"name,omitempty"`        // capture's bound name
+    Type        string `json:"type,omitempty"`        // capture's declared type
+    Description string `json:"description,omitempty"` // trailing doc string
+    Optional    bool   `json:"optional,omitempty"`    // trailing arg with a default
+    Default     string `json:"default,omitempty"`     // value bound when omitted
+}
+```
+
+Example — introspecting a one-function library:
+
+```go
+lib, _ := capy.NewLibrary(`
+extension html
+
+comments
+    line "#"
+end
+
+function button
+    description "A clickable button."
+    arg literal "button"
+    arg capture label   string "Visible text."
+    arg capture variant string default "primary"   "Style variant."
+    write ` + "`<button class=\"btn-${variant}\">${label}</button>`" + `
+end
+`)
+
+for _, fn := range lib.Introspect() {
+    fmt.Println(fn.Name, "-", fn.Description)
+    for _, a := range fn.Args {
+        if a.Kind == "capture" {
+            opt := ""
+            if a.Optional {
+                opt = fmt.Sprintf(" (optional, default %q)", a.Default)
+            }
+            fmt.Printf("  %s: %s%s — %s\n", a.Name, a.Type, opt, a.Description)
+        }
+    }
+}
+fmt.Println("comment markers:", lib.CommentMarkers())
+```
+
+Output:
+
+```
+button - A clickable button.
+  label: string — Visible text.
+  variant: string (optional, default "primary") — Style variant.
+comment markers: [#]
+```
+
+The same data is available from the browser via the wasm builds —
+`capyIntrospect(librarySrc)` in the generic engine, `pagesIntrospect()`
+in a library-embedded build — returning the identical JSON shape. An
+editor can `JSON.parse` it and build autocomplete with zero
+hand-maintenance.
 
 ## A real example
 

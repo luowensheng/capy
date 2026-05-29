@@ -13,7 +13,7 @@ hover-docs / scroll-sync). All additive, all opt-in:
 | Feature | What it gives you |
 |---|---|
 | `${line}` / `${col}` render locals | Source↔output mapping. Stamp `data-capy-line="${line}"` and the host editor does `querySelector('[data-capy-line="N"]')` for scroll-sync / inline errors — no source mutation. |
-| `Library.Introspect()` + `capyIntrospect()` / `pagesIntrospect()` | Declared functions, args, capture types, and `description` doc strings — so an editor derives its autocomplete / hover / highlight metadata instead of hand-maintaining a parallel catalogue. |
+| [`Library.Introspect()`](embedding.md#introspection-the-library-describes-itself) + `capyIntrospect()` / `pagesIntrospect()` | Declared functions, args, capture types, optional/default flags, and `description` doc strings — so an editor derives its autocomplete / hover / highlight metadata instead of hand-maintaining a parallel catalogue. |
 | `${decoded x}` handles embedded quotes | `<div class="x">\nmore` round-trips — quotes preserved, newlines real. No host-side decoder needed. |
 | Column-0 lines inside `template … end` | A flush-left `${indent 2 body}` no longer truncates the function body. |
 | Verbatim raw-byte fidelity | `block_verbatim` preserves blank lines and `#`-comment lines exactly — unblocks a real `markdown … end` block. |
@@ -300,6 +300,104 @@ Output:
 <p>北京 上海 东京</p>
 <p>🎉 emoji works too 🚀</p>
 ```
+
+### Source↔output mapping with `${line}` / `${col}`
+
+Every statement knows its 1-indexed source position. Stamp it onto
+emitted elements and a host editor can scroll-sync the preview to the
+cursor, or underline the exact line that failed — with a single
+`querySelector`, no source mutation, working inside every region.
+
+```
+function p
+    arg literal "p"
+    arg capture text string
+    template
+        <p data-capy-line="${line}">${escapeHtml (decoded text)}</p>
+    end
+end
+```
+
+Input:
+
+```
+p "First paragraph."
+p "Second paragraph."
+p "Third paragraph."
+```
+
+Output — each `<p>` carries the line it came from:
+
+```html
+<p data-capy-line="1">First paragraph.</p>
+<p data-capy-line="2">Second paragraph.</p>
+<p data-capy-line="3">Third paragraph.</p>
+```
+
+The editor then does `querySelector('[data-capy-line="2"]')`. A user
+capture named `line`/`col` still wins — these are render locals, same
+precedence as `body` / `depth` / `top_level`.
+
+### Optional args with defaults — one function, many call shapes
+
+A trailing capture can declare a `default`, so the call site may omit
+it. One `button` collapses what used to be `button` / `button_link` /
+`submit`:
+
+```
+function button
+    arg literal "button"
+    arg capture label   string
+    arg capture variant string default "primary"
+    arg capture kind    string default "button"
+    template
+        <button type="${decoded kind}" class="btn-${decoded variant}">${escapeHtml (decoded label)}</button>
+    end
+end
+```
+
+Input:
+
+```
+button "Save"
+button "Delete" "danger"
+button "Submit" "primary" "submit"
+```
+
+Output:
+
+```html
+<button type="button" class="btn-primary">Save</button>
+<button type="button" class="btn-danger">Delete</button>
+<button type="submit" class="btn-primary">Submit</button>
+```
+
+A required capture after an optional one is a load-time error
+(optional args must be trailing).
+
+### The library describes itself — `Introspect()`
+
+Point a tool at a library and it reports every function's shape —
+including which args are optional and their defaults — so an editor
+builds autocomplete / hover-docs / highlighting from one source of
+truth:
+
+```go
+for _, fn := range lib.Introspect() {
+    fmt.Println(fn.Name, "-", fn.Description)
+    for _, a := range fn.Args {
+        if a.Kind == "capture" {
+            fmt.Printf("  %s: %s (optional=%v default=%q)\n",
+                a.Name, a.Type, a.Optional, a.Default)
+        }
+    }
+}
+```
+
+The identical JSON shape is available in the browser via
+`capyIntrospect(librarySrc)` / `pagesIntrospect()`. Full struct
+reference and a runnable example: [Introspection in
+embedding.md](embedding.md#introspection-the-library-describes-itself).
 
 ---
 
@@ -786,6 +884,8 @@ ambiguous ("make this HTML"? "treat this as HTML"?). Renamed to
 | Ship a code-block library | [Block functions in library-authoring.md](library-authoring.md#block-functions) |
 | Safely emit HTML | [`escapeHtml` in templates.md](templates.md#escapehtml-string) |
 | Handle quoted user strings cleanly | [`decoded` in templates.md](templates.md#decoded-string) |
+| Build editor tooling from the library | [Introspection in embedding.md](embedding.md#introspection-the-library-describes-itself) |
+| Map output back to source lines | [`${line}` / `${col}` in inner-dsl.md](inner-dsl.md) |
 | See the full grammar | [language-reference.md](language-reference.md) |
 | Drop into the LLM-facing brief | [CAPY_FOR_LLMS.md](CAPY_FOR_LLMS.md) |
 
