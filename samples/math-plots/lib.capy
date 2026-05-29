@@ -112,12 +112,10 @@ file_template
             code { background: rgba(78,238,255,0.06); padding: 1px 6px; border-radius: 4px; }
             .meta { color: #888; font-size: 0.9em; margin-top: 24px; }
           </style>
-        </head>
-        <body>
-          <h1>${escapeHtml context.title}</h1>
-          ${body}
-          <p class="meta">Rendered from a Capy source. No server.</p>
           <script>
+            // Defined in <head> so it exists before each plot's inline
+            // call script runs — function declarations do NOT hoist
+            // across separate <script> elements.
             function drawPlot(canvas, expr, opts) {
               const ctx = canvas.getContext('2d');
               const W = canvas.width, H = canvas.height;
@@ -183,6 +181,11 @@ file_template
               ctx.stroke();
             }
           </script>
+        </head>
+        <body>
+          <h1>${escapeHtml context.title}</h1>
+          ${body}
+          <p class="meta">Rendered from a Capy source. No server.</p>
         </body>
         </html>
     end
