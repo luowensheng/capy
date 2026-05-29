@@ -209,6 +209,21 @@ func (e *outerEval) renderTemplateAt(c domain.FuncCall, body string, sections ma
 		locals[k] = v
 	}
 	for k, v := range c.Captures {
+		// Function-typed captures (named nonterminals): render each
+		// matched sub-FuncCall and concatenate. The result is the
+		// target text the sub-construct produces.
+		if v.Sub != nil {
+			var sb strings.Builder
+			for _, sub := range v.Sub {
+				s, err := e.renderFuncCallAt(sub, depth)
+				if err != nil {
+					return "", err
+				}
+				sb.WriteString(s)
+			}
+			locals[k] = sb.String()
+			continue
+		}
 		// Templates always see the source-text form of a capture.
 		// This is the transpiler model: what the user wrote appears
 		// in the target unless a helper transforms it.
@@ -230,6 +245,16 @@ func (e *outerEval) validateArgs(c domain.FuncCall) error {
 		cap, ok := c.Captures[a.Name]
 		if !ok {
 			return fmt.Errorf("function %q: missing capture %q", c.Func.Name, a.Name)
+		}
+		// Function-typed captures (named nonterminals) are structural
+		// matches, not flat tokens — their type names a library function,
+		// not a built-in/declared type, so the textual type check below
+		// does not apply.
+		if cap.Sub != nil {
+			continue
+		}
+		if _, isFunc := e.lib.Functions[a.Type]; isFunc {
+			continue
 		}
 		// A bare identifier reference is accepted by any primitive type.
 		if cap.IsExpr {

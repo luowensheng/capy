@@ -1,0 +1,1 @@
+<article class="post" id="p1"><h1>Capy parses HTML</h1><p>One generic function, <b>any</b> tag.</p></article><user id="42"><name>Ada Lovelace</name><role>admin</role></user>

@@ -148,6 +148,12 @@ type ArgEntry struct {
 	// call site; Default is the source-form value bound when omitted.
 	Optional bool
 	Default  string
+	// Repeat is the repetition quantifier for a function-typed capture:
+	// "" (exactly one), "*" (zero or more), or "+" (one or more). Only
+	// meaningful when Type names a library function. Sep, when set, is a
+	// required separator literal between repetitions.
+	Repeat string
+	Sep    string
 }
 
 // BlockSpec marks a function as a block opener. There are two modes:
@@ -166,6 +172,23 @@ type BlockSpec struct {
 	Close      string
 	IsDedent   bool
 	IsVerbatim bool
+	// CloseSeq, when non-empty, makes this a multi-token sequence-closed
+	// block: the body is a free-flowing sequence of statements (newlines
+	// and indentation are insignificant) terminated by the exact token
+	// sequence in CloseSeq. Unlike block_open/close (single-character
+	// delimiters) the closer may span several lexical tokens — e.g.
+	// `</div>` lexes to ["</", "div", ">"]. Each block demands its own
+	// sequence, so a stray `</p>` inside a `<div>` body fails to match
+	// and surfaces as a parse error (mismatched-nesting detection). This
+	// is what makes angle-bracket matched-pair HTML (`<p>…</p>`,
+	// `<div>…</div>`) authorable. No closer function is involved.
+	//
+	// Each segment is either a fixed literal (pre-tokenized into Tokens)
+	// or a reference to a capture bound by the opener (Ref). A reference
+	// segment lets the closer DEPEND ON the opener — an opener capturing
+	// `name` can declare `block_close_seq "</" name ">"`, so `<div>` is
+	// closed only by `</div>` and `<p>` only by `</p>`, generically.
+	CloseSeq []CloseSegment
 	// Sections, when non-empty, makes this a multi-section block (e.g.
 	// `try … rescue … finally … end`). Each entry is an interior section
 	// keyword that appears at the opener's indent and introduces its own
@@ -174,6 +197,15 @@ type BlockSpec struct {
 	// named after each section keyword (`${rescue}`, `${finally}`). The
 	// block is closed by Closer. Enables try/rescue/finally (missing.md §8).
 	Sections []string
+}
+
+// CloseSegment is one piece of a capture-bound block closer (BlockSpec.
+// CloseSeq). Exactly one of Tokens / Ref is set: Tokens is a fixed,
+// pre-tokenized literal run (e.g. "</" → ["</"]); Ref names a capture
+// whose bound text is substituted as a single token at parse time.
+type CloseSegment struct {
+	Tokens []string
+	Ref    string
 }
 
 // Lookahead gates a candidate on what follows its header, after the
@@ -198,6 +230,13 @@ type PatternElement struct {
 	// matcher binds Default instead of consuming a token.
 	Optional bool
 	Default  string
+	// Repeat / Sep apply to function-typed captures (named nonterminals):
+	// Repeat is "" / "*" / "+"; Sep is an optional separator literal
+	// between repetitions. IsFunc marks that CapType names a library
+	// function (resolved at load time) rather than a built-in/declared type.
+	Repeat string
+	Sep    string
+	IsFunc bool
 }
 
 // TypeDef is a library-defined argument type. Three optional fields applied

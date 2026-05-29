@@ -699,10 +699,33 @@ func (p *capyLibParser) parseFunction() (RawFunction, error) {
 				a := RawArg{Kind: "capture", Name: tokens[2], Type: "any"}
 				rest := tokens[3:]
 				idx := 0
-				// Optional TYPE: an ident that isn't the `default` keyword.
-				if idx < len(rest) && isIdent(rest[idx]) && rest[idx] != "default" {
-					a.Type = rest[idx]
-					idx++
+				// Optional TYPE, with an optional repetition suffix
+				// (`type*` / `type+`) for function-typed captures. The
+				// token must not be the `default` or `sep` keyword.
+				if idx < len(rest) && rest[idx] != "default" && rest[idx] != "sep" {
+					typ := rest[idx]
+					if strings.HasSuffix(typ, "*") {
+						a.Repeat = "*"
+						typ = strings.TrimSuffix(typ, "*")
+					} else if strings.HasSuffix(typ, "+") {
+						a.Repeat = "+"
+						typ = strings.TrimSuffix(typ, "+")
+					}
+					if isIdent(typ) {
+						a.Type = typ
+						idx++
+					} else if a.Repeat != "" {
+						return fn, p.errf("arg capture: repetition suffix requires a function/type name before %q", rest[idx])
+					}
+				}
+				// Optional `sep "VALUE"` — a separator literal between
+				// repetitions of a function-typed capture.
+				if idx < len(rest) && rest[idx] == "sep" {
+					if idx+1 >= len(rest) {
+						return fn, p.errf("arg capture: `sep` requires a value")
+					}
+					a.Sep = rest[idx+1]
+					idx += 2
 				}
 				// Optional `default "VALUE"` — marks the arg optional.
 				if idx < len(rest) && rest[idx] == "default" {
@@ -772,6 +795,24 @@ func (p *capyLibParser) parseFunction() (RawFunction, error) {
 			}
 			block.Open = tokens[1]
 			block.Close = tokens[3]
+			blockSet = true
+		case "block_close_seq":
+			// `block_close_seq "</div>"` (fixed) or
+			// `block_close_seq "</" name ">"` (capture-bound) — the body is
+			// a free-flowing sequence of statements terminated by the
+			// closing sequence. Quoted segments are literals; bare
+			// identifiers reference captures bound by the opener, so the
+			// closer can depend on the opener (matched-pair HTML, generic
+			// over tag name, with mismatch detection).
+			segs, err := parseCloseSeqSegs(line)
+			if err != nil {
+				return fn, p.errf("%v", err)
+			}
+			if len(segs) == 0 {
+				return fn, p.errf("block_close_seq requires a closing sequence (e.g. `block_close_seq \"</div>\"` or `block_close_seq \"</\" name \">\"`)")
+			}
+			p.nextLine()
+			block.CloseSeq = segs
 			blockSet = true
 		default:
 			// New-shape body: anything that isn't one of the recognised
@@ -1314,6 +1355,77 @@ func stripIndent(s string, n int) string {
 // tokenizeLibLine splits a line into tokens, respecting double-quoted strings
 // with Go-style escapes. The result is the list of token *contents* (quotes
 // removed, escapes decoded). Comments after `#` (outside strings) are dropped.
+// parseCloseSeqSegs parses the arguments of a `block_close_seq` directive
+// line into segments, preserving which were QUOTED (→ literal) vs BARE
+// (→ capture reference). It must read the raw line because
+// tokenizeLibLine de-quotes, erasing that distinction. The leading
+// `block_close_seq` keyword is skipped.
+func parseCloseSeqSegs(line string) ([]RawCloseSeg, error) {
+	s := strings.TrimRight(line, " \t")
+	i := 0
+	for i < len(s) && (s[i] == ' ' || s[i] == '\t') {
+		i++
+	}
+	var segs []RawCloseSeg
+	first := true
+	for i < len(s) {
+		c := s[i]
+		switch {
+		case c == ' ' || c == '\t':
+			i++
+		case c == '#':
+			i = len(s)
+		case c == '"':
+			j := i + 1
+			var b strings.Builder
+			for j < len(s) && s[j] != '"' {
+				if s[j] == '\\' && j+1 < len(s) {
+					switch s[j+1] {
+					case 'n':
+						b.WriteByte('\n')
+					case 't':
+						b.WriteByte('\t')
+					case 'r':
+						b.WriteByte('\r')
+					case '"':
+						b.WriteByte('"')
+					case '\\':
+						b.WriteByte('\\')
+					default:
+						b.WriteByte(s[j+1])
+					}
+					j += 2
+					continue
+				}
+				b.WriteByte(s[j])
+				j++
+			}
+			if j >= len(s) {
+				return nil, fmt.Errorf("block_close_seq: unterminated string literal")
+			}
+			if !first { // skip the directive keyword (always bare, position 0)
+				segs = append(segs, RawCloseSeg{Text: b.String(), IsRef: false})
+			}
+			first = false
+			i = j + 1
+		default:
+			j := i
+			for j < len(s) && s[j] != ' ' && s[j] != '\t' && s[j] != '#' {
+				j++
+			}
+			word := s[i:j]
+			if first {
+				// This is the `block_close_seq` keyword itself.
+				first = false
+			} else {
+				segs = append(segs, RawCloseSeg{Text: word, IsRef: true})
+			}
+			i = j
+		}
+	}
+	return segs, nil
+}
+
 func tokenizeLibLine(line string) ([]string, error) {
 	var toks []string
 	s := strings.TrimRight(line, " \t")

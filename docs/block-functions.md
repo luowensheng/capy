@@ -127,13 +127,106 @@ for x in items {
 The above produces a `for` template whose `.body` is the rendered `if`
 template, whose `.body` is in turn the rendered `say` call.
 
+## Mode C — multi-token sequence closer (`block_close_seq`)
+
+Modes A and B close on a single keyword or single-character delimiter.
+Some grammars — most famously matched-pair HTML — close on a **multi-token
+sequence**: `<p>…</p>`, `<div>…</div>`. The closer `</div>` lexes to three
+tokens (`</`, `div`, `>`), and a `<div>` body must be terminated by *that
+exact sequence* — a stray `</p>` inside it is a mismatched-nesting error.
+
+Declare it with `block_close_seq`, listing the closer's segments. Each
+segment is either a **quoted literal** (pre-tokenized the way the lexer
+will see it) or a **bare capture name** bound by the opener:
+
+```
+function p
+    arg literal "<"
+    arg literal "p"
+    arg literal ">"
+    block_close_seq "</p>"
+    write `<p>${body}</p>`
+end
+```
+
+Inside a sequence-closed block, newlines and indentation are
+insignificant — the structure comes from the tags, not the layout. The
+body is a free-flowing sequence of statements terminated by the closing
+sequence.
+
+### Capture-bound closers (one function for every tag)
+
+A ref segment makes the closer **depend on the opener**. An opener that
+captures the tag name can close on `</NAME>` generically, so a single
+function covers `<div>`, `<p>`, `<span>`, … and each is closed only by its
+own matching tag:
+
+```
+function element
+    arg literal "<"
+    arg capture name ident
+    arg capture attrs attribute*      # zero or more (see below)
+    arg literal ">"
+    block_close_seq "</" name ">"     # `name` is a ref to the capture
+    write `<${name}${attrs}>${body}</${name}>`
+end
+```
+
+`<div>` now closes only on `</div>` and `<p>` only on `</p>` — mismatched
+nesting (`<div><p></div>`) is a hard parse error. Every ref segment must
+name a capture the opener actually binds, or the library fails to load.
+
+## Function-as-type captures (named nonterminals)
+
+A capture's type may name **another library function** instead of a
+built-in type. The capture then matches that function's shape and renders
+its template:
+
+```
+function attribute
+    arg capture key ident
+    arg literal "="
+    arg capture val raw
+    write ` ${key}="${val}"`
+end
+```
+
+`arg capture attrs attribute` (above, in `element`) matches one
+`attribute`. Add a quantifier to match several:
+
+| Suffix | Meaning            |
+|--------|--------------------|
+| (none) | exactly one (mandatory) |
+| `*`    | zero or more       |
+| `+`    | one or more        |
+
+An optional `sep "X"` declares a separator literal required between
+repetitions:
+
+```
+arg capture items cell+ sep ","       # one-or-more cells, comma-separated
+```
+
+On interpolation (`${attrs}`, `${items}`) the matched sub-results are
+rendered and concatenated. A `+` capture that matches nothing is a parse
+error; a `*` capture that matches nothing renders empty.
+
+> **Type tip.** A nonterminal's *trailing* capture has no following
+> literal to stop on, so prefer single-token types (`raw`, `ident`,
+> `word`) over `string` there — a `string` capture runs through the
+> expression parser, which can swallow a following delimiter like `>` as
+> a comparison operator.
+
 ## Loader validation
 
 You **must** set exactly one of:
 - `block.closer:` (Mode A), or
-- both `block.open:` and `block.close:` (Mode B).
+- both `block.open:` and `block.close:` (Mode B), or
+- `block_dedent` (indent-closed), or
+- `block_verbatim` (raw-byte body), or
+- `block_close_seq` (Mode C — multi-token sequence closer).
 
-The loader rejects libraries that set both or neither.
+The loader rejects libraries that set more than one or none.
 
 ## What if I want both A and B for the same function?
 

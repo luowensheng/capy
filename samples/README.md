@@ -43,6 +43,7 @@ Compact DSLs that produce substantial frontend assets.
 | [transpile-react-component/](transpile-react-component/) | React TSX       | Typed `useState`/`useEffect` component from 7-line spec. |
 | [transpile-landing-page/](transpile-landing-page/)     | HTML page         | Responsive landing page with embedded CSS, hero, features, CTAs. |
 | [html-component/](html-component/)                     | HTML              | Mode-B `{...}` blocks for component DSLs. |
+| [html-xml-parser/](html-xml-parser/)                   | HTML / XML        | Parse any well-formed `<tag>…</tag>` with ONE generic function — capture-bound `block_close_seq` + `attribute*` nonterminal; mismatched nesting errors. |
 | [transpile-form/](transpile-form/)                     | HTML form         | Form block wraps field/textarea statements. |
 | [transpile-email-html/](transpile-email-html/)         | HTML email        | Inline-styled email that survives every client. |
 

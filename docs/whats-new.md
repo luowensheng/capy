@@ -4,6 +4,49 @@ title: What's new — engine primitives shipped in this release
 
 # What's new
 
+## Round 6 — matched-pair HTML: sequence closers & named nonterminals
+
+Two composing grammar primitives that together make well-formed,
+matched-pair markup (HTML/XML) authorable from a single library function.
+
+**`block_close_seq` — multi-token sequence closers.** A block can now
+close on an exact *run* of tokens rather than a single keyword or
+delimiter. The closer is declared as a list of segments — each a quoted
+literal or a bare **capture-name ref** bound by the opener:
+
+```
+function element
+    arg literal "<"
+    arg capture name ident
+    arg capture attrs attribute*
+    arg literal ">"
+    block_close_seq "</" name ">"
+    write `<${name}${attrs}>${body}</${name}>`
+end
+```
+
+The ref makes the closer depend on the opener, so one `element` function
+covers every paired tag: `<div>` closes only on `</div>`, `<p>` only on
+`</p>`, and mismatched nesting (`<div><p></div>`) is a hard parse error.
+Inside the body, layout is insignificant — structure comes from the tags.
+
+**Function-as-type captures (named nonterminals).** A capture's type may
+name another library function. The capture matches that function's shape
+and renders its template. Add `*` / `+` to repeat, and `sep "X"` for a
+separator literal:
+
+```
+arg capture attrs attribute*          # zero or more attributes
+arg capture items cell+ sep ","       # one or more, comma-separated
+```
+
+Both are additive — no existing library changes behaviour.
+
+Tests: [`functype_test.go`](https://github.com/luowensheng/capy/blob/main/functype_test.go),
+[`multitoken_closer_test.go`](https://github.com/luowensheng/capy/blob/main/multitoken_closer_test.go).
+
+---
+
 ## Round 5 — `tail` preserves quoted slots
 
 A follow-up to the `tail` capture (Round 3, §6). Previously `tail`
@@ -65,8 +108,29 @@ These close concrete parser and tokenizer gaps. All additive, all opt-in:
 | `word` capture type | A shell-style bare word: `--oneline`, `-f`, `k8s/deploy.yaml`, `name=^web$`, `restart-api` capture as ONE value despite the lexer splitting on `-`/`/`/`=`/`.`. |
 | `dotted_ident` capture type | `match err.kind` works bare — captures the dotted path as one string instead of needing the `"${err.kind}"` workaround. |
 | `${asString x}` helper | Emits exactly one valid JSON string, quoting iff the capture isn't already a string. `exec echo foo` and `exec echo "foo"` both interpolate correctly — no more `${toJSON}` double-quoting or bare-ident invalid JSON. |
+| **Source-level metaprogramming** (`define … end`) | A script can declare its own DSL functions inline — same grammar as a library `function` — then use them in the same file. The library stays minimal; power users extend the vocabulary without forking it. Embedded callers get the same behaviour through `capy.Library.Run` / `RunMulti`. |
 
 Tests: [`missing_features_test.go`](https://github.com/luowensheng/capy/blob/main/missing_features_test.go).
+
+**Metaprogramming in one breath.** The source below ships with a library
+that defines *only* `print` — `heading`, `todo`, and `quote` are declared
+inline with `define … end` and then used immediately:
+
+```
+define heading
+    arg literal "heading"
+    arg capture text string
+    write `# ${unquote text}
+`
+end
+
+heading "Capy metaprogramming"
+todo yes "Ship metaprogramming feature"
+```
+
+Full worked example: [`samples/metaprogramming/`](https://github.com/luowensheng/capy/tree/main/samples/metaprogramming)
+· pattern docs: [metaprogramming.md](metaprogramming.md)
+· runnable in the [playground](playground.md) under **🧬 Metaprogramming**.
 
 ---
 

@@ -21,6 +21,9 @@ var CURATED = []struct {
 	ID, Category, Title, Description, Hint, ScriptFile, LibraryFile string
 }{
 	// ─── ✨ New features (round-1 & round-2) ────────────────────────
+	{"html-xml-parser", "Features", "✨ Parse HTML / XML (one function)",
+		"A single generic `element` function parses ANY well-formed `<tag …>…</tag>` — HTML or XML. The tag name is captured, attributes match via a function-typed repetition (`attribute*`), and the block closes on the capture-bound sequence `</NAME>`. Mismatched nesting (`<div><p></div>`) is a hard parse error — real structural parsing of the tag tree.",
+		"Add your own nested tags or attributes; try breaking the nesting to see the mismatch error.", "", ""},
 	{"template-sugar", "Features", "✨ template … end sugar",
 		"`template … end` replaces multi-line backtick `write` literals — same `${…}` interpolation, no backtick bookkeeping. Stacks cards from plain `card`/`p` lines.",
 		"Add another `card \"…\" … end` block; edit the paragraphs inside.", "", ""},

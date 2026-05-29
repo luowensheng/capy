@@ -1,0 +1,42 @@
+# html-xml-parser — parse arbitrary well-formed HTML/XML with ONE function.
+#
+# A single generic `element` function matches ANY `<tag …>…</tag>` pair:
+#
+#   - the tag NAME is captured (`ident`), so the same function serves
+#     <div>, <p>, <article>, and equally any XML tag like <user> or <role>;
+#   - zero-or-more attributes are matched via a FUNCTION-TYPED REPETITION
+#     (`attribute*` — the capture's type names another library function);
+#   - the block closes on the CAPTURE-BOUND sequence `</NAME>`
+#     (`block_close_seq "</" name ">"`), so `<div>` closes only on `</div>`.
+#
+# Because each open tag demands its own matching close tag, mismatched
+# nesting (`<div><p></div>`) is a hard parse error — true structural
+# parsing of the tag tree, not a regex that happens to match angle brackets.
+extension html
+
+function element
+    arg literal "<"
+    arg capture name ident
+    arg capture attrs attribute*
+    arg literal ">"
+    block_close_seq "</" name ">"
+    write `<${name}${attrs}>${body}</${name}>`
+end
+
+# An attribute is itself a named nonterminal: key="value". Values use the
+# `raw` capture type (one token), not `string`, so the tag-closing `>` is
+# never swallowed by the expression parser as a comparison operator.
+function attribute
+    arg capture key ident
+    arg literal "="
+    arg capture val raw
+    write ` ${key}="${val}"`
+end
+
+# Text node: a quoted string becomes escaped literal content. `raw` takes
+# exactly one token, so the `<` that opens the next tag stays a tag.
+function text
+    bare
+    arg capture s raw
+    write `${escapeHtml s}`
+end

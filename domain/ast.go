@@ -38,6 +38,14 @@ type CaptureValue struct {
 	IsExpr bool
 	Expr   Expr
 	Text   string
+	// Sub holds the matched sub-FuncCall(s) when this capture's declared
+	// type is another library function (function-as-type / named
+	// nonterminal). A single function-typed capture yields one entry; a
+	// repeated capture (`type*` / `type+`) yields one per occurrence. The
+	// evaluator renders each and concatenates (joined by Text, which for a
+	// function-typed capture is unused as source text). When Sub is
+	// non-nil the capture is a structural match, not a flat token.
+	Sub []FuncCall
 }
 
 // --- Expression AST (used by both outer template captures and inner DSL) ---

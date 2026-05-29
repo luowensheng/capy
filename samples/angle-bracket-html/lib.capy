@@ -1,0 +1,44 @@
+# angle-bracket-html — matched-pair HTML tags via `block_close_seq`.
+#
+# Each tag function opens on its literal `<tag>` sequence and closes on
+# the multi-token sequence `</tag>`. Because every block demands its OWN
+# closing sequence, a stray `</p>` inside a `<div>` (or a missing closer)
+# fails to match and surfaces as a parse error — true mismatched-nesting
+# detection, exactly HTML's contract. Text is supplied as quoted strings.
+extension html
+
+function div
+    arg literal "<"
+    arg literal "div"
+    arg literal "class"
+    arg literal "="
+    arg capture cls string
+    arg literal ">"
+    block_close_seq "</div>"
+    write `<div class="${decoded cls}">${body}</div>`
+end
+
+function p
+    arg literal "<"
+    arg literal "p"
+    arg literal ">"
+    block_close_seq "</p>"
+    write `<p>${body}</p>`
+end
+
+function b
+    arg literal "<"
+    arg literal "b"
+    arg literal ">"
+    block_close_seq "</b>"
+    write `<b>${body}</b>`
+end
+
+# Bare text node: any quoted string becomes literal (escaped) content.
+# `raw` consumes exactly one string token (no expression parsing), so the
+# `<` opening the next tag is never mistaken for a less-than operator.
+function text
+    bare
+    arg capture s raw
+    write `${escapeHtml s}`
+end

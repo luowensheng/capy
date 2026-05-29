@@ -17,16 +17,18 @@ directory if you want to clone and run them yourself.
 
 ---
 
-## ✨ New-feature showcase — 21 examples in the playground
+## ✨ New-feature showcase — 22 examples in the playground
 
-The round-1 and round-2 language features each ship with a focused,
-runnable example. They're grouped under the **✨ Features** category at
-the top of the [playground](playground.md) dropdown — pick one, read
-the source, edit it live, and watch the output change. Every example
-below is a real `samples/<id>/` directory with a golden-tested output.
+The round-1, round-2 and round-6 language features each ship with a
+focused, runnable example. They're grouped under the **✨ Features**
+category at the top of the [playground](playground.md) dropdown — pick
+one, read the source, edit it live, and watch the output change. Every
+example below is a real `samples/<id>/` directory with a golden-tested
+output.
 
 | Example | Feature it shows off |
 |---|---|
+| [`html-xml-parser`](https://github.com/luowensheng/capy/tree/main/samples/html-xml-parser) | **parse HTML / XML** — one generic `element` function matches any `<tag>…</tag>` via a capture-bound `block_close_seq` + `attribute*` nonterminal; mismatched nesting is a hard error |
 | [`template-sugar`](https://github.com/luowensheng/capy/tree/main/samples/template-sugar) | `template … end` instead of multi-line backtick `write` literals |
 | [`optional-args`](https://github.com/luowensheng/capy/tree/main/samples/optional-args) | trailing capture with a `default` — one function, many call shapes |
 | [`line-mapping`](https://github.com/luowensheng/capy/tree/main/samples/line-mapping) | `${line}` / `${col}` render locals for source↔output mapping |

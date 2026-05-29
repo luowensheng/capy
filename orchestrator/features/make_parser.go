@@ -71,6 +71,12 @@ type outerP struct {
 	// `block_verbatim` body as the raw byte range — preserving blank
 	// lines and comment-marker lines that produce no tokens.
 	srcLines []string
+	// seqDepth counts how many sequence-closed blocks (block_close_seq)
+	// are currently open. Inside such a block, statements are packed on a
+	// line with no newline separators (`<p>"hi"</p>`), so a flat function
+	// need not be followed by a NEWLINE/EOF — leftover tokens simply
+	// become the next statement. >0 relaxes that requirement in parseStmt.
+	seqDepth int
 }
 
 // splitSourceLines mirrors the lexer's splitLines: normalise CRLF,
@@ -202,7 +208,43 @@ func (p *outerP) parseStmt() (domain.FuncCall, error) {
 			p.consumeNewlines()
 			return inst, nil
 		}
-		if p.Peek().Kind != domain.TokNewline && p.Peek().Kind != domain.TokEOF {
+		// Sequence-closed block: opener is followed directly by the body
+		// (no required newline), terminated by the multi-token CloseSeq.
+		// This is the angle-bracket HTML model — `<p>…</p>`.
+		if fn.Block != nil && len(fn.Block.CloseSeq) > 0 {
+			// Resolve the closing sequence: literal segments contribute
+			// their pre-tokenized tokens; a ref segment substitutes the
+			// source text of the opener-bound capture as a single token.
+			// This is what makes the closer DEPEND ON the opener — a
+			// generic `<NAME>` opener captures `name` and declares
+			// `block_close_seq "</" name ">"`, so `<div>` closes only on
+			// `</div>` and `<p>` only on `</p>`.
+			seq, err := resolveCloseSeq(fn.Block.CloseSeq, inst.Captures)
+			if err != nil {
+				if blockErr == nil {
+					blockErr = err
+				}
+				p.Restore(saved)
+				continue
+			}
+			body, err := p.parseSeqBlock(seq, startLine)
+			if err != nil {
+				if blockErr == nil {
+					blockErr = err
+				}
+				p.Restore(saved)
+				continue
+			}
+			inst.Body = &body
+			p.consumeNewlines()
+			return inst, nil
+		}
+		// Inside a sequence-closed block, statements are not newline-
+		// delimited (`<p>"a"<b>"b"</b></p>`): a flat function may be
+		// followed immediately by the next statement's tokens or the
+		// block's closing sequence. Outside such a block, require the
+		// usual NEWLINE/EOF terminator so partial matches are rejected.
+		if p.seqDepth == 0 && p.Peek().Kind != domain.TokNewline && p.Peek().Kind != domain.TokEOF {
 			p.Restore(saved)
 			continue
 		}
@@ -324,6 +366,111 @@ func (p *outerP) parseDelimBlock(open, close string) (domain.Block, error) {
 	}
 }
 
+// resolveCloseSeq flattens a []CloseSegment into the concrete token
+// sequence that closes this particular block instance. Literal segments
+// contribute their fixed pre-tokenized tokens; a ref segment substitutes
+// the source text of the named opener-bound capture as a single token.
+func resolveCloseSeq(segs []domain.CloseSegment, caps map[string]domain.CaptureValue) ([]string, error) {
+	var out []string
+	for _, seg := range segs {
+		if seg.Ref != "" {
+			cv, ok := caps[seg.Ref]
+			if !ok {
+				return nil, fmt.Errorf("block_close_seq references capture %q which is not bound", seg.Ref)
+			}
+			out = append(out, cv.Text)
+			continue
+		}
+		out = append(out, seg.Tokens...)
+	}
+	return out, nil
+}
+
+// parseSeqBlock parses a free-flowing sequence of statements until the
+// exact token sequence `seq` is reached, then consumes it. NEWLINE,
+// INDENT, and DEDENT between statements are insignificant (HTML-style:
+// the structure comes from the tags, not the indentation). Because each
+// block carries its own closing sequence, a stray closer for a DIFFERENT
+// tag fails to match here and surfaces as a parse error on the next
+// statement — that is the mismatched-nesting detection HTML relies on.
+func (p *outerP) parseSeqBlock(seq []string, openerLine int) (domain.Block, error) {
+	p.seqDepth++
+	defer func() { p.seqDepth-- }()
+	closer := strings.Join(seq, "")
+	var stmts []domain.FuncCall
+	for {
+		if p.tryConsumeSeq(seq) {
+			return domain.Block{Stmts: stmts}, nil
+		}
+		k := p.Peek().Kind
+		if k == domain.TokEOF {
+			return domain.Block{}, fmt.Errorf("line %d: unexpected end of input: expected closing %q", openerLine, closer)
+		}
+		if k == domain.TokNewline || k == domain.TokIndent || k == domain.TokDedent {
+			p.Advance()
+			continue
+		}
+		s, err := p.parseStmt()
+		if err != nil {
+			return domain.Block{}, err
+		}
+		stmts = append(stmts, s)
+	}
+}
+
+// tryConsumeSeq matches the multi-token closing sequence `seq` (e.g.
+// ["</","div",">"]) against the upcoming tokens and, on a match, consumes
+// exactly those tokens — returning true. On no match it leaves the parser
+// position untouched and returns false.
+//
+// Matching is token-based and whitespace-tolerant (mirroring how the
+// opener's literals match), so `</p>` and `</p >` both close a `<p>`.
+// The one special case is the FINAL element: the lexer greedily packs
+// runs of punctuation into one token, so `</p></div>` lexes as
+// `</ p ></ div >` — the closing `>` of `</p>` and the opening `</` of
+// `</div>` share a single `></` token. When the last element is a strict
+// prefix of such a merged punctuation run, it is matched and the leftover
+// suffix is written back as a new token (with adjusted Col/Width) so it
+// can open the next tag. (A mid-sequence merge cannot occur: a tag name
+// is an identifier, which always breaks the punctuation run.)
+func (p *outerP) tryConsumeSeq(seq []string) bool {
+	i := p.pos
+	splitIdx := -1
+	var splitTok domain.Token
+	for n, el := range seq {
+		if i >= len(p.toks) {
+			return false
+		}
+		tok := p.toks[i]
+		switch tok.Kind {
+		case domain.TokNewline, domain.TokIndent, domain.TokDedent, domain.TokEOF:
+			return false
+		}
+		if tok.Text == el {
+			i++
+			continue
+		}
+		if tok.Kind == domain.TokPunct && n == len(seq)-1 &&
+			len(tok.Text) > len(el) && strings.HasPrefix(tok.Text, el) {
+			rem := tok
+			rem.Text = tok.Text[len(el):]
+			rem.Col = tok.Col + len(el)
+			rem.Width = len(rem.Text)
+			splitIdx = i
+			splitTok = rem
+			break
+		}
+		return false
+	}
+	if splitIdx >= 0 {
+		p.toks[splitIdx] = splitTok
+		p.pos = splitIdx
+		return true
+	}
+	p.pos = i
+	return true
+}
+
 func (p *outerP) consumeNewlines() {
 	for p.Peek().Kind == domain.TokNewline {
 		p.Advance()
@@ -342,6 +489,18 @@ func (p *outerP) tryMatch(fn *domain.FuncDef) (domain.FuncCall, error) {
 			if !p.matchLiteral(el.Literal) {
 				return domain.FuncCall{}, fmt.Errorf("expected %q", el.Literal)
 			}
+			continue
+		}
+		// Function-as-type capture (named nonterminal): the capture's
+		// type names another library function. Match that function's
+		// shape — possibly repeated (`type*` / `type+`) with an optional
+		// separator literal — and store the matched sub-FuncCall(s).
+		if el.IsFunc {
+			val, err := p.captureFuncType(el)
+			if err != nil {
+				return domain.FuncCall{}, err
+			}
+			caps[el.Name] = val
 			continue
 		}
 		// Optional capture: if the statement has ended (no value to
@@ -365,6 +524,76 @@ func (p *outerP) tryMatch(fn *domain.FuncDef) (domain.FuncCall, error) {
 		caps[el.Name] = val
 	}
 	return domain.FuncCall{Func: fn, Captures: caps}, nil
+}
+
+// captureFuncType matches a function-as-type capture (named nonterminal).
+// el.CapType names a library function; el.Repeat selects the arity:
+//
+//	""  exactly one occurrence
+//	"+" one or more
+//	"*" zero or more
+//
+// el.Sep, when set, is a separator literal required between successive
+// occurrences. The matched sub-FuncCall(s) are returned in CaptureValue.Sub.
+// A zero-progress guard prevents an infinite loop if a sub-function can
+// match while consuming no tokens.
+func (p *outerP) captureFuncType(el domain.PatternElement) (domain.CaptureValue, error) {
+	target := p.byName[el.CapType]
+	if target == nil {
+		return domain.CaptureValue{}, fmt.Errorf("internal: function-typed capture %q references unknown function %q", el.Name, el.CapType)
+	}
+	matchOne := func() (domain.FuncCall, bool) {
+		saved := p.Save()
+		startPos := p.pos
+		fc, err := p.tryMatch(target)
+		if err != nil || p.pos == startPos {
+			p.Restore(saved)
+			return domain.FuncCall{}, false
+		}
+		fc.Func = target
+		return fc, true
+	}
+
+	// Exactly-one (no repetition): a single mandatory match.
+	if el.Repeat == "" {
+		fc, ok := matchOne()
+		if !ok {
+			return domain.CaptureValue{}, fmt.Errorf("expected %s", el.CapType)
+		}
+		return domain.CaptureValue{Sub: []domain.FuncCall{fc}}, nil
+	}
+
+	// Repeated: gather as many occurrences as match, separated by Sep.
+	var subs []domain.FuncCall
+	for {
+		if len(subs) > 0 && el.Sep != "" {
+			// A separator is required between occurrences; if it's not
+			// present, the repetition is over.
+			sep := p.Save()
+			if !p.matchLiteral(el.Sep) {
+				p.Restore(sep)
+				break
+			}
+			fc, ok := matchOne()
+			if !ok {
+				// Separator consumed but no following item — roll back the
+				// separator so it isn't lost.
+				p.Restore(sep)
+				break
+			}
+			subs = append(subs, fc)
+			continue
+		}
+		fc, ok := matchOne()
+		if !ok {
+			break
+		}
+		subs = append(subs, fc)
+	}
+	if el.Repeat == "+" && len(subs) == 0 {
+		return domain.CaptureValue{}, fmt.Errorf("expected at least one %s", el.CapType)
+	}
+	return domain.CaptureValue{Sub: subs}, nil
 }
 
 // atStatementEnd reports whether the next token ends the current
@@ -412,6 +641,20 @@ func (p *outerP) matchLiteral(lit string) bool {
 		domain.TokLBrack, domain.TokRBrack:
 		if t.Text == lit {
 			p.Advance()
+			return true
+		}
+		// The lexer greedily merges runs of punctuation into one token, so
+		// an angle-bracket tag boundary like `><` (a `>` closing one tag
+		// immediately followed by the `<` opening the next) arrives as a
+		// single `><` punct token. When a punct literal is a strict prefix
+		// of such a merged run, match the prefix and write the suffix back
+		// as the next token (adjusted Col/Width) so it can be matched next.
+		if t.Kind == domain.TokPunct && len(t.Text) > len(lit) && strings.HasPrefix(t.Text, lit) {
+			rem := t
+			rem.Text = t.Text[len(lit):]
+			rem.Col = t.Col + len(lit)
+			rem.Width = len(rem.Text)
+			p.toks[p.pos] = rem
 			return true
 		}
 	}

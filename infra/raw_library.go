@@ -136,6 +136,18 @@ type RawBlock struct {
 	// (e.g. ["rescue","finally"]). When set, the block is closed by
 	// Closer and each section introduces its own indented sub-body.
 	Sections []string
+	// CloseSeq: segments of a (possibly capture-bound) multi-token
+	// sequence closer, set by `block_close_seq "</" name ">"`. Each
+	// segment is a literal (quoted in source) or a capture reference
+	// (bare identifier). Empty unless the directive is used.
+	CloseSeq []RawCloseSeg
+}
+
+// RawCloseSeg is one segment of a block_close_seq directive: a quoted
+// literal (IsRef=false) or a bare capture-name reference (IsRef=true).
+type RawCloseSeg struct {
+	Text  string
+	IsRef bool
 }
 
 // RawArg is an args-list entry. The Kind discriminator is required.
@@ -151,6 +163,11 @@ type RawArg struct {
 	// `default "…"` suffix on an `arg capture` line.
 	Optional bool
 	Default  string
+	// Repeat / Sep apply to function-typed captures (named nonterminals):
+	// Repeat is "" / "*" / "+" (set by a `*` or `+` suffix on the type);
+	// Sep is the optional separator literal from a trailing `sep "X"`.
+	Repeat string
+	Sep    string
 }
 
 type RawType struct {

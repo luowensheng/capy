@@ -317,11 +317,31 @@ func mapLibrary(r infra.RawLibrary, tokenize func(string) ([]domain.Token, error
 			}
 		}
 		for _, a := range fd.Args {
-			if a.Kind == "capture" && !validType(a.Type, lib.Types) {
+			if a.Kind != "capture" {
+				continue
+			}
+			// A capture's type may name another LIBRARY FUNCTION
+			// (function-as-type / named nonterminal). That's valid even
+			// though it's neither a built-in nor a declared `type`.
+			if _, isFunc := lib.Functions[a.Type]; isFunc {
+				continue
+			}
+			// Repetition (`type*` / `type+`) and `sep` only make sense for
+			// function-typed captures.
+			if a.Repeat != "" {
+				return lib, fmt.Errorf("function %q: capture %q uses a repetition suffix but its type %q is not a library function", fd.Name, a.Name, a.Type)
+			}
+			if a.Sep != "" {
+				return lib, fmt.Errorf("function %q: capture %q uses `sep` but its type %q is not a library function", fd.Name, a.Name, a.Type)
+			}
+			if !validType(a.Type, lib.Types) {
 				ce := &domain.CapyError{Msg: fmt.Sprintf("function %q: capture %q has unknown type %q", fd.Name, a.Name, a.Type)}
 				// Suggest the closest known type (built-ins + library-declared).
 				cands := []string{"any", "ident", "raw", "tail", "word", "dotted_ident", "string", "int", "float", "bool"}
 				for n := range lib.Types {
+					cands = append(cands, n)
+				}
+				for n := range lib.Functions {
 					cands = append(cands, n)
 				}
 				if best := domain.SuggestClosest(a.Type, cands, 2); best != "" {
@@ -330,6 +350,17 @@ func mapLibrary(r infra.RawLibrary, tokenize func(string) ([]domain.Token, error
 					ce.Hint = fmt.Sprintf("built-in types: any, ident, raw, tail, word, dotted_ident, string, int, float, bool; declared types: %v", typeNames(lib.Types))
 				}
 				return lib, ce
+			}
+		}
+		// Resolve IsFunc on compiled pattern elements now that all function
+		// names are known: a capture whose type names a library function is
+		// a structural (nonterminal) match, not a flat token.
+		for i := range fd.Elements {
+			el := &fd.Elements[i]
+			if el.IsCapture {
+				if _, isFunc := lib.Functions[el.CapType]; isFunc {
+					el.IsFunc = true
+				}
 			}
 		}
 		if fd.Block != nil {
@@ -342,6 +373,7 @@ func mapLibrary(r infra.RawLibrary, tokenize func(string) ([]domain.Token, error
 			hasDelim := fd.Block.Open != "" && fd.Block.Close != ""
 			hasDedent := fd.Block.IsDedent
 			hasVerbatim := fd.Block.IsVerbatim
+			hasSeq := len(fd.Block.CloseSeq) > 0
 			modes := 0
 			if hasCloser {
 				modes++
@@ -355,14 +387,36 @@ func mapLibrary(r infra.RawLibrary, tokenize func(string) ([]domain.Token, error
 			if hasVerbatim {
 				modes++
 			}
+			if hasSeq {
+				modes++
+			}
 			if modes != 1 {
-				return lib, fmt.Errorf("function %q: block must set exactly one of block_closer, block_open/close, block_dedent, or block_verbatim", fd.Name)
+				return lib, fmt.Errorf("function %q: block must set exactly one of block_closer, block_open/close, block_dedent, block_verbatim, or block_close_seq", fd.Name)
 			}
 			// Both keyword-closed modes require the closer function to
 			// exist.
 			if (hasCloser || hasVerbatim) && fd.Block.Closer != "" {
 				if _, ok := lib.Functions[fd.Block.Closer]; !ok {
 					return lib, fmt.Errorf("function %q: block.closer %q not found", fd.Name, fd.Block.Closer)
+				}
+			}
+			// Each block_close_seq ref segment must name a capture bound
+			// by this function's opener.
+			if hasSeq {
+				for _, seg := range fd.Block.CloseSeq {
+					if seg.Ref == "" {
+						continue
+					}
+					found := false
+					for _, a := range fd.Args {
+						if a.Kind == "capture" && a.Name == seg.Ref {
+							found = true
+							break
+						}
+					}
+					if !found {
+						return lib, fmt.Errorf("function %q: block_close_seq references unknown capture %q", fd.Name, seg.Ref)
+					}
 				}
 			}
 		}
@@ -431,6 +485,28 @@ func compileFunction(name string, f infra.RawFunction, tokenize func(string) ([]
 	}
 	if f.Block != nil {
 		fd.Block = &domain.BlockSpec{Closer: f.Block.Closer, Open: f.Block.Open, Close: f.Block.Close, IsDedent: f.Block.IsDedent, IsVerbatim: f.Block.IsVerbatim, Sections: f.Block.Sections}
+		if len(f.Block.CloseSeq) > 0 {
+			var segs []domain.CloseSegment
+			for _, raw := range f.Block.CloseSeq {
+				if raw.IsRef {
+					// A bare capture-name reference; resolved against the
+					// opener's bound captures at parse time.
+					segs = append(segs, domain.CloseSegment{Ref: raw.Text})
+					continue
+				}
+				// A fixed literal — pre-tokenize it the way the user-script
+				// lexer will (e.g. "</div>" → ["</", "div", ">"]).
+				toks, err := lexemeTexts(raw.Text, tokenize)
+				if err != nil {
+					return nil, fmt.Errorf("function %q: block_close_seq: %v", name, err)
+				}
+				if len(toks) == 0 {
+					return nil, fmt.Errorf("function %q: block_close_seq segment %q lexes to no tokens", name, raw.Text)
+				}
+				segs = append(segs, domain.CloseSegment{Tokens: toks})
+			}
+			fd.Block.CloseSeq = segs
+		}
 	}
 	if f.FollowedByIndent && f.NotFollowedByIndent {
 		return nil, fmt.Errorf("function %q: cannot set both when_followed_by and when_not_followed_by", name)
@@ -452,6 +528,26 @@ func compileFunction(name string, f infra.RawFunction, tokenize func(string) ([]
 	}
 
 	return fd, nil
+}
+
+// lexemeTexts tokenizes src and returns the .Text of each lexeme token,
+// skipping structural tokens (NEWLINE / INDENT / DEDENT / EOF). Used to
+// pre-compute a multi-token block closer sequence (e.g. "</div>" →
+// ["</", "div", ">"]) at library-load time.
+func lexemeTexts(src string, tokenize func(string) ([]domain.Token, error)) ([]string, error) {
+	toks, err := tokenize(src)
+	if err != nil {
+		return nil, err
+	}
+	var out []string
+	for _, t := range toks {
+		switch t.Kind {
+		case domain.TokNewline, domain.TokIndent, domain.TokDedent, domain.TokEOF:
+			continue
+		}
+		out = append(out, t.Text)
+	}
+	return out, nil
 }
 
 func compileArgs(raws []infra.RawArg, fname string) ([]domain.ArgEntry, error) {
@@ -477,7 +573,7 @@ func compileArgs(raws []infra.RawArg, fname string) ([]domain.ArgEntry, error) {
 			if t == "" {
 				t = "any"
 			}
-			out = append(out, domain.ArgEntry{Kind: "capture", Name: r.Name, Type: t, Description: r.Description, Optional: r.Optional, Default: r.Default})
+			out = append(out, domain.ArgEntry{Kind: "capture", Name: r.Name, Type: t, Description: r.Description, Optional: r.Optional, Default: r.Default, Repeat: r.Repeat, Sep: r.Sep})
 		default:
 			return nil, fmt.Errorf("function %q arg %d: unknown or missing kind %q (must be \"literal\" or \"capture\")", fname, i, r.Kind)
 		}
@@ -493,7 +589,7 @@ func compileElements(args []domain.ArgEntry) []domain.PatternElement {
 			// outer lexer tokenises them.
 			out = append(out, splitLiteral(a.Value)...)
 		} else {
-			out = append(out, domain.PatternElement{IsCapture: true, Name: a.Name, CapType: a.Type, Optional: a.Optional, Default: a.Default})
+			out = append(out, domain.PatternElement{IsCapture: true, Name: a.Name, CapType: a.Type, Optional: a.Optional, Default: a.Default, Repeat: a.Repeat, Sep: a.Sep})
 		}
 	}
 	return out

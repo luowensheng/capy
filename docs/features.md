@@ -36,6 +36,8 @@ links; this page is a quick reference for "is X supported?".
 | `run` | Inner-DSL snippet that mutates `context`. Does NOT execute user code. |
 | `block.closer` | Mode-A block opener (INDENT/DEDENT body + named closer function). |
 | `block.open` + `block.close` | Mode-B block opener (explicit delimiter pair). |
+| `block_close_seq` | Mode-E block opener — multi-token sequence closer (matched-pair HTML/XML). |
+| `arg capture x FUNC` / `FUNC*` / `FUNC+` | Function-as-type capture (named nonterminal), optionally repeated with `sep`. |
 | `priority` | Higher wins on ambiguous matches; default 0. |
 
 ### Auto-name-prepend rule
@@ -219,8 +221,43 @@ block_dedent
 Body runs until the indentation returns to the opener's level — no
 explicit closer keyword.
 
+### Mode E — multi-token sequence closer (matched-pair HTML/XML)
+
+```
+function element
+    arg literal "<"
+    arg capture name ident
+    arg capture attrs attribute*
+    arg literal ">"
+    block_close_seq "</" name ">"
+    write `<${name}${attrs}>${body}</${name}>`
+end
+```
+
+The body closes on an exact **run of tokens**, not a single keyword.
+Segments are quoted literals or bare **capture-name refs** bound by the
+opener, so a capture-bound closer (`</NAME>`) lets ONE function parse any
+well-formed `<tag>…</tag>` — HTML or XML. Each open tag demands its own
+matching close tag, so mismatched nesting (`<div><p></div>`) is a hard
+parse error. See [`samples/html-xml-parser`](showcase.md) and
+[block-functions](block-functions.md#mode-c-multi-token-sequence-closer-block_close_seq).
+
 Nesting works freely across all modes, including mixed (Mode-A inside
 Mode-B and vice versa).
+
+### Function-as-type captures (named nonterminals)
+
+A capture's type may name **another library function** instead of a
+built-in type. The capture then matches that function's shape and renders
+its template. Add a quantifier to repeat it, and `sep "X"` for a
+separator literal:
+
+| Form | Meaning |
+|------|---------|
+| `arg capture x SomeFunc` | exactly one `SomeFunc` (mandatory) |
+| `arg capture xs SomeFunc*` | zero or more |
+| `arg capture xs SomeFunc+` | one or more |
+| `arg capture xs SomeFunc+ sep ","` | one or more, comma-separated |
 
 ## CLI
 

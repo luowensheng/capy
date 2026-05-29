@@ -363,10 +363,13 @@ files, API stubs, schema migrations, design-system primitives,
 docs, manifests, tests. **Capy lets you describe *what* you want in
 a few plain lines**; a library encodes *how* each target produces
 it. Same source → many artifacts, byte-identical every time, all
-typed and validated at the boundary. Use it from the CLI, embed it
-as a Go library, ship it through an MCP server to AI agents, or
-[try it right now in your browser](playground.md) — the compiler
-runs as WebAssembly.
+typed and validated at the boundary. The grammar is expressive
+enough to parse **matched-pair HTML and XML** — one generic
+`<tag>…</tag>` function, with mismatched nesting caught as a parse
+error ([see it in the playground](playground.md)). Use it from the
+CLI, embed it as a Go library, ship it through an MCP server to AI
+agents, or [try it right now in your browser](playground.md) — the
+compiler runs as WebAssembly.
 
 </div>
 

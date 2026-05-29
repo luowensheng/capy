@@ -61,6 +61,12 @@ function <NAME>              # one DSL statement shape
     arg capture <NAME> <TYPE> # capture a typed named variable
     arg capture <NAME> <TYPE> default "V"  # optional trailing arg;
                              # binds "V" when omitted. Must be trailing.
+    arg capture <NAME> <FUNC>   # function-as-type: <TYPE> names another
+                             # library function (named nonterminal); the
+                             # capture matches that function's shape and
+                             # renders its template.
+    arg capture <NAME> <FUNC>*  # repeated nonterminal: * (zero+) / + (one+)
+    arg capture <NAME> <FUNC>+ sep "," # repeated with a separator literal
     block_closer <NAME>      # block opener: body runs until <NAME> appears
     block_open "OPEN" close "CLOSE"   # alternative: explicit delimiters
     block_dedent             # alternative: body ends at first DEDENT,
@@ -72,6 +78,12 @@ function <NAME>              # one DSL statement shape
     block_sections rescue finally closer end  # alternative: multi-section
                              # block. Main body + each section render to
                              # ${body} / ${rescue} / ${finally}. (try/rescue)
+    block_close_seq "</" name ">"  # alternative: multi-token sequence
+                             # closer. Segments are quoted literals or bare
+                             # capture-name refs bound by the opener. Body
+                             # is a free-flowing statement sequence ended by
+                             # the exact token run. Enables matched-pair HTML
+                             # (<div>…</div>); mismatched nesting is an error.
     when_followed_by indent      # gate: match only if an indented block follows
     when_not_followed_by indent  # gate: match only if one does NOT follow
                              # (context-sensitive keyword reuse — a flat and a
