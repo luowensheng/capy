@@ -14,7 +14,7 @@ import (
 // in priority order; the first complete match wins.
 func MakeParser() features.Parser {
 	return features.Parser{
-		Parse: func(toks []domain.Token, lib domain.Library) (domain.Block, error) {
+		Parse: func(toks []domain.Token, src string, lib domain.Library) (domain.Block, error) {
 			fns := make([]*domain.FuncDef, 0, len(lib.Functions))
 			for _, f := range lib.Functions {
 				fns = append(fns, f)
@@ -30,7 +30,7 @@ func MakeParser() features.Parser {
 				}
 				return literalLength(fns[i]) > literalLength(fns[j])
 			})
-			pp := &outerP{toks: toks, fns: fns, byName: lib.Functions, types: lib.Types}
+			pp := &outerP{toks: toks, fns: fns, byName: lib.Functions, types: lib.Types, srcLines: splitSourceLines(src)}
 			return pp.parseProgram(false, "")
 		},
 	}
@@ -57,6 +57,19 @@ type outerP struct {
 	fns    []*domain.FuncDef
 	byName map[string]*domain.FuncDef
 	types  map[string]domain.TypeDef
+	// srcLines is the original source split into lines (1-indexed via
+	// srcLines[line-1]). Used by parseVerbatimBody to capture a
+	// `block_verbatim` body as the raw byte range — preserving blank
+	// lines and comment-marker lines that produce no tokens.
+	srcLines []string
+}
+
+// splitSourceLines mirrors the lexer's splitLines: normalise CRLF,
+// then split on \n. Keeps line indexing aligned with token Line
+// numbers.
+func splitSourceLines(s string) []string {
+	s = strings.ReplaceAll(s, "\r\n", "\n")
+	return strings.Split(s, "\n")
 }
 
 func (p *outerP) Peek() domain.Token    { return p.toks[p.pos] }
@@ -176,7 +189,7 @@ func (p *outerP) parseStmt() (domain.FuncCall, error) {
 		p.consumeNewlines()
 		if fn.Block != nil {
 			if fn.Block.IsVerbatim {
-				text, closer, err := p.parseVerbatimBody(fn.Block.Closer)
+				text, closer, err := p.parseVerbatimBody(fn.Block.Closer, startLine)
 				if err != nil {
 					return domain.FuncCall{}, err
 				}
@@ -483,40 +496,43 @@ func (p *outerP) consumeLiteral(lit string) bool {
 // pleasant for code blocks: the user indents `pre go … end` four
 // spaces in their script and the captured body still starts at
 // column 1, ready for whatever the library's template does with it.
-func (p *outerP) parseVerbatimBody(closerName string) (string, *domain.FuncCall, error) {
+func (p *outerP) parseVerbatimBody(closerName string, openerLine int) (string, *domain.FuncCall, error) {
 	if p.Peek().Kind != domain.TokIndent {
 		return "", nil, fmt.Errorf("line %d: expected indented block (verbatim, closer=%s)", p.Peek().Line, closerName)
 	}
 	p.Advance()
 
-	// Collect every body token. Track INDENT/DEDENT balance so nested
-	// indentation doesn't terminate the verbatim block early.
-	var bodyToks []domain.Token
+	// Walk tokens to advance the parser position past the body and find
+	// the closing DEDENT's line. Track INDENT/DEDENT balance so nested
+	// indentation doesn't end the block early. We DON'T reconstruct
+	// text from these tokens — the body is sliced from the raw source
+	// (below) so blank lines and comment-marker lines, which produce no
+	// tokens, are preserved byte-for-byte.
 	depth := 0
+	closerLine := -1
 	for {
-		k := p.Peek().Kind
-		switch k {
+		switch p.Peek().Kind {
 		case domain.TokEOF:
 			return "", nil, fmt.Errorf("line %d: unterminated verbatim block, expected closer %q", p.Peek().Line, closerName)
 		case domain.TokIndent:
 			depth++
-			bodyToks = append(bodyToks, p.Advance())
+			p.Advance()
 			continue
 		case domain.TokDedent:
 			if depth == 0 {
-				// This is OUR closing DEDENT — body ends here.
+				closerLine = p.Peek().Line
 				p.Advance()
 				goto done
 			}
 			depth--
-			bodyToks = append(bodyToks, p.Advance())
+			p.Advance()
 			continue
 		}
-		bodyToks = append(bodyToks, p.Advance())
+		p.Advance()
 	}
 done:
 
-	text := reconstructVerbatim(bodyToks)
+	text := p.verbatimSlice(openerLine, closerLine)
 
 	cp, ok := p.byName[closerName]
 	if !ok {
@@ -535,81 +551,58 @@ done:
 	return text, &closerInst, nil
 }
 
-// reconstructVerbatim rebuilds source-like text from a token slice
-// captured by `parseVerbatimBody`. With the lexer's source-absolute
-// `Col` tracking (see startCol in tokenizeWith), the algorithm is
-// straightforward: find the minimum first-token column across body
-// lines (= the body's indent baseline) and shift every line left by
-// that amount so the captured text starts at column 1. Within a
-// line, gap arithmetic between consecutive tokens uses the same
-// column-preserved spacing logic that `tail` already relies on.
-// INDENT/DEDENT tokens carry no visible text and are skipped — col
-// values already encode the right whitespace.
-func reconstructVerbatim(toks []domain.Token) string {
-	if len(toks) == 0 {
+// verbatimSlice returns the raw source lines strictly between the
+// opener line and the closer line (both 1-indexed), dedented by the
+// smallest leading-whitespace run across non-blank body lines so the
+// captured text starts flush-left. Because it reads the original
+// source — not the token stream — blank lines and comment-marker
+// lines are preserved exactly (missing2.md §6).
+func (p *outerP) verbatimSlice(openerLine, closerLine int) string {
+	n := len(p.srcLines)
+	if closerLine <= 0 || closerLine > n+1 {
+		// Defensive: trailing-EOF dedent has no line; treat the rest
+		// of the source as the body.
+		closerLine = n + 1
+	}
+	// Body = 1-indexed lines (openerLine+1 .. closerLine-1)
+	//      = 0-indexed slice [openerLine : closerLine-1].
+	start, end := openerLine, closerLine-1
+	if start < 0 {
+		start = 0
+	}
+	if end > n {
+		end = n
+	}
+	if start >= end {
 		return ""
 	}
-	// Baseline: the leftmost source column of any text-bearing
-	// token. We shift every line left by (baseline - 1) so the
-	// captured body starts at column 1.
-	baseline := -1
-	for _, t := range toks {
-		switch t.Kind {
-		case domain.TokNewline, domain.TokIndent, domain.TokDedent:
+	body := p.srcLines[start:end]
+
+	minIndent := -1
+	for _, ln := range body {
+		if strings.TrimSpace(ln) == "" {
 			continue
 		}
-		if baseline < 0 || t.Col < baseline {
-			baseline = t.Col
+		i := 0
+		for i < len(ln) && (ln[i] == ' ' || ln[i] == '\t') {
+			i++
+		}
+		if minIndent < 0 || i < minIndent {
+			minIndent = i
 		}
 	}
-	if baseline < 1 {
-		baseline = 1
+	if minIndent < 0 {
+		minIndent = 0
 	}
-
-	var lines []string
-	var cur strings.Builder
-	onLineStart := true
-	prevEnd := -1
-
-	flushLine := func() {
-		lines = append(lines, cur.String())
-		cur.Reset()
-		onLineStart = true
-		prevEnd = -1
-	}
-
-	for _, t := range toks {
-		switch t.Kind {
-		case domain.TokIndent, domain.TokDedent:
-			continue
-		case domain.TokNewline:
-			flushLine()
-			continue
+	out := make([]string, len(body))
+	for i, ln := range body {
+		if len(ln) >= minIndent {
+			out[i] = ln[minIndent:]
+		} else {
+			out[i] = ln
 		}
-		// Effective column after shifting the body to start at col 1.
-		effCol := t.Col - (baseline - 1)
-		if effCol < 1 {
-			effCol = 1
-		}
-		if onLineStart {
-			if effCol > 1 {
-				cur.WriteString(strings.Repeat(" ", effCol-1))
-			}
-			onLineStart = false
-		} else if effCol > prevEnd {
-			cur.WriteString(strings.Repeat(" ", effCol-prevEnd))
-		}
-		text := tokenSourceForm(t)
-		cur.WriteString(text)
-		prevEnd = effCol + len(text)
 	}
-	if !onLineStart {
-		flushLine()
-	}
-	if len(lines) > 0 && lines[len(lines)-1] == "" {
-		lines = lines[:len(lines)-1]
-	}
-	return strings.Join(lines, "\n") + "\n"
+	return strings.Join(out, "\n") + "\n"
 }
 
 // tokenSourceForm reproduces a token's source-text representation.

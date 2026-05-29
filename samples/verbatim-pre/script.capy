@@ -9,3 +9,12 @@ pre python
         # quotes & angle brackets <stay> as text
         print(f"Hello, {name}!")
 end
+
+pre markdown
+    # Heading
+
+    A paragraph after a blank line — both the `#` line and the
+    blank line above survive verbatim.
+
+    ## Subheading
+end

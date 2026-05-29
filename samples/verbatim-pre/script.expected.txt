@@ -6,3 +6,10 @@
     # quotes &amp; angle brackets &lt;stay&gt; as text
     print(f&quot;Hello, {name}!&quot;)
 </code></pre>
+<pre><code class="language-markdown"># Heading
+
+A paragraph after a blank line — both the `#` line and the
+blank line above survive verbatim.
+
+## Subheading
+</code></pre>

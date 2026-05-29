@@ -1,6 +1,7 @@
 package orchfeatures
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/luowensheng/capy/domain"
@@ -84,19 +85,31 @@ func TestLexer_MultiLineObjectBracket(t *testing.T) {
 	}
 }
 
-func TestLexer_BadIndent(t *testing.T) {
-	// 3 spaces is not a valid indent
-	_, err := tokenize("a\n   b\n")
-	if err == nil {
-		t.Fatal("expected indent error")
+func TestLexer_ArbitraryIndentWidth(t *testing.T) {
+	// Indentation is width-based now: any consistent indent works, not
+	// just 4-space multiples. 3 spaces should tokenize as one INDENT.
+	toks, err := tokenize("a\n   b\n")
+	if err != nil {
+		t.Fatalf("3-space indent should be accepted, got: %v", err)
+	}
+	got := traceKinds(toks)
+	want := []string{"Ident:a", "NL", "Indent", "Ident:b", "NL", "Dedent", "EOF"}
+	if strings.Join(got, " ") != strings.Join(want, " ") {
+		t.Fatalf("got %v, want %v", got, want)
 	}
 }
 
-func TestLexer_NestedIndentJump(t *testing.T) {
-	// Jumping two levels in one step should error.
-	_, err := tokenize("a\n        b\n")
-	if err == nil {
-		t.Fatal("expected indent-jump error")
+func TestLexer_DeepIndentJumpIsOneLevel(t *testing.T) {
+	// Jumping straight to a deep indent is fine — it's a single INDENT,
+	// balanced by a single DEDENT. No "indent jump" restriction anymore.
+	toks, err := tokenize("a\n        b\n")
+	if err != nil {
+		t.Fatalf("deep indent should be accepted, got: %v", err)
+	}
+	got := traceKinds(toks)
+	want := []string{"Ident:a", "NL", "Indent", "Ident:b", "NL", "Dedent", "EOF"}
+	if strings.Join(got, " ") != strings.Join(want, " ") {
+		t.Fatalf("got %v, want %v", got, want)
 	}
 }
 

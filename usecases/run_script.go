@@ -15,7 +15,7 @@ type RunResult struct {
 
 type (
 	TokenizeFn      func(source string) ([]domain.Token, error)
-	ParseFn         func(toks []domain.Token, lib domain.Library) (domain.Block, error)
+	ParseFn         func(toks []domain.Token, src string, lib domain.Library) (domain.Block, error)
 	EvaluateFn      func(program domain.Block, lib domain.Library) (string, error)
 	EvaluateMultiFn func(program domain.Block, lib domain.Library) (string, map[string]string, error)
 	LoadLibFn       func(path string) (domain.Library, error)

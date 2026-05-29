@@ -162,7 +162,7 @@ func (l *Library) RunMulti(scriptSrc string) (string, map[string]string, error) 
 	if err != nil {
 		return "", nil, err
 	}
-	prog, err := l.parser.Parse(toks, libToUse)
+	prog, err := l.parser.Parse(toks, cleaned, libToUse)
 	if err != nil {
 		return "", nil, err
 	}

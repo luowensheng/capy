@@ -67,7 +67,7 @@ func (r *RunScriptImpl) Execute(scriptPath, libraryPath string) (usecases.RunRes
 	if err != nil {
 		return usecases.RunResult{}, err
 	}
-	prog, err := r.parse(toks, lib)
+	prog, err := r.parse(toks, src, lib)
 	if err != nil {
 		return usecases.RunResult{}, err
 	}

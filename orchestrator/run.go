@@ -100,7 +100,7 @@ func RunMultiWithArgs(libraryPath, scriptPath string, userArgs []string) (string
 	if err != nil {
 		return "", nil, err
 	}
-	prog, err := parser.Parse(toks, lib)
+	prog, err := parser.Parse(toks, expanded, lib)
 	if err != nil {
 		return "", nil, err
 	}
@@ -142,7 +142,7 @@ func RunStrings(librarySrc, libraryPath, scriptSrc string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	prog, err := parser.Parse(toks, lib)
+	prog, err := parser.Parse(toks, scriptSrc, lib)
 	if err != nil {
 		return "", err
 	}

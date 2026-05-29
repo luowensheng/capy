@@ -69,21 +69,31 @@ func tokenizeWith(source string, commentMarkers []string) ([]domain.Token, error
 			if rest == "" || hasCommentPrefix(rest, commentMarkers) {
 				continue
 			}
-			if indent%4 != 0 {
-				return nil, fmt.Errorf("line %d: indentation must be 4 spaces or 1 tab per level", li+1)
-			}
-			level := indent / 4
+			// Indentation is tracked as raw column WIDTH, not fixed
+			// 4-space levels. Any consistent indentation works — 2 spaces,
+			// 8 spaces, a tab, whatever — as long as deeper nesting uses
+			// more indent than its parent. `indents` is a stack of widths
+			// (base 0). Deeper than the top → one INDENT; shallower → pop
+			// DEDENTs until we reach a matching-or-shallower width. This
+			// keeps INDENT/DEDENT balanced for any well-nested source and
+			// removes the old "must be 4 spaces" / "unexpected indent jump"
+			// restrictions.
 			top := indents[len(indents)-1]
-			if level > top {
-				if level != top+1 {
-					return nil, fmt.Errorf("line %d: unexpected indent jump", li+1)
-				}
-				indents = append(indents, level)
+			if indent > top {
+				indents = append(indents, indent)
 				toks = append(toks, domain.Token{Kind: domain.TokIndent, Line: li + 1})
-			}
-			for level < indents[len(indents)-1] {
-				indents = indents[:len(indents)-1]
-				toks = append(toks, domain.Token{Kind: domain.TokDedent, Line: li + 1})
+			} else if indent < top {
+				for len(indents) > 1 && indent < indents[len(indents)-1] {
+					indents = indents[:len(indents)-1]
+					toks = append(toks, domain.Token{Kind: domain.TokDedent, Line: li + 1})
+				}
+				// Partial dedent landing between two known widths: open a
+				// fresh level so the line still belongs somewhere, rather
+				// than erroring "unindent does not match" (lenient).
+				if indent > indents[len(indents)-1] {
+					indents = append(indents, indent)
+					toks = append(toks, domain.Token{Kind: domain.TokIndent, Line: li + 1})
+				}
 			}
 			startCol = i + 1
 			line = line[i:]
