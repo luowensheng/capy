@@ -59,6 +59,8 @@ function <NAME>              # one DSL statement shape
                              # row of three string captures)
     arg literal "TEXT"       # match a literal token
     arg capture <NAME> <TYPE> # capture a typed named variable
+    arg capture <NAME> <TYPE> default "V"  # optional trailing arg;
+                             # binds "V" when omitted. Must be trailing.
     block_closer <NAME>      # block opener: body runs until <NAME> appears
     block_open "OPEN" close "CLOSE"   # alternative: explicit delimiters
     block_dedent             # alternative: body ends at first DEDENT,
@@ -79,6 +81,8 @@ function <NAME>              # one DSL statement shape
     #   `body`      — rendered inner-block output (block functions)
     #   `top_level` — true when this call is at the file root
     #   `depth`     — integer AST depth (0 at root)
+    #   `line` / `col` — 1-indexed source position of this statement
+    #                    (e.g. data-capy-line="${line}" for editors)
 end
 
 file_template                # whole-file assembler

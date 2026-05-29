@@ -185,7 +185,7 @@ extra quoting — useful for the file template's `for ... in ... end` loop.
 
 ## Engine-injected locals
 
-In addition to your function's captures, three locals are always
+In addition to your function's captures, these locals are always
 available inside the function body:
 
 | Local | Available where | What it is |
@@ -193,6 +193,8 @@ available inside the function body:
 | `body` | `write` literals AND state-mutation statements | The rendered output of the function's inner block (block functions only). In a state mutation like `append context.styles {name: name, body: body}`, this lets you stash rendered text back into context. |
 | `top_level` | `write` literals AND state-mutation statements | Boolean. `true` when the function call is being rendered at the file's outermost program block; `false` once we're inside any block's body. |
 | `depth` | `write` literals AND state-mutation statements | Integer. `0` at the top level, `1` inside one nested block, `2` inside two, etc. |
+| `line` | `write` literals AND state-mutation statements | Integer. The 1-indexed source line of the statement's first token. Stamp it onto emitted output for source↔output mapping: `<p data-capy-line="${line}">…</p>`. |
+| `col` | `write` literals AND state-mutation statements | Integer. The 1-indexed source column of the statement's first token. |
 
 `top_level` is the convenience boolean — most uses only need
 `if top_level … else … end` to branch between "this call appears at
@@ -202,9 +204,14 @@ scope (wrap in `<script>` for an HTML target, emit a `var` line for
 a JS target, etc.) and a *bare reassignment* inside a handler body,
 with no extra keyword required from the user.
 
+`line` / `col` give a host editor source↔output mapping for free: a
+library that writes `data-capy-line="${line}"` lets the editor do
+`querySelector('[data-capy-line="N"]')` for scroll-sync or inline
+error underlines — no source mutation, works inside every region.
+
 If a user-defined capture happens to be named `body`, `top_level`,
-or `depth`, the capture **wins**: the engine local only gets
-injected when there is no capture of the same name.
+`depth`, `line`, or `col`, the capture **wins**: the engine local
+only gets injected when there is no capture of the same name.
 
 ## Context paths
 

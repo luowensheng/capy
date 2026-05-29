@@ -18,6 +18,8 @@ Inside a function body, these are visible to `${EXPR}` interpolation:
 | `${<capture>}`     | One entry per capture; the captured source text as a string.    |
 | `${body}`          | The inner block's rendered output (block functions only).       |
 | `${context.X}`     | Read-only snapshot of the current accumulated context.          |
+| `${top_level}` / `${depth}` | Whether this call renders at file scope; its AST depth. |
+| `${line}` / `${col}` | The 1-indexed source position of the statement. Stamp `data-capy-line="${line}"` for editor source↔output mapping. |
 | `${func arg arg}`  | Call a helper inline (see Helpers below).                       |
 
 ```

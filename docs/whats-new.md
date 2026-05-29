@@ -4,6 +4,33 @@ title: What's new — engine primitives shipped in this release
 
 # What's new
 
+## Round 2 — editor integration & authoring ergonomics
+
+A second wave, driven by building a real product on Capy (a
+46-component library + a live editor with highlight / autocomplete /
+hover-docs / scroll-sync). All additive, all opt-in:
+
+| Feature | What it gives you |
+|---|---|
+| `${line}` / `${col}` render locals | Source↔output mapping. Stamp `data-capy-line="${line}"` and the host editor does `querySelector('[data-capy-line="N"]')` for scroll-sync / inline errors — no source mutation. |
+| `Library.Introspect()` + `capyIntrospect()` / `pagesIntrospect()` | Declared functions, args, capture types, and `description` doc strings — so an editor derives its autocomplete / hover / highlight metadata instead of hand-maintaining a parallel catalogue. |
+| `${decoded x}` handles embedded quotes | `<div class="x">\nmore` round-trips — quotes preserved, newlines real. No host-side decoder needed. |
+| Column-0 lines inside `template … end` | A flush-left `${indent 2 body}` no longer truncates the function body. |
+| Verbatim raw-byte fidelity | `block_verbatim` preserves blank lines and `#`-comment lines exactly — unblocks a real `markdown … end` block. |
+| Backtick code spans in captures | `` markdown `inline \`code\` here` `` keeps the span. |
+| Optional args with defaults | `arg capture variant string default "primary"` — collapses `button` / `button_link` / `submit` families into one function. |
+
+Samples: [`line-mapping`](https://github.com/luowensheng/capy/tree/main/samples/line-mapping),
+[`backtick-codespan`](https://github.com/luowensheng/capy/tree/main/samples/backtick-codespan),
+[`optional-args`](https://github.com/luowensheng/capy/tree/main/samples/optional-args),
+plus extended [`string-decoded`](https://github.com/luowensheng/capy/tree/main/samples/string-decoded),
+[`template-sugar`](https://github.com/luowensheng/capy/tree/main/samples/template-sugar),
+[`verbatim-pre`](https://github.com/luowensheng/capy/tree/main/samples/verbatim-pre).
+
+---
+
+## Round 1 — prose-heavy DSL substrate
+
 This release closes a six-stage roadmap focused on making Capy a
 viable substrate for **prose-heavy DSLs** (markdown-like authoring
 tools, blog/notes engines, technical docs, AI-emitted documents).

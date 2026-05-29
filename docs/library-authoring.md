@@ -118,6 +118,44 @@ arg literal "recipe" "Open a new recipe."
 arg capture title string "Display name, shown as the H1."
 ```
 
+### Optional args with defaults
+
+A trailing capture can declare a `default`, making it omittable at
+the call site. The full `arg capture` shape is:
+
+```
+arg capture NAME [TYPE] [default "VALUE"] [DESCRIPTION]
+```
+
+When the call site ends before reaching the optional arg, the
+engine binds the default instead of consuming a token. This
+collapses families of near-duplicate components into one function:
+
+```
+function button
+    arg literal "button"
+    arg capture label   string
+    arg capture variant string default "primary"
+    arg capture kind    string default "button"
+    template
+        <button type="${decoded kind}" class="btn btn-${decoded variant}">${escapeHtml (decoded label)}</button>
+    end
+end
+```
+
+```
+button "Save"                       → btn-primary, type=button
+button "Delete" "danger"            → btn-danger,  type=button
+button "Submit" "primary" "submit"  → btn-primary, type=submit
+```
+
+Optional args must be **trailing** — a required capture (or a
+literal) after an optional one is a load-time error, since the
+matcher couldn't tell which slot a supplied value fills. A `string`
+default is delivered in the same quoted form a real string capture
+carries, so `${x}` and `${decoded x}` behave identically whether the
+arg was supplied or defaulted.
+
 ### Auto-name-prepend
 
 If a function declares **zero** `arg literal` lines, the engine
@@ -422,6 +460,11 @@ end
 inside a `<pre><code>` block, indentation preserved verbatim. Every
 line between `pre go` and `end` is captured byte-for-byte; the user
 can paste arbitrary code without it being re-parsed as Capy.
+
+The capture is the literal source byte range, so **blank lines and
+comment-marker (`#`) lines are preserved exactly** — a `markdown …
+end` block with `## headings` and blank paragraphs round-trips
+untouched.
 
 ### Inline syntax via `group_open` / `group_close`
 
