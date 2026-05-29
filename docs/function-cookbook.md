@@ -1,0 +1,350 @@
+# Built-in function cookbook
+
+Capy has **zero source-language grammar** of its own — every keyword in a
+script comes from a `.capy` library. But the *template* side ships a fixed
+set of **built-in helper functions** you call inside `${ … }` (and inside
+`run`/`set` inner-DSL expressions). They are the only functions Capy
+itself defines; everything else you build.
+
+This page documents **every** built-in helper, what it does, and a worked
+example. The examples are mirrored by a runnable sample —
+[`samples/builtin-functions/`](https://github.com/luowensheng/capy/tree/main/samples/builtin-functions)
+— whose golden output is checked in CI, so what you read here is what the
+engine actually produces.
+
+> **Maintenance rule.** This list must stay in lock-step with the helper
+> table in `infra/helpers.go`. Whenever a built-in function is added,
+> renamed, or removed, update this page (and `samples/builtin-functions/`)
+> in the same change. See `CLAUDE.md`.
+
+## How to call a helper
+
+Inside a `write` / `template` body, a helper is called **prefix-style** —
+name first, arguments after, separated by spaces, no commas:
+
+```
+${pascalCase name}            # one argument
+${add count 1}                # two arguments
+${indent 4 body}              # literal + the body local
+```
+
+Wrap a sub-call in parentheses to nest:
+
+```
+${escapeHtml (decoded text)}  # decode escapes, THEN HTML-escape
+${dasherize (snakeCase name)} # "Order Item" → order-item
+${toJSON (split argv " ")}    # split a string, then JSON-encode the list
+```
+
+The same helpers are available in inner-DSL expressions, so
+`set context.total (add context.total n)` works identically.
+
+## Quick reference
+
+| Function | Signature | One-liner |
+|----------|-----------|-----------|
+| [`indent`](#indent) | `indent N str` | Indent every non-blank line by N spaces |
+| [`lower`](#lower-upper) | `lower str` | Lowercase |
+| [`upper`](#lower-upper) | `upper str` | Uppercase |
+| [`pascalCase`](#pascalcase-camelcase-snakecase) | `pascalCase str` | `Display Name` → `DisplayName` |
+| [`camelCase`](#pascalcase-camelcase-snakecase) | `camelCase str` | `Display Name` → `displayName` |
+| [`snakeCase`](#pascalcase-camelcase-snakecase) | `snakeCase str` | `Display Name` → `display_name` |
+| [`dasherize`](#dasherize) | `dasherize str` | `_` → `-` (snake → kebab) |
+| [`unquote`](#unquote) | `unquote str` | Strip one layer of surrounding quotes |
+| [`unescape`](#unescape) | `unescape str` | Reverse Go string escaping |
+| [`decoded`](#decoded) | `decoded str` | User-intended string: unquote + resolve escapes |
+| [`escapeHtml`](#escapehtml) | `escapeHtml str` | Neutralise `& < > " '` for HTML |
+| [`toQuoted`](#toquoted) | `toQuoted str` | Wrap in JSON-style double quotes |
+| [`asString`](#asstring) | `asString str` | Normalise any capture to exactly one JSON string |
+| [`trimSuffix`](#trimsuffix-trimprefix) | `trimSuffix suf str` | Drop a trailing substring |
+| [`trimPrefix`](#trimsuffix-trimprefix) | `trimPrefix pre str` | Drop a leading substring |
+| [`join`](#join) | `join sep list` | Join a list with a separator |
+| [`split`](#split) | `split str sep` | Split a string into a list |
+| [`nonEmpty`](#nonempty) | `nonEmpty list` | Drop blank entries from a string list |
+| [`toJSON`](#tojson-tojsonindent) | `toJSON value` | Compact JSON |
+| [`toJSONIndent`](#tojson-tojsonindent) | `toJSONIndent value` | Pretty-printed JSON |
+| [`toPyLit`](#topylit) | `toPyLit value` | Format a value as a Python literal |
+| [`add`](#add-sub-mul) | `add a b` | Integer `a + b` |
+| [`sub`](#add-sub-mul) | `sub a b` | Integer `a - b` |
+| [`mul`](#add-sub-mul) | `mul a b` | Integer `a * b` |
+| [`percent`](#percent) | `percent n d` | `n/d * 100`, clamped to 0–100 |
+| [`stars`](#stars) | `stars n` | `n` filled stars + the rest outlined, out of 5 |
+
+---
+
+## Layout
+
+### `indent`
+
+`indent N str` — prefix every **non-blank** line of `str` with `N`
+spaces. Blank lines stay empty (no trailing whitespace). The classic use
+is indenting a block function's `body` to the target language's nesting:
+
+```
+function block
+    arg literal "block"
+    block_closer end
+    write `block:
+${indent 2 body}`
+end
+```
+
+```
+block:
+  one
+  two
+```
+
+---
+
+## Case & identifiers
+
+These turn a friendly display name into an identifier. Each one strips a
+single layer of surrounding quotes first, then splits on space, `-`, `_`,
+and `.`.
+
+### `pascalCase` / `camelCase` / `snakeCase`
+
+| Call | `"user profile"` → |
+|------|--------------------|
+| `${pascalCase s}` | `UserProfile` |
+| `${camelCase s}`  | `userProfile` |
+| `${snakeCase s}`  | `user_profile` |
+
+`pascalCase` upper-cases the first letter of every segment; `camelCase` is
+the same with a lowercased first letter; `snakeCase` lowercases and joins
+with `_`.
+
+> **Watch the input.** `snakeCase` *also* inserts `_` before an interior
+> capital, so `"User Profile"` (space **and** capital `P`) becomes
+> `user__profile` (double underscore). Feed it an already-lowercase
+> display name, or run identifiers through it, to avoid surprises.
+
+### `lower` / `upper`
+
+`lower str` / `upper str` — straight case folding (no quote stripping; pair
+with `unquote` if the capture is quoted):
+
+```
+${upper (unquote s)}   # "user profile" → USER PROFILE
+${lower (unquote s)}   # "user profile" → user profile
+```
+
+### `dasherize`
+
+`dasherize str` — replace every `_` with `-`. Built for CSS property names
+and kebab-case identifiers, where the lexer won't allow a `-` inside an
+identifier. Compose with `snakeCase`:
+
+```
+${dasherize (snakeCase s)}   # "user profile" → user-profile
+```
+
+---
+
+## Strings & escaping
+
+A `string` capture surfaces in templates as the **source-quoted** form —
+`p "He said \"hi\""` gives `text` the value `"He said \\\"hi\\\""`. These
+helpers convert it to whatever the target wants.
+
+### `unquote`
+
+`unquote str` — strip exactly one layer of matched surrounding quotes
+(`"…"`, `'…'`, or `` `…` ``) if present; otherwise return the input
+unchanged. Escape sequences inside are **not** resolved — use
+[`decoded`](#decoded) for that. Good for Markdown headings and other
+spots that just need the quotes gone.
+
+### `decoded`
+
+`decoded str` — deliver the **user-intended** string: strip the outer
+quotes *and* fully resolve Go-style escapes (`\"`, `\n`, `\t`, `\\`,
+`\xNN`, `\uNNNN`). This is what you want when a capture may contain
+escaped quotes or whitespace:
+
+```
+text "He said \"hi\" <b>"
+```
+
+| Call | Output |
+|------|--------|
+| `${unquote s}` | `He said \\\"hi\\\" <b>` |
+| `${decoded s}` | `He said "hi" <b>` |
+
+Unlike `unquote`, `decoded` tolerates a bare `"` inside the string (common
+in captured HTML like `class="card"`), so newlines and tabs always resolve.
+
+### `escapeHtml`
+
+`escapeHtml str` — replace the five characters every HTML emitter must
+neutralise (`& < > " '`) with their entities, ampersand first. Your XSS
+guard for any free-form capture dropped into `<…>${…}</…>`. Compose it
+**after** `decoded`:
+
+```
+write `<p>${escapeHtml (decoded text)}</p>`
+```
+
+```
+He said "hi" <b>   →   He said &quot;hi&quot; &lt;b&gt;
+```
+
+> The verbose name is deliberate: `${html x}` would read as "make this
+> HTML"; `escapeHtml` reads as "escape this *for* HTML" — what it does.
+
+### `unescape`
+
+`unescape str` — reverse Go string escaping with `strconv.Unquote`
+(wrapping in `"…"` first if unquoted). Use it when the **target** wants
+the literal escape sequence resolved — assembler `.asciz`, C string
+literals, JSON on the wire. For HTML/template work prefer `decoded`, which
+is lenient about bare quotes; `unescape` falls back to the raw input if
+the value isn't valid Go-string syntax.
+
+### `toQuoted`
+
+`toQuoted str` — wrap a string in JSON-style double quotes (also valid for
+Python). Uses `json.Marshal`, so `<`, `>`, and `&` come out as `<`,
+`>`, `&`:
+
+```
+${toQuoted (decoded text)}   # He said "hi" <b>  →  "He said \"hi\" <b>"
+```
+
+### `asString`
+
+`asString str` — normalise **any** capture to exactly one valid JSON
+string, quoting only if it isn't already a string literal. Solves the case
+where a `raw`/`any` capture holds either a bare token (`foo`, `42`) or a
+quoted string (`"foo"`): both interpolate to `"foo"`. It peels one quote
+layer and decodes escapes (like `decoded`) then re-encodes as JSON.
+
+```
+write `{"op":"exec","bin":${asString bin},"argv":${toJSON (split argv " ")}}`
+```
+
+### `trimSuffix` / `trimPrefix`
+
+`trimSuffix suffix str` / `trimPrefix prefix str` — drop a trailing /
+leading substring if present. Note the **fixed string comes first**, the
+value second (reads naturally as a pipeline). The canonical use is
+shaving the dangling comma off a comma-suffixed list body:
+
+```
+${trimSuffix ",\n" body}     # drop the trailing comma+newline
+```
+
+```
+trimSuffix ".go" "src/main.go"   →  src/main
+trimPrefix "src/" "src/main.go"  →  main.go
+```
+
+---
+
+## Lists
+
+List helpers work on the `[]`-valued context entries you build with the
+inner DSL (`set context.items …`, `range`) or on the result of `split`.
+
+### `join`
+
+`join sep list` — join a list of values with `sep` between them. Real
+example from the CSV transpiler, joining an accumulated row:
+
+```
+write `${join "," context.header}`
+write `${join ", " context.models}`
+```
+
+### `split`
+
+`split str sep` — split a string into a list at each `sep` (argument order
+matches `strings.Split`: value first, separator second, so it reads well
+inline). Drive a loop or feed another helper:
+
+```
+for line in (split context.api_keys "\n")   # inner-DSL loop
+${toJSON (split argv " ")}                   # split then JSON-encode
+```
+
+### `nonEmpty`
+
+`nonEmpty list` — filter a string list down to entries that aren't blank
+after trimming. Handy after splitting `read_file` output so a trailing
+newline doesn't produce an empty final row:
+
+```
+range (nonEmpty (split (read_file "items.txt") "\n"))
+```
+
+---
+
+## Serialisation
+
+### `toJSON` / `toJSONIndent`
+
+`toJSON value` marshals any value to **compact** JSON; `toJSONIndent value`
+pretty-prints with two-space indentation. Great for config-file targets:
+
+```
+${toJSON context.settings}
+${toJSONIndent context.settings}
+```
+
+### `toPyLit`
+
+`toPyLit value` formats a value as a **Python literal**: `nil` → `None`,
+`true`/`false` → `True`/`False`, strings get quoted, lists render as
+`[…]`, maps as `{…}`. For emitting Python source from accumulated context.
+
+---
+
+## Numbers & display
+
+### `add` / `sub` / `mul`
+
+`add a b`, `sub a b`, `mul a b` — integer arithmetic; both arguments are
+coerced to `int64` (a digit-string from a `string` capture works too).
+Common in running totals inside `range`:
+
+```
+set context.total (add context.total n)
+${add a b}   # 3 4 → 7
+${sub a b}   # 3 4 → -1
+${mul a b}   # 3 4 → 12
+```
+
+### `percent`
+
+`percent n d` — `n / d * 100` as an integer, clamped to `[0, 100]`
+(returns 0 when `d == 0`). Built for HTML progress bars:
+
+```
+<div class="bar" style="width:${percent done total}%"></div>
+```
+
+```
+percent 3 4   →  75
+```
+
+### `stars`
+
+`stars n` — render `n` filled stars (`★`) followed by the remainder out of
+five as outlined stars (`☆`), clamped to 0–5. For ratings in
+non-programmer DSLs (reading logs, restaurant lists):
+
+```
+stars 3   →  ★★★☆☆
+```
+
+---
+
+## See also
+
+- [Templates](templates.md) — the `${ … }` interpolation syntax and the
+  per-function / file-template values in scope.
+- [Inner DSL](inner-dsl.md) — `run`/`set`/`range`/`if`, where these same
+  helpers are available in expression position.
+- [`samples/builtin-functions/`](https://github.com/luowensheng/capy/tree/main/samples/builtin-functions)
+  — the runnable, CI-checked source for every example above.

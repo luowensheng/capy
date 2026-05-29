@@ -4,6 +4,19 @@ title: What's new — engine primitives shipped in this release
 
 # What's new
 
+## Docs — built-in function cookbook
+
+Every built-in template helper (the functions you call inside `${ … }`)
+now has a single reference page:
+[Built-in function cookbook](function-cookbook.md). All 26 helpers —
+`indent`, `pascalCase`/`camelCase`/`snakeCase`, `dasherize`, `unquote`,
+`decoded`, `escapeHtml`, `toQuoted`, `asString`, `unescape`,
+`trimSuffix`/`trimPrefix`, `join`/`split`/`nonEmpty`, `toJSON`/
+`toJSONIndent`/`toPyLit`, `add`/`sub`/`mul`, `percent`, `stars`,
+`lower`/`upper` — with a worked example each. The examples are mirrored by
+the CI-checked [`samples/builtin-functions/`](https://github.com/luowensheng/capy/tree/main/samples/builtin-functions)
+sample, also runnable in the playground.
+
 ## Round 6 — matched-pair HTML: sequence closers & named nonterminals
 
 Two composing grammar primitives that together make well-formed,

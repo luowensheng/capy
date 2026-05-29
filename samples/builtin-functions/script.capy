@@ -1,0 +1,8 @@
+names "user profile"
+text "He said \"hi\" <b>"
+calc 3 4
+trim "src/main.go"
+block
+    line one
+    line two
+end

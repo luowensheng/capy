@@ -1,0 +1,21 @@
+pascalCase: UserProfile
+camelCase:  userProfile
+snakeCase:  user_profile
+dasherize:  user-profile
+upper:      USER PROFILE
+lower:      user profile
+unquote:    He said \\\"hi\\\" <b>
+decoded:    He said "hi" <b>
+escapeHtml: He said &quot;hi&quot; &lt;b&gt;
+toQuoted:   "He said \"hi\" \u003cb\u003e"
+asString:   "He said \"hi\" \u003cb\u003e"
+add:     7
+sub:     -1
+mul:     12
+percent: 75
+stars:   ★★★☆☆
+trimSuffix: src/main
+trimPrefix: main.go
+block:
+  one
+  two

@@ -54,6 +54,10 @@ end
 
 ## Helpers
 
+> For the **complete** list of every built-in helper — all 26, each with
+> a worked example — see the [Built-in function cookbook](function-cookbook.md).
+> The highlights below cover the most common ones.
+
 Beyond Go's stdlib helpers, Capy provides:
 
 ### `indent N`

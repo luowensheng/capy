@@ -29,6 +29,7 @@ plugs together.
 | [empty-engine/](empty-engine/) | Zero default grammar: every script is rejected without a library. |
 | [types/](types/)               | `pattern:` / `options:` / `base:` validation, with a failing-validation companion script. |
 | [scene-dsl/](scene-dsl/)       | A pure declarative DSL with no control flow defined. |
+| [builtin-functions/](builtin-functions/) | Live tour of every built-in template helper (`pascalCase`, `decoded`, `escapeHtml`, `percent`, `stars`, `indent`, …). Verifies the [function cookbook](../docs/function-cookbook.md). |
 
 ---
 

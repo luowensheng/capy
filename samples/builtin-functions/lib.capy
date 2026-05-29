@@ -1,0 +1,72 @@
+# builtin-functions — a live demonstration of Capy's built-in template
+# helper functions (the functions you call inside `${ ... }`). Each
+# library function below isolates one helper family so the golden output
+# doubles as a verified reference for docs/function-cookbook.md.
+extension txt
+
+# Case + identifier helpers: pascalCase / camelCase / snakeCase /
+# dasherize / upper / lower. Input is a friendly display name.
+function names
+    arg literal "names"
+    arg capture s string
+    write `pascalCase: ${pascalCase s}
+camelCase:  ${camelCase s}
+snakeCase:  ${snakeCase s}
+dasherize:  ${dasherize (snakeCase s)}
+upper:      ${upper (unquote s)}
+lower:      ${lower (unquote s)}
+`
+end
+
+# String-shaping helpers: unquote / decoded / escapeHtml / toQuoted /
+# asString. Shows how the same captured string surfaces differently.
+function text
+    arg literal "text"
+    arg capture s string
+    write `unquote:    ${unquote s}
+decoded:    ${decoded s}
+escapeHtml: ${escapeHtml (decoded s)}
+toQuoted:   ${toQuoted (decoded s)}
+asString:   ${asString s}
+`
+end
+
+# Numeric helpers: add / sub / mul / percent / stars.
+function calc
+    arg literal "calc"
+    arg capture a int
+    arg capture b int
+    write `add:     ${add a b}
+sub:     ${sub a b}
+mul:     ${mul a b}
+percent: ${percent a b}
+stars:   ${stars a}
+`
+end
+
+# trimSuffix / trimPrefix on a raw token.
+function trim
+    arg literal "trim"
+    arg capture s raw
+    write `trimSuffix: ${trimSuffix ".go" s}
+trimPrefix: ${trimPrefix "src/" s}
+`
+end
+
+# indent N — indent every line of the block body by N spaces.
+function block
+    arg literal "block"
+    block_closer end
+    write `block:
+${indent 2 body}`
+end
+
+function line
+    arg literal "line"
+    arg capture s raw
+    write `${s}
+`
+end
+
+function end
+end
