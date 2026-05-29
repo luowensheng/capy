@@ -50,7 +50,7 @@ The same helpers are available in inner-DSL expressions, so
 Every helper, its **parameters with types**, **arity**, and **return
 type** — taken directly from the `funcs` map and the `ApplyHelper`
 dispatch in `infra/helpers.go`. Call order matches the parameter order
-(prefix style, space-separated). See the [type glossary](#parameter--return-types)
+(prefix style, space-separated). See the [type glossary](#parameter-return-types)
 below the table.
 
 | Function | Parameters (in order) | Args | Returns | Summary |

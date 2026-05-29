@@ -93,6 +93,7 @@ nav:
     - Library keyword cookbook: library-keywords.md
     - ".capy library syntax": capy-libraries.md
     - Language reference (source side): language-reference.md
+    - How Capy parses & extracts content: how-capy-parses.md
     - Templates: templates.md
     - Built-in function cookbook: function-cookbook.md
     - Types: types.md

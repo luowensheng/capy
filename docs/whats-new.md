@@ -4,6 +4,18 @@ title: What's new — engine primitives shipped in this release
 
 # What's new
 
+## Docs — how Capy parses & extracts content
+
+A new end-to-end walkthrough,
+[How Capy parses & extracts content](how-capy-parses.md), explains the
+four-stage pipeline (lex → match → capture → render) and showcases it
+with 40+ runnable examples, building from a one-line literal grammar up
+to matched-pair tag parsing, nonterminal repetition with independent
+`sep`/`join`, custom types, and group-type inline syntax. Every output
+shown is produced by the engine, and the trickier behaviors (greedy
+`tail`, the auto-name-prepend rule, `when_followed_by indent`,
+capture-bound `block_close_seq`) are grounded in CI-checked samples.
+
 ## Docs — library keyword cookbook
 
 A companion to the function cookbook: the
