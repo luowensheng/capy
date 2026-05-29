@@ -1,0 +1,13 @@
+# backtick-codespan — a backtick-delimited `string` capture can hold
+# Markdown code spans by escaping the inner backticks (`\``). The
+# lexer preserves the escape; `${decoded src}` resolves `\`` → `` ` ``.
+# Removes the old "use html + <code> instead" caveat (missing2 §4b).
+extension html
+
+function markdown
+    arg literal "markdown"
+    arg capture src string
+    template
+        <p>${decoded src}</p>
+    end
+end

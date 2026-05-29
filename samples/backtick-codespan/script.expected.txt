@@ -1,0 +1,3 @@
+<p>plain paragraph, no spans</p>
+<p>inline `code` in the middle</p>
+<p>two spans: `foo` and `bar`</p>

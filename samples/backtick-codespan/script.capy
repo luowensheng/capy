@@ -1,0 +1,3 @@
+markdown `plain paragraph, no spans`
+markdown `inline \`code\` in the middle`
+markdown `two spans: \`foo\` and \`bar\``
