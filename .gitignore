@@ -4,7 +4,7 @@
 *.exe
 *.test
 *.out
-
+.ignore
 # OS junk
 .DS_Store
 Thumbs.db
