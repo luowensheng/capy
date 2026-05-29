@@ -207,6 +207,11 @@ type ArgInfo struct {
 	Type string `json:"type,omitempty"`
 	// Description is the optional trailing doc string on the arg line.
 	Description string `json:"description,omitempty"`
+	// Optional is true for a trailing capture declared with `default`,
+	// i.e. one the call site may omit (Kind == "capture").
+	Optional bool `json:"optional,omitempty"`
+	// Default is the value bound when an Optional capture is omitted.
+	Default string `json:"default,omitempty"`
 }
 
 // FunctionInfo is the introspected shape of one library function —
@@ -250,6 +255,8 @@ func (l *Library) Introspect() []FunctionInfo {
 				Name:        a.Name,
 				Type:        a.Type,
 				Description: a.Description,
+				Optional:    a.Optional,
+				Default:     a.Default,
 			})
 		}
 		if b := fn.Block; b != nil {
