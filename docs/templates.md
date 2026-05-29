@@ -108,6 +108,31 @@ file_template
 end
 ```
 
+### `asString <capture>`
+
+Normalises a capture to exactly **one valid JSON string**, quoting *iff*
+it isn't already a string. This is the verb to reach for when a single
+capture might hold either a bare token (`foo`, `42`, `true`) or a quoted
+string (`"foo"`) and you want correct JSON for both:
+
+- `${x}` alone emits the source text — a bare ident `foo` is invalid JSON.
+- `${toJSON x}` re-quotes an already-quoted string, leaking literal `"`.
+- `${asString x}` resolves the captured text to its user-intended form
+  (peeling one quote layer and decoding escapes, like `decoded`) and
+  re-encodes it as a single JSON string.
+
+```
+function exec
+    arg literal "exec"
+    arg capture bin word
+    write `{"run": ${asString bin}}
+`
+end
+```
+
+`exec git` and `exec "git"` both emit `{"run": "git"}`. Pairs naturally
+with the `word` / `tail` capture types for shell-like surfaces.
+
 ### `lower` / `upper`
 
 Case helpers.

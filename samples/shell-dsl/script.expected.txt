@@ -1,0 +1,4 @@
+{"op":"exec","bin":"git","argv":["log","--oneline","-10"]}
+{"op":"exec","bin":"kubectl","argv":["apply","-f","k8s/deploy.yaml"]}
+{"op":"run","name":"restart-api"}
+{"op":"watch","field":"err.kind"}

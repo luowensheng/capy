@@ -233,7 +233,9 @@ func (e *outerEval) validateArgs(c domain.FuncCall) error {
 // look like an integer literal); library-defined types apply pattern/options.
 func (e *outerEval) checkType(t string, text string) error {
 	switch t {
-	case "", "any", "raw", "ident", "tail":
+	case "", "any", "raw", "ident", "tail", "word", "dotted_ident":
+		// Free-form token captures — the parser already enforced their
+		// shape at capture time, so any captured text is valid here.
 		return nil
 	case "string":
 		// String captures parse as StringLit and the source-text form is

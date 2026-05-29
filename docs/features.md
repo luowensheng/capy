@@ -69,6 +69,8 @@ the [new-feature showcase](showcase.md#new-feature-showcase-21-examples-in-the-p
 | `any` | Any single value expression (numbers, strings, lists, objects, dotted paths, paren sub-calls, comparisons). |
 | `ident` | A single identifier token; bound as a string. |
 | `raw` | One identifier OR string token. |
+| `word` | A shell-style bare word — adjacent tokens with no source whitespace joined into one value (`--oneline`, `k8s/deploy.yaml`, `restart-api`). |
+| `dotted_ident` | A dotted path `IDENT(.IDENT)*` captured as one string (`err.kind`). |
 | `string` | A quoted string literal — OR a bare identifier. |
 | `int` | An integer literal — OR a bare identifier. |
 | `float` | A float literal — OR a bare identifier. |
@@ -148,6 +150,7 @@ or `${helper arg expr}`, in both per-function bodies and the top-level
 | `unquote` | Strip one layer of surrounding `"..."`, `'...'`, or `` `...` ``. |
 | `unescape` | Resolve standard Go escape sequences (legacy; prefer `decoded`). |
 | `toQuoted` | Wrap a string in JSON-style double quotes. |
+| `asString` | Normalise a capture to ONE valid JSON string, quoting iff not already a string — correct for both a bare ident and a quoted string. |
 | `toPyLit` | Format a Go value as a Python literal (`True`/`False`/`None`/lists/dicts). |
 | `toJSON` / `toJSONIndent` | Marshal any value to compact / pretty JSON. |
 | `trimPrefix P` / `trimSuffix S` | Strip a leading / trailing substring. |

@@ -1,0 +1,5 @@
+# A shell-style automation script.
+exec git log --oneline -10
+exec kubectl apply -f k8s/deploy.yaml
+run restart-api
+on err.kind

@@ -320,14 +320,14 @@ func mapLibrary(r infra.RawLibrary, tokenize func(string) ([]domain.Token, error
 			if a.Kind == "capture" && !validType(a.Type, lib.Types) {
 				ce := &domain.CapyError{Msg: fmt.Sprintf("function %q: capture %q has unknown type %q", fd.Name, a.Name, a.Type)}
 				// Suggest the closest known type (built-ins + library-declared).
-				cands := []string{"any", "ident", "raw", "tail", "string", "int", "float", "bool"}
+				cands := []string{"any", "ident", "raw", "tail", "word", "dotted_ident", "string", "int", "float", "bool"}
 				for n := range lib.Types {
 					cands = append(cands, n)
 				}
 				if best := domain.SuggestClosest(a.Type, cands, 2); best != "" {
 					ce.Hint = fmt.Sprintf("did you mean %q?", best)
 				} else {
-					ce.Hint = fmt.Sprintf("built-in types: any, ident, raw, tail, string, int, float, bool; declared types: %v", typeNames(lib.Types))
+					ce.Hint = fmt.Sprintf("built-in types: any, ident, raw, tail, word, dotted_ident, string, int, float, bool; declared types: %v", typeNames(lib.Types))
 				}
 				return lib, ce
 			}
@@ -533,7 +533,7 @@ func typeNames(types map[string]domain.TypeDef) []string {
 
 func validType(t string, types map[string]domain.TypeDef) bool {
 	switch t {
-	case "any", "ident", "raw", "tail", "string", "int", "float", "bool":
+	case "any", "ident", "raw", "tail", "word", "dotted_ident", "string", "int", "float", "bool":
 		return true
 	}
 	_, ok := types[t]

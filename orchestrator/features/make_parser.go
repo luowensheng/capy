@@ -29,7 +29,15 @@ func MakeParser() features.Parser {
 				if li != lj {
 					return li
 				}
-				return literalLength(fns[i]) > literalLength(fns[j])
+				if a, b := literalLength(fns[i]), literalLength(fns[j]); a != b {
+					return a > b
+				}
+				// Final tiebreaker on name so candidate ordering is TOTAL
+				// and deterministic. Without this, functions that tie on
+				// (priority, literal-start, literal-length) kept Go's
+				// randomized map-iteration order — making any keyword
+				// collision a run-to-run heisenbug (missing.md §2).
+				return fns[i].Name < fns[j].Name
 			})
 			pp := &outerP{toks: toks, fns: fns, byName: lib.Functions, types: lib.Types, srcLines: splitSourceLines(src)}
 			return pp.parseProgram(false, "")
@@ -151,6 +159,13 @@ func (p *outerP) parseStmt() (domain.FuncCall, error) {
 	startTok := p.Peek()
 	startLine := startTok.Line
 	startCol := startTok.Col
+	// blockErr remembers the FIRST error from a candidate that matched its
+	// header and opened a block but then failed to parse its body. We now
+	// backtrack out of such failures (missing.md §1) so a flat function can
+	// still match the same leading keyword. But if NO later candidate
+	// matches either, this remembered error is more informative than the
+	// generic "no library function matches" — so we surface it at the end.
+	var blockErr error
 	for _, fn := range p.fns {
 		saved := p.Save()
 		inst, err := p.tryMatch(fn)
@@ -173,7 +188,11 @@ func (p *outerP) parseStmt() (domain.FuncCall, error) {
 			}
 			body, err := p.parseDelimBlock(fn.Block.Open, fn.Block.Close)
 			if err != nil {
-				return domain.FuncCall{}, err
+				if blockErr == nil {
+					blockErr = err
+				}
+				p.Restore(saved)
+				continue
 			}
 			inst.Body = &body
 			// Expect NEWLINE after the closing delimiter.
@@ -192,7 +211,11 @@ func (p *outerP) parseStmt() (domain.FuncCall, error) {
 			if fn.Block.IsVerbatim {
 				text, closer, err := p.parseVerbatimBody(fn.Block.Closer, startLine)
 				if err != nil {
-					return domain.FuncCall{}, err
+					if blockErr == nil {
+						blockErr = err
+					}
+					p.Restore(saved)
+					continue
 				}
 				// Stash the raw body bytes on the FuncCall via a
 				// synthetic single-statement block whose VerbatimText
@@ -203,13 +226,23 @@ func (p *outerP) parseStmt() (domain.FuncCall, error) {
 			} else {
 				body, closer, err := p.parseBlockBody(fn.Block.Closer)
 				if err != nil {
-					return domain.FuncCall{}, err
+					if blockErr == nil {
+						blockErr = err
+					}
+					p.Restore(saved)
+					continue
 				}
 				inst.Body = &body
 				inst.Closer = closer
 			}
 		}
 		return inst, nil
+	}
+	// A candidate matched a block opener but its body failed to parse, and
+	// nothing else matched either — surface that error (it points at the
+	// real problem inside the body, not the generic "no match").
+	if blockErr != nil {
+		return domain.FuncCall{}, blockErr
 	}
 	// Build a "did you mean…?" hint: the closest literal-starting
 	// function name to the unrecognized token.
@@ -404,6 +437,58 @@ func (p *outerP) captureValue(t string, stop []string) (domain.CaptureValue, err
 			return domain.CaptureValue{}, fmt.Errorf("expected tail value, got end of line")
 		}
 		return domain.CaptureValue{Text: b.String()}, nil
+	case "word":
+		// A shell-style bare word: a MAXIMAL run of adjacent tokens with
+		// no intervening source whitespace, joined into one value. Lets
+		// `--oneline`, `-f`, `k8s/deploy.yaml`, `name=^web$`, and hyphenated
+		// names like `restart-api` capture as ONE token even though the
+		// lexer splits them on `-`, `/`, `=`, `.` etc. (missing.md §4).
+		// Unlike `tail`, it stops at the first whitespace gap, so
+		// `exec git --bare` can capture `git` as a word and leave
+		// `--bare` for the next element.
+		if k := p.Peek().Kind; k == domain.TokNewline || k == domain.TokEOF || k == domain.TokDedent || k == domain.TokIndent {
+			return domain.CaptureValue{}, fmt.Errorf("expected word, got end of statement")
+		}
+		var wb strings.Builder
+		prevEnd := -1
+		for {
+			tok := p.Peek()
+			switch tok.Kind {
+			case domain.TokNewline, domain.TokEOF, domain.TokDedent, domain.TokIndent:
+				return domain.CaptureValue{Text: wb.String()}, nil
+			}
+			if prevEnd >= 0 && tok.Col > prevEnd {
+				// A whitespace gap in the source ends the word.
+				return domain.CaptureValue{Text: wb.String()}, nil
+			}
+			p.Advance()
+			wb.WriteString(tok.Text)
+			prevEnd = tok.Col + len(tok.Text)
+		}
+	case "dotted_ident":
+		// A dotted identifier path: IDENT ( "." IDENT )*. The lexer treats
+		// `.` as punctuation, so a bare `ident` capture stops at the first
+		// segment; this type consumes the whole `err.kind` / `a.b.c` chain
+		// and returns it joined with dots (missing.md §9). Requires no
+		// surrounding whitespace around the dots.
+		tok := p.Peek()
+		if tok.Kind != domain.TokIdent {
+			return domain.CaptureValue{}, fmt.Errorf("expected dotted identifier, got %q", tok.Text)
+		}
+		var db strings.Builder
+		db.WriteString(p.Advance().Text)
+		end := tok.Col + len(tok.Text)
+		for p.Peek().Kind == domain.TokPunct && p.Peek().Text == "." && p.Peek().Col == end {
+			dot := p.Advance()
+			seg := p.Peek()
+			if seg.Kind != domain.TokIdent || seg.Col != dot.Col+1 {
+				return domain.CaptureValue{}, fmt.Errorf("expected identifier after %q in dotted identifier", db.String()+".")
+			}
+			db.WriteString(".")
+			db.WriteString(p.Advance().Text)
+			end = seg.Col + len(seg.Text)
+		}
+		return domain.CaptureValue{Text: db.String()}, nil
 	}
 	// Library-defined types. Three sub-cases:
 	//   * `group_open`/`group_close` set → delimited capture: walk

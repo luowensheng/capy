@@ -8,19 +8,50 @@ reference them by name in `arg capture NAME TYPE`.
 
 These are always available and don't need a `type` declaration:
 
-| Kind     | Captures                                                                |
-|----------|-------------------------------------------------------------------------|
-| `any`    | Any single value expression. No validation.                             |
-| `ident`  | A single identifier token; bound as a string.                           |
-| `raw`    | An identifier OR a string token; bound as a string (no quotes).         |
-| `string` | A quoted string literal — or a bare ident (transpile-mode permissive).  |
-| `int`    | An integer literal — or a bare ident.                                   |
-| `float`  | A float literal — or a bare ident.                                      |
-| `bool`   | `true`/`false` — or a bare ident.                                       |
+| Kind           | Captures                                                                |
+|----------------|-------------------------------------------------------------------------|
+| `any`          | Any single value expression. No validation.                             |
+| `ident`        | A single identifier token; bound as a string.                           |
+| `raw`          | An identifier OR a string token; bound as a string (no quotes).         |
+| `word`         | A shell-style **bare word** — a maximal run of adjacent tokens with no source whitespace. Captures `--oneline`, `-f`, `k8s/deploy.yaml`, `name=^web$`, `restart-api` as ONE value even though the lexer splits them on `-`, `/`, `=`, `.`. Stops at the first whitespace gap. |
+| `dotted_ident` | A dotted identifier path — `IDENT ( "." IDENT )*` — captured as one string. Lets `match err.kind` work bare instead of `match "${err.kind}"`. |
+| `tail`         | **Every** remaining token on the statement, rejoined with source-accurate spacing. One value, one-or-more tokens. Great for free-form trailing argv / CSS values. |
+| `string`       | A quoted string literal — or a bare ident (transpile-mode permissive).  |
+| `int`          | An integer literal — or a bare ident.                                   |
+| `float`        | A float literal — or a bare ident.                                      |
+| `bool`         | `true`/`false` — or a bare ident.                                       |
 
 The "or a bare ident" rule exists because in transpile mode the captured
 text flows into the target language; a bare ident might be a variable that
 holds a value of the expected type at the target's runtime.
+
+### `word` vs `tail` vs `dotted_ident`
+
+All three exist because the lexer tokenises on its own rules (idents,
+strings, numbers, punctuation) — so a single shell flag or path arrives as
+several tokens. These capture types reassemble them:
+
+- **`word`** — one bare word, stops at whitespace. Use for a hyphenated
+  command name (`restart-api`) or a single flag/path token.
+- **`tail`** — the whole rest of the line as one string. Use for free-form
+  trailing content (a full argv, a CSS value).
+- **`dotted_ident`** — a dotted path only (`a.b.c`); rejects whitespace and
+  other punctuation. Use for member-access syntax.
+
+```
+function exec
+    arg literal "exec"
+    arg capture cmd  word        # restart-api, kubectl, git
+    arg capture argv tail        # --oneline -n 10 path/to/file
+    write `{"op":"exec","cmd":${asString cmd},"argv":${toJSON (split argv " ")}}`
+end
+
+function match
+    arg literal "match"
+    arg capture path dotted_ident  # err.kind  →  "err.kind"
+    write `... ${path} ...`
+end
+```
 
 ## Library-defined types
 

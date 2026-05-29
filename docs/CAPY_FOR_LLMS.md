@@ -142,6 +142,8 @@ end
 | `any`    | Any value expression (number, string, ident, list, object, dotted path, paren-sub-call, comparison). |
 | `ident`  | A single identifier token.                            |
 | `raw`    | Identifier OR string.                                 |
+| `word`   | Shell-style bare word — a maximal run of adjacent tokens with no source whitespace. Captures `--oneline`, `k8s/deploy.yaml`, `name=^web$`, `restart-api` as ONE value. |
+| `dotted_ident` | `IDENT(.IDENT)*` captured as one string, e.g. `err.kind`. |
 | `tail`   | Every remaining token on the statement, joined with original column spacing. For free-form trailing values like `20px` or `1px solid red`. |
 | `string` | A quoted string — OR a bare identifier.               |
 | `int`    | An integer literal — OR a bare identifier.            |
@@ -247,6 +249,7 @@ Inside `file_template`:
 - `toQuoted` — wrap a string in `"…"`.
 - `toPyLit` — Python literal formatting (True/False/None, lists, dicts).
 - `toJSON`, `toJSONIndent` — JSON marshal.
+- `asString` — normalise a capture to ONE valid JSON string, quoting iff not already a string (handles bare ident OR quoted string uniformly).
 - `unquote` — strip surrounding quotes from a captured string.
 
 ---

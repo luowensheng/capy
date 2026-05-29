@@ -225,6 +225,29 @@ var funcs = map[string]any{
 		}
 		return decodeEscapes(text)
 	},
+	// asString normalises a capture to exactly ONE valid JSON string,
+	// quoting iff it isn't already a string literal. This is the
+	// interpolation verb that was missing (missing.md §3): an `any` /
+	// `raw` capture can hold either a bare token (`foo`, `42`, `true`)
+	// or a quoted string (`"foo"`), and neither `${x}` nor `${toJSON x}`
+	// emits correct JSON for both — the former leaves a bare ident
+	// unquoted (invalid JSON), the latter re-quotes an already-quoted
+	// string (leaking literal `"` into the value). asString resolves the
+	// captured text to its user-intended form (peeling one quote layer
+	// and decoding escapes, exactly like `decoded`) and then re-encodes
+	// it as a single JSON string. So `exec echo foo` and
+	// `exec echo "foo"` both interpolate to `"foo"`.
+	"asString": func(s any) string {
+		text := toStringAny(s)
+		var v string
+		if unq, err := strconv.Unquote(text); err == nil {
+			v = decodeEscapes(unq)
+		} else {
+			v = decodeEscapes(text)
+		}
+		b, _ := json.Marshal(v)
+		return string(b)
+	},
 	// toPyLit formats any value as a Python literal.
 	"toPyLit": pyLit,
 	// toJSON marshals any value to compact JSON (good for config-file output).

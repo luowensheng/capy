@@ -4,6 +4,24 @@ title: What's new — engine primitives shipped in this release
 
 # What's new
 
+## Round 3 — automation-DSL parser hardening
+
+A third wave, driven by building a shell-/automation-style DSL on Capy
+(command runners, `exec` surfaces, config languages with member access).
+These close concrete parser and tokenizer gaps. All additive, all opt-in:
+
+| Feature | What it gives you |
+|---|---|
+| **Block backtracking** | When a function matches a block opener's header but no body follows, the parser now backtracks and tries the next candidate — so a flat function and a block function can safely share a leading keyword (e.g. `os "linux"` as a flat entry vs `os "…" … end` as a conditional block). Previously it committed to the block and errored. |
+| **Deterministic candidate ordering** | The function-match order is now total (priority → literal-start → literal-length → **name**). Functions that tie on all other keys no longer inherit Go's randomized map order — eliminating run-to-run "parses 50% of the time" heisenbugs on keyword collisions. |
+| `word` capture type | A shell-style bare word: `--oneline`, `-f`, `k8s/deploy.yaml`, `name=^web$`, `restart-api` capture as ONE value despite the lexer splitting on `-`/`/`/`=`/`.`. |
+| `dotted_ident` capture type | `match err.kind` works bare — captures the dotted path as one string instead of needing the `"${err.kind}"` workaround. |
+| `${asString x}` helper | Emits exactly one valid JSON string, quoting iff the capture isn't already a string. `exec echo foo` and `exec echo "foo"` both interpolate correctly — no more `${toJSON}` double-quoting or bare-ident invalid JSON. |
+
+Tests: [`missing_features_test.go`](https://github.com/luowensheng/capy/blob/main/missing_features_test.go).
+
+---
+
 ## Round 2 — editor integration & authoring ergonomics
 
 A second wave, driven by building a real product on Capy (a

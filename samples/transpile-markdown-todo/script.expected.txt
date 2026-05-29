@@ -11,4 +11,3 @@
 - [ ] Publish VS Code extension
 - [ ] Set up Discussions
 - [x] Move .codestyle to docs
-

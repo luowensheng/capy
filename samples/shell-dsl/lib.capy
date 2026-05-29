@@ -1,0 +1,37 @@
+# shell-dsl — an automation/command DSL emitting NDJSON-style events.
+# Exercises the round-3 parser features (missing.md):
+#   * `word`         — bare shell words: flags, paths, hyphenated names (§4)
+#   * `tail`         — the rest of the line as one free-form argv (§4/§6)
+#   * `dotted_ident` — member-access paths captured bare (§9)
+#   * `asString`     — JSON-safe interpolation of ident-or-string (§3)
+#   * a `comments` block so `#` lines parse in user scripts (§7)
+extension ndjson
+
+comments
+    line "#"
+end
+
+# exec BIN ARGV…  → one function, any number of trailing tokens (no arity cap).
+function exec
+    arg literal "exec"
+    arg capture bin word
+    arg capture argv tail
+    write `{"op":"exec","bin":${asString bin},"argv":${toJSON (split argv " ")}}
+`
+end
+
+# run NAME  → a hyphenated command name captured as one word.
+function run
+    arg literal "run"
+    arg capture name word
+    write `{"op":"run","name":${asString name}}
+`
+end
+
+# on FIELD  → a dotted access path captured bare (err.kind), no quoting needed.
+function on
+    arg literal "on"
+    arg capture field dotted_ident
+    write `{"op":"watch","field":${asString field}}
+`
+end
