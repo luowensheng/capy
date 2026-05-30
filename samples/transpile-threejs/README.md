@@ -75,5 +75,5 @@ A self-contained HTML page that:
 - Animates motion verbs and `explode` decay in a `requestAnimationFrame`
   loop.
 
-Try it live: in the [playground](https://luowensheng.github.io/capy/playground/),
+Try it live: in the [playground](https://olivierdevelops.github.io/capy/playground/),
 pick "🌐 Three.js scene (interactive)" from the dropdown.

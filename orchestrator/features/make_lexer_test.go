@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/luowensheng/capy/domain"
+	"github.com/olivierdevelops/capy/domain"
 )
 
 func TestLexer_IndentDedent(t *testing.T) {

@@ -1,0 +1,6 @@
+st x 1
+st x 2
+ld x
+st x 3
+st y 9
+flush

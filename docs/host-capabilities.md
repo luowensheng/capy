@@ -82,8 +82,8 @@ trusted environment and want libraries to see your env/files, opt in:
 ```go
 import (
     "os"
-    "github.com/luowensheng/capy"
-    "github.com/luowensheng/capy/infra"
+    "github.com/olivierdevelops/capy"
+    "github.com/olivierdevelops/capy/infra"
 )
 
 lib, _ := capy.NewLibraryFromFile("lib.capy")
@@ -133,7 +133,7 @@ differs from the CLI run.
 ## Worked example
 
 The full sample lives at
-[`samples/host-capabilities/`](https://github.com/luowensheng/capy/tree/main/samples/host-capabilities).
+[`samples/host-capabilities/`](https://github.com/olivierdevelops/capy/tree/main/samples/host-capabilities).
 A 5-line source produces a complete Kubernetes Deployment manifest
 that incorporates env vars, CLI args, and the contents of a sibling
 secrets file at transpile time.

@@ -75,7 +75,7 @@ end
 A source that says `page "Account Settings"` then emits
 `AccountSettingsPage.tsx` and `components/account-settings.css`
 side by side. See
-[`samples/design-system-components/`](https://github.com/luowensheng/capy/tree/main/samples/design-system-components)
+[`samples/design-system-components/`](https://github.com/olivierdevelops/capy/tree/main/samples/design-system-components)
 for a real one.
 
 Tip: subdirectories work fine in the filename template too —
@@ -109,7 +109,7 @@ to stdout (or writes to `--out`). Most multi-file libraries omit
 
 ### The killer sample
 
-[`samples/multi-file-project/`](https://github.com/luowensheng/capy/tree/main/samples/multi-file-project)
+[`samples/multi-file-project/`](https://github.com/olivierdevelops/capy/tree/main/samples/multi-file-project)
 turns a 9-line route declaration into a 6-file FastAPI project tree
 (README, pyproject.toml, .gitignore, src/main.py, src/handlers.py,
 tests/test_smoke.py).
@@ -255,7 +255,7 @@ so imported content nests naturally inside the surrounding block.
 | Conflict rule                  | Importer-wins merge        | n/a (text inclusion)           |
 | Typical use                    | Share DSL building blocks  | Share pieces of authored content |
 
-See [`samples/source-imports/`](https://github.com/luowensheng/capy/tree/main/samples/source-imports)
+See [`samples/source-imports/`](https://github.com/olivierdevelops/capy/tree/main/samples/source-imports)
 for a worked menu example.
 
 ## When to split a library
@@ -274,7 +274,7 @@ read than five 20-line files. Refactor when the pain shows up.
 
 ## The composition sample
 
-[`samples/lib-composition/`](https://github.com/luowensheng/capy/tree/main/samples/lib-composition)
+[`samples/lib-composition/`](https://github.com/olivierdevelops/capy/tree/main/samples/lib-composition)
 ships a minimal layout that demonstrates the pattern end-to-end:
 
 ```

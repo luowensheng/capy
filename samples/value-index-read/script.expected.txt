@@ -1,0 +1,5 @@
+    ; (dead store to x eliminated)
+    mov [x], 2
+    mov rax, [x]
+    mov [x], 3
+    mov [y], 9

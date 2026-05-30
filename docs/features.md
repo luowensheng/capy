@@ -10,11 +10,11 @@ links; this page is a quick reference for "is X supported?".
 | Feature | Status | Where |
 |---------|--------|-------|
 | Zero default grammar — every shape is library-defined | ✅ | [language-reference](language-reference.md) |
-| Single-binary Go engine, no runtime deps | ✅ | `go install github.com/luowensheng/capy/cmd/capy@latest` |
+| Single-binary Go engine, no runtime deps | ✅ | `go install github.com/olivierdevelops/capy/cmd/capy@latest` |
 | Programmatic Go API | ✅ | `capy.NewLibrary(src)` → `lib.Run(script)` / `lib.RunMulti(script)`. See [embedding](embedding.md). |
 | Library introspection (names, args, docstrings, optional/default flags) | ✅ | `lib.Introspect()` / `lib.CommentMarkers()` — see [embedding](embedding.md#introspection-the-library-describes-itself) |
 | Browser playground — same engine compiled to WebAssembly | ✅ | [playground](playground.md) |
-| Caret-pointed error messages with line:col + did-you-mean | ✅ | [`domain.CapyError`](https://github.com/luowensheng/capy/blob/main/domain/errors.go), [errors-and-debugging](errors-and-debugging.md) |
+| Caret-pointed error messages with line:col + did-you-mean | ✅ | [`domain.CapyError`](https://github.com/olivierdevelops/capy/blob/main/domain/errors.go), [errors-and-debugging](errors-and-debugging.md) |
 
 ## Library schema
 
@@ -62,7 +62,7 @@ the function callable as plain prose.
 
 These ship with focused, golden-tested examples — open the
 **✨ Features** category in the [playground](playground.md), or browse
-the [new-feature showcase](showcase.md#new-feature-showcase-21-examples-in-the-playground).
+the [new-feature showcase](showcase.md#new-feature-showcase-22-examples-in-the-playground).
 
 ## Built-in capture types
 
@@ -210,7 +210,7 @@ block_verbatim end
 The body is captured as **raw source bytes** — not re-parsed as Capy.
 Blank lines and `#`-prefixed lines survive byte-for-byte. Ideal for
 code blocks, inline SVG, or embedded HTML. Pair with `${escapeHtml body}`
-to emit it safely. See [`samples/verbatim-pre`](showcase.md#new-feature-showcase-21-examples-in-the-playground).
+to emit it safely. See [`samples/verbatim-pre`](showcase.md#new-feature-showcase-22-examples-in-the-playground).
 
 ### Mode D — dedent
 
@@ -335,13 +335,13 @@ and structured accumulation (context) without any explicit conversion.
 
 | Asset | Purpose |
 |-------|---------|
-| [Claude Code skill](https://github.com/luowensheng/capy/tree/main/skills/capy-author) | Full skill with `SKILL.md` + instructions + 5 reference docs |
-| [Slash commands](https://github.com/luowensheng/capy/tree/main/commands/capy) | `/capy-new`, `/capy-add-function`, `/capy-add-type`, `/capy-explain`, `/capy-debug` |
+| [Claude Code skill](https://github.com/olivierdevelops/capy/tree/main/skills/capy-author) | Full skill with `SKILL.md` + instructions + 5 reference docs |
+| [Slash commands](https://github.com/olivierdevelops/capy/tree/main/commands/capy) | `/capy-new`, `/capy-add-function`, `/capy-add-type`, `/capy-explain`, `/capy-debug` |
 | [`CAPY_FOR_LLMS.md`](CAPY_FOR_LLMS.md) | Single-page brief paste-able into any model |
-| [Cursor rule](https://github.com/luowensheng/capy/tree/main/editors/cursor) | Drop-in `.cursor/rules/capy.md` |
-| [Continue config](https://github.com/luowensheng/capy/tree/main/editors/continue) | Adds LLM brief to context |
-| [Aider read](https://github.com/luowensheng/capy/tree/main/editors/aider) | `aider --read docs/CAPY_FOR_LLMS.md` |
-| [Agent system prompt](https://github.com/luowensheng/capy/blob/main/agents/capy-system-prompt.md) | Drop-in for any tool |
+| [Cursor rule](https://github.com/olivierdevelops/capy/tree/main/editors/cursor) | Drop-in `.cursor/rules/capy.md` |
+| [Continue config](https://github.com/olivierdevelops/capy/tree/main/editors/continue) | Adds LLM brief to context |
+| [Aider read](https://github.com/olivierdevelops/capy/tree/main/editors/aider) | `aider --read docs/CAPY_FOR_LLMS.md` |
+| [Agent system prompt](https://github.com/olivierdevelops/capy/blob/main/agents/capy-system-prompt.md) | Drop-in for any tool |
 
 See [Capy for AI agents](ai-agents.md) for token-savings math and
 sandboxing patterns.
@@ -350,22 +350,22 @@ sandboxing patterns.
 
 | Editor | Where |
 |--------|-------|
-| VS Code | [`editors/vscode/capy/`](https://github.com/luowensheng/capy/tree/main/editors/vscode/capy) — syntax highlighting for `.capy` source and libraries |
+| VS Code | [`editors/vscode/capy/`](https://github.com/olivierdevelops/capy/tree/main/editors/vscode/capy) — syntax highlighting for `.capy` source and libraries |
 
 ## Distribution
 
 | Method | Command |
 |--------|---------|
-| Go | `go install github.com/luowensheng/capy/cmd/capy@latest` |
-| Binary release | [Releases page](https://github.com/luowensheng/capy/releases) |
-| Install script | `curl -fsSL https://raw.githubusercontent.com/luowensheng/capy/main/scripts/install.sh \| sh` |
+| Go | `go install github.com/olivierdevelops/capy/cmd/capy@latest` |
+| Binary release | [Releases page](https://github.com/olivierdevelops/capy/releases) |
+| Install script | `curl -fsSL https://raw.githubusercontent.com/olivierdevelops/capy/main/scripts/install.sh \| sh` |
 | Docker | `docker build -t capy .` (Dockerfile in repo root) |
-| Homebrew | Coming when the `luowensheng/homebrew-tap` repo exists |
+| Homebrew | Coming when the `olivierdevelops/homebrew-tap` repo exists |
 
 ## Pre-1.0 status
 
 The library schema may evolve between minor versions before 1.0.
-Each breaking change appears in [CHANGELOG](https://github.com/luowensheng/capy/blob/main/CHANGELOG.md)
+Each breaking change appears in [CHANGELOG](https://github.com/olivierdevelops/capy/blob/main/CHANGELOG.md)
 with a migration note. The engine itself is stable enough to use in
 production for code generation; just pin a specific version.
 

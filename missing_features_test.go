@@ -3,7 +3,7 @@ package capy_test
 import (
 	"testing"
 
-	"github.com/luowensheng/capy"
+	"github.com/olivierdevelops/capy"
 )
 
 // (bt — a single backtick string — is declared in capy_test.go.)

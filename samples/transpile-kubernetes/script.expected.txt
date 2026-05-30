@@ -8,6 +8,6 @@ spec:
     spec:
       containers:
         - name: capy_api
-          image: ghcr.io/luowensheng/capy:0.1.0
+          image: ghcr.io/olivierdevelops/capy:0.1.0
           ports:
             - containerPort: 8080

@@ -14,7 +14,7 @@ itself defines; everything else you build.
 
 This page documents **every** built-in helper, what it does, and a worked
 example. The examples are mirrored by a runnable sample —
-[`samples/builtin-functions/`](https://github.com/luowensheng/capy/tree/main/samples/builtin-functions)
+[`samples/builtin-functions/`](https://github.com/olivierdevelops/capy/tree/main/samples/builtin-functions)
 — whose golden output is checked in CI, so what you read here is what the
 engine actually produces.
 
@@ -79,6 +79,9 @@ below the table.
 | [`add`](#add-sub-mul) | `a any`, `b any` | 2 | `int64` | Integer `a + b` |
 | [`sub`](#add-sub-mul) | `a any`, `b any` | 2 | `int64` | Integer `a - b` |
 | [`mul`](#add-sub-mul) | `a any`, `b any` | 2 | `int64` | Integer `a * b` |
+| [`div`](#div-mod-align) | `a any`, `b any` | 2 | `int64` | Integer quotient `a / b` (0 if `b == 0`) |
+| [`mod`](#div-mod-align) | `a any`, `b any` | 2 | `int64` | Remainder `a % b` (0 if `b == 0`) |
+| [`align`](#div-mod-align) | `n any`, `a any` | 2 | `int64` | Round `n` up to the next multiple of `a` |
 | [`percent`](#percent) | `n any`, `d any` | 2 | `int64` | `n / d * 100`, clamped to 0–100 |
 | [`stars`](#stars) | `n any` | 1 | `string` | `n` filled stars + the rest outlined, out of 5 |
 
@@ -348,6 +351,44 @@ ${sub a b}   # 3 4 → -1
 ${mul a b}   # 3 4 → 12
 ```
 
+### `div` / `mod` / `align`
+
+`div a b`, `mod a b`, `align n a` — the integer ops that running-total
+bookkeeping (`add` alone) can't express. Both `div` and `mod` return `0`
+when the divisor is `0` so a template never panics on bad input.
+
+`align n a` rounds `n` **up** to the next multiple of `a` — the classic
+`(n + a - 1) / a * a`. It's the one op that ABI code generators need:
+struct-field offsets, struct total size, and 16-byte stack-frame
+alignment all reduce to it. Because it's a named helper, a library emits
+correct layout without open-coding the formula (and without bitwise ops,
+which Capy doesn't have).
+
+```
+${div 17 4}     # → 4   (quotient)
+${mod 17 4}     # → 1   (remainder)
+${align 9 4}    # → 12  (next multiple of 4 at or above 9)
+${align 13 8}   # → 16  (16-byte stack frame for 13 bytes of locals)
+```
+
+A struct-layout function placing each field at its aligned offset:
+
+```
+function field
+    arg literal "field"
+    arg capture name ident
+    arg capture size int
+    # align INLINE in the template — a same-function `set` wouldn't be
+    # visible to its own `write` (the one-call lag).
+    write `; ${name} @ offset ${align context.off size} (size ${size})
+`
+    set context.off (add (align context.off size) size)
+end
+```
+
+For `id:8`, `flag:1`, `count:4` this emits `count @ offset 12` (padded
+9 → 12) — the ABI-correct layout, not the naive `offset 9`.
+
 ### `percent`
 
 `percent n d` — `n / d * 100` as an integer, clamped to `[0, 100]`
@@ -379,5 +420,5 @@ stars 3   →  ★★★☆☆
   per-function / file-template values in scope.
 - [Inner DSL](inner-dsl.md) — `run`/`set`/`range`/`if`, where these same
   helpers are available in expression position.
-- [`samples/builtin-functions/`](https://github.com/luowensheng/capy/tree/main/samples/builtin-functions)
+- [`samples/builtin-functions/`](https://github.com/olivierdevelops/capy/tree/main/samples/builtin-functions)
   — the runnable, CI-checked source for every example above.

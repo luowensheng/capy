@@ -1,0 +1,6 @@
+let count int
+let name string
+let ready bool
+check count
+check name
+check missing

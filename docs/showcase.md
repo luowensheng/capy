@@ -12,7 +12,7 @@ below the code** so you can see exactly what comes out.
 For non-renderable targets (Python, SQL, JSON, …) you see the
 source-and-generated pair.
 
-All demos live in the [`samples/`](https://github.com/luowensheng/capy/tree/main/samples)
+All demos live in the [`samples/`](https://github.com/olivierdevelops/capy/tree/main/samples)
 directory if you want to clone and run them yourself.
 
 ---
@@ -28,31 +28,60 @@ output.
 
 | Example | Feature it shows off |
 |---|---|
-| [`html-xml-parser`](https://github.com/luowensheng/capy/tree/main/samples/html-xml-parser) | **parse HTML / XML** — one generic `element` function matches any `<tag>…</tag>` via a capture-bound `block_close_seq` + `attribute*` nonterminal; mismatched nesting is a hard error |
-| [`template-sugar`](https://github.com/luowensheng/capy/tree/main/samples/template-sugar) | `template … end` instead of multi-line backtick `write` literals |
-| [`optional-args`](https://github.com/luowensheng/capy/tree/main/samples/optional-args) | trailing capture with a `default` — one function, many call shapes |
-| [`line-mapping`](https://github.com/luowensheng/capy/tree/main/samples/line-mapping) | `${line}` / `${col}` render locals for source↔output mapping |
-| [`string-decoded`](https://github.com/luowensheng/capy/tree/main/samples/string-decoded) | `${decoded}` round-trips `\n` / `\t` and embedded `\"` quotes |
-| [`verbatim-pre`](https://github.com/luowensheng/capy/tree/main/samples/verbatim-pre) | `block_verbatim` — raw byte-fidelity code blocks |
-| [`backtick-codespan`](https://github.com/luowensheng/capy/tree/main/samples/backtick-codespan) | escapable backticks so `` \`code\` `` survives inside a capture |
-| [`utf8-prose`](https://github.com/luowensheng/capy/tree/main/samples/utf8-prose) | bare UTF-8 prose (accents, CJK, emoji) — no quoting |
-| [`multiline-strings`](https://github.com/luowensheng/capy/tree/main/samples/multiline-strings) | multi-line backtick captures in user scripts |
-| [`inline-markdown`](https://github.com/luowensheng/capy/tree/main/samples/inline-markdown) | group types — `link [text](url)`, `bold **x**`, `strike ~~x~~` |
-| [`feature-faq`](https://github.com/luowensheng/capy/tree/main/samples/feature-faq) | FAQ: optional `open` flag + `template` + decode/escape |
-| [`feature-pricing`](https://github.com/luowensheng/capy/tree/main/samples/feature-pricing) | pricing tiers with optional period / CTA defaults |
-| [`feature-callouts`](https://github.com/luowensheng/capy/tree/main/samples/feature-callouts) | note / tip / warning callouts via one optional arg |
-| [`feature-svg-badge`](https://github.com/luowensheng/capy/tree/main/samples/feature-svg-badge) | inline SVG captured verbatim, byte-for-byte |
-| [`feature-menu-i18n`](https://github.com/luowensheng/capy/tree/main/samples/feature-menu-i18n) | multilingual menu — UTF-8 prose + `tail` capture |
-| [`feature-changelog`](https://github.com/luowensheng/capy/tree/main/samples/feature-changelog) | release notes: `${line}` + optional `kind` + verbatim block |
-| [`feature-social-card`](https://github.com/luowensheng/capy/tree/main/samples/feature-social-card) | social preview cards with an optional `theme` |
-| [`feature-stepper`](https://github.com/luowensheng/capy/tree/main/samples/feature-stepper) | onboarding stepper stamping `${line}` for scroll-sync |
-| [`feature-glossary`](https://github.com/luowensheng/capy/tree/main/samples/feature-glossary) | definition list: multi-line backticks + code spans |
-| [`feature-quiz`](https://github.com/luowensheng/capy/tree/main/samples/feature-quiz) | multiple-choice quiz with an optional `correct` flag |
-| [`mcp-widgets`](https://github.com/luowensheng/capy/tree/main/samples/mcp-widgets) | nested blocks + templates + decode/escape + context, together |
-| [`math-plots`](https://github.com/luowensheng/capy/tree/main/samples/math-plots) | `template … end` + canvas plots (rendered live below) |
+| [`html-xml-parser`](https://github.com/olivierdevelops/capy/tree/main/samples/html-xml-parser) | **parse HTML / XML** — one generic `element` function matches any `<tag>…</tag>` via a capture-bound `block_close_seq` + `attribute*` nonterminal; mismatched nesting is a hard error |
+| [`template-sugar`](https://github.com/olivierdevelops/capy/tree/main/samples/template-sugar) | `template … end` instead of multi-line backtick `write` literals |
+| [`optional-args`](https://github.com/olivierdevelops/capy/tree/main/samples/optional-args) | trailing capture with a `default` — one function, many call shapes |
+| [`line-mapping`](https://github.com/olivierdevelops/capy/tree/main/samples/line-mapping) | `${line}` / `${col}` render locals for source↔output mapping |
+| [`string-decoded`](https://github.com/olivierdevelops/capy/tree/main/samples/string-decoded) | `${decoded}` round-trips `\n` / `\t` and embedded `\"` quotes |
+| [`verbatim-pre`](https://github.com/olivierdevelops/capy/tree/main/samples/verbatim-pre) | `block_verbatim` — raw byte-fidelity code blocks |
+| [`backtick-codespan`](https://github.com/olivierdevelops/capy/tree/main/samples/backtick-codespan) | escapable backticks so `` \`code\` `` survives inside a capture |
+| [`utf8-prose`](https://github.com/olivierdevelops/capy/tree/main/samples/utf8-prose) | bare UTF-8 prose (accents, CJK, emoji) — no quoting |
+| [`multiline-strings`](https://github.com/olivierdevelops/capy/tree/main/samples/multiline-strings) | multi-line backtick captures in user scripts |
+| [`inline-markdown`](https://github.com/olivierdevelops/capy/tree/main/samples/inline-markdown) | group types — `link [text](url)`, `bold **x**`, `strike ~~x~~` |
+| [`feature-faq`](https://github.com/olivierdevelops/capy/tree/main/samples/feature-faq) | FAQ: optional `open` flag + `template` + decode/escape |
+| [`feature-pricing`](https://github.com/olivierdevelops/capy/tree/main/samples/feature-pricing) | pricing tiers with optional period / CTA defaults |
+| [`feature-callouts`](https://github.com/olivierdevelops/capy/tree/main/samples/feature-callouts) | note / tip / warning callouts via one optional arg |
+| [`feature-svg-badge`](https://github.com/olivierdevelops/capy/tree/main/samples/feature-svg-badge) | inline SVG captured verbatim, byte-for-byte |
+| [`feature-menu-i18n`](https://github.com/olivierdevelops/capy/tree/main/samples/feature-menu-i18n) | multilingual menu — UTF-8 prose + `tail` capture |
+| [`feature-changelog`](https://github.com/olivierdevelops/capy/tree/main/samples/feature-changelog) | release notes: `${line}` + optional `kind` + verbatim block |
+| [`feature-social-card`](https://github.com/olivierdevelops/capy/tree/main/samples/feature-social-card) | social preview cards with an optional `theme` |
+| [`feature-stepper`](https://github.com/olivierdevelops/capy/tree/main/samples/feature-stepper) | onboarding stepper stamping `${line}` for scroll-sync |
+| [`feature-glossary`](https://github.com/olivierdevelops/capy/tree/main/samples/feature-glossary) | definition list: multi-line backticks + code spans |
+| [`feature-quiz`](https://github.com/olivierdevelops/capy/tree/main/samples/feature-quiz) | multiple-choice quiz with an optional `correct` flag |
+| [`mcp-widgets`](https://github.com/olivierdevelops/capy/tree/main/samples/mcp-widgets) | nested blocks + templates + decode/escape + context, together |
+| [`math-plots`](https://github.com/olivierdevelops/capy/tree/main/samples/math-plots) | `template … end` + canvas plots (rendered live below) |
 
 [Open the playground → ](playground.md) and choose the **✨ Features**
 category. New to the language features? Start with [What's new](whats-new.md).
+
+---
+
+## 🔢 Indexed reads — lists & maps read back by index or key
+
+A `[<expr>]` index now works in **read** position, mirroring the
+write side: `${context.buf[i]}`, `${context.palette[name]}`,
+`${context.memo[(sub n 1)]}`, `${context.stack[-1]}` and nested
+`${context.grid[r][c]}`. Map parents key on the index's string form,
+list parents key on an integer (negative counts from the end);
+missing keys / out-of-range indices render empty. These ten samples —
+grouped under the **🔢 Indexed reads** category in the
+[playground](playground.md) — turn the idiom into real programs:
+
+| Example | What it indexes |
+|---|---|
+| [`word-frequency`](https://github.com/olivierdevelops/capy/tree/main/samples/word-frequency) | map read-modify-write: `set context.counts[w] (add context.counts[w] 1)` |
+| [`memo-fib`](https://github.com/olivierdevelops/capy/tree/main/samples/memo-fib) | computed indices `${context.memo[(sub n 1)]}` over a memo table |
+| [`stack-top`](https://github.com/olivierdevelops/capy/tree/main/samples/stack-top) | negative indices `${context.stack[-1]}` / `[-2]` to peek a stack |
+| [`enum-lookup`](https://github.com/olivierdevelops/capy/tree/main/samples/enum-lookup) | list-by-index lookup tables (`days[d]`, `months[m]`) |
+| [`leaderboard`](https://github.com/olivierdevelops/capy/tree/main/samples/leaderboard) | fixed positions `[0]`/`[1]`/`[2]` + `[-1]` for last place |
+| [`color-palette`](https://github.com/olivierdevelops/capy/tree/main/samples/color-palette) | map-by-name `${context.palette[name]}` to emit colored chips |
+| [`symbol-types`](https://github.com/olivierdevelops/capy/tree/main/samples/symbol-types) | a symbol table keyed by captured name |
+| [`register-allocator`](https://github.com/olivierdevelops/capy/tree/main/samples/register-allocator) | a name→register map read during emission |
+| [`grid-game`](https://github.com/olivierdevelops/capy/tree/main/samples/grid-game) | a flat board indexed by a computed `r*cols + c` |
+| [`emoji-react`](https://github.com/olivierdevelops/capy/tree/main/samples/emoji-react) | a key→glyph map read back by name in a template |
+
+See [value-position indexing](design/value-position-indexing.md) for
+the design notes and read/write parity rules.
 
 ---
 
@@ -90,7 +119,7 @@ Rendered live below:
 
 <iframe src="../assets/demos/math-plots.html" sandbox="allow-scripts allow-same-origin" style="width: 100%; height: 540px; border: 0; border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.18); display: block; margin: 18px 0 24px;" title="Math plots rendered live from a Capy source"></iframe>
 
-Full library + script: [`samples/math-plots/`](https://github.com/luowensheng/capy/tree/main/samples/math-plots).
+Full library + script: [`samples/math-plots/`](https://github.com/olivierdevelops/capy/tree/main/samples/math-plots).
 Walk-through of every primitive it uses: [What's new](whats-new.md).
 
 ---
@@ -129,7 +158,7 @@ Open the iframes to see the polished output.
 
     <iframe src="../assets/demos/recipe-card.html" width="100%" height="540" style="border: 1px solid #e8d9b0; background: #fdf6e3; border-radius: 8px;"></iframe>
 
-    [Full sample → `samples/recipe-card/`](https://github.com/luowensheng/capy/tree/main/samples/recipe-card)
+    [Full sample → `samples/recipe-card/`](https://github.com/olivierdevelops/capy/tree/main/samples/recipe-card)
 
 === "Event invitation"
 
@@ -154,7 +183,7 @@ Open the iframes to see the polished output.
 
     <iframe src="../assets/demos/event-invite.html" width="100%" height="640" style="border: 1px solid #d4b8e8; background: linear-gradient(135deg, #ffd5e8, #cfe9ff); border-radius: 8px;"></iframe>
 
-    [Full sample → `samples/event-invite/`](https://github.com/luowensheng/capy/tree/main/samples/event-invite)
+    [Full sample → `samples/event-invite/`](https://github.com/olivierdevelops/capy/tree/main/samples/event-invite)
 
 === "Weekly meal plan"
 
@@ -177,7 +206,7 @@ Open the iframes to see the polished output.
 
     <iframe src="../assets/demos/weekly-meal-plan.html" width="100%" height="640" style="border: 1px solid #c5e0c5; background: #f0f7f0; border-radius: 8px;"></iframe>
 
-    [Full sample → `samples/weekly-meal-plan/`](https://github.com/luowensheng/capy/tree/main/samples/weekly-meal-plan)
+    [Full sample → `samples/weekly-meal-plan/`](https://github.com/olivierdevelops/capy/tree/main/samples/weekly-meal-plan)
 
 === "Reading log (for kids)"
 
@@ -198,7 +227,7 @@ Open the iframes to see the polished output.
 
     <iframe src="../assets/demos/reading-log.html" width="100%" height="540" style="border: 1px solid #f4d8a8; background: #fff4d6; border-radius: 8px;"></iframe>
 
-    [Full sample → `samples/reading-log/`](https://github.com/luowensheng/capy/tree/main/samples/reading-log)
+    [Full sample → `samples/reading-log/`](https://github.com/olivierdevelops/capy/tree/main/samples/reading-log)
 
 **Why this matters.** You don't need a degree in computer science
 to use Capy. The vocabularies above (`recipe`, `serves`,
@@ -223,7 +252,7 @@ escape hatches when the abstraction isn't enough.
     landing "Capy"
             tagline "Describe what you want. Capy produces what you need."
             cta_text "Open the playground"
-            cta_link "https://luowensheng.github.io/capy/playground/"
+            cta_link "https://olivierdevelops.github.io/capy/playground/"
     ```
 
     You declare WHAT; the library decides EVERYTHING else.
@@ -264,7 +293,7 @@ escape hatches when the abstraction isn't enough.
 
         raw_section "<section style='...'>...custom HTML...</section>"
         cta "Open the playground" "..."
-        raw_footer "<a href='...'>github.com/luowensheng/capy</a>"
+        raw_footer "<a href='...'>github.com/olivierdevelops/capy</a>"
     end
     ```
 
@@ -283,7 +312,7 @@ escape hatches when the abstraction isn't enough.
     | "Escape hatches are second-class citizens" | `raw_head` / `style_override` / `raw_section` are first-class primitives; libraries are designed around them. |
     | "What if I need to go off-script for one launch?" | Drop to Level 3 for that page; revert to Level 1 for the next. |
 
-[Full sample → `samples/progressive-abstraction/`](https://github.com/luowensheng/capy/tree/main/samples/progressive-abstraction) ·
+[Full sample → `samples/progressive-abstraction/`](https://github.com/olivierdevelops/capy/tree/main/samples/progressive-abstraction) ·
 [Pattern docs → `progressive-abstraction.md`](progressive-abstraction.md)
 
 ---
@@ -360,7 +389,7 @@ prototype DSL extensions before promoting them to the library.
     Source defines OVERRIDE library functions of the same name —
     use it to specialize without forking.
 
-[Full sample → `samples/metaprogramming/`](https://github.com/luowensheng/capy/tree/main/samples/metaprogramming) ·
+[Full sample → `samples/metaprogramming/`](https://github.com/olivierdevelops/capy/tree/main/samples/metaprogramming) ·
 [Pattern docs →](metaprogramming.md)
 
 ---
@@ -1006,7 +1035,7 @@ menu sections, footers, author bios), splitting long sources for
 readability, multi-environment configs. Cycles are detected by
 absolute path. `@include` is a synonym of `@import`.
 
-[Full sample → `samples/source-imports/`](https://github.com/luowensheng/capy/tree/main/samples/source-imports)
+[Full sample → `samples/source-imports/`](https://github.com/olivierdevelops/capy/tree/main/samples/source-imports)
 
 ---
 
@@ -1099,7 +1128,7 @@ three frameworks, zero drift.
 the library; every framework regenerates. Add a 4th target (Lit,
 Solid, Astro, SwiftUI) by writing a 40-line library.
 
-[Full sample → `samples/design-system-components/`](https://github.com/luowensheng/capy/tree/main/samples/design-system-components) ·
+[Full sample → `samples/design-system-components/`](https://github.com/olivierdevelops/capy/tree/main/samples/design-system-components) ·
 [Pattern → `docs/design-systems.md`](design-systems.md)
 
 ---
@@ -1171,7 +1200,7 @@ the library — new contributors can't deviate.
 
 **There's no way to declare a handler without its matching test.**
 
-[Full sample → `samples/backend-with-tests/`](https://github.com/luowensheng/capy/tree/main/samples/backend-with-tests) ·
+[Full sample → `samples/backend-with-tests/`](https://github.com/olivierdevelops/capy/tree/main/samples/backend-with-tests) ·
 [Pattern → `docs/backend-codegen.md`](backend-codegen.md)
 
 ---
@@ -1183,7 +1212,7 @@ libraries are **implementers**. When the Go server isn't fast
 enough and you want Rust, you swap libraries — not rewrite the
 code.
 
-The [multi-language-demo](https://github.com/luowensheng/capy/tree/main/samples/multi-language-demo)
+The [multi-language-demo](https://github.com/olivierdevelops/capy/tree/main/samples/multi-language-demo)
 ships this concretely: the same 10-line source compiles to
 **Python, JavaScript, Go, Rust, AND C**. Identical semantics,
 five idiomatic implementations.
@@ -1245,7 +1274,7 @@ for its target.
     └── styles.css       (themed by source variables)
     ```
 
-    [Full sample → `samples/webapp-trio/`](https://github.com/luowensheng/capy/tree/main/samples/webapp-trio)
+    [Full sample → `samples/webapp-trio/`](https://github.com/olivierdevelops/capy/tree/main/samples/webapp-trio)
 
 === "Android app skeleton — 7 files"
 
@@ -1278,7 +1307,7 @@ for its target.
             └── res/{layout,values}/...
     ```
 
-    [Full sample → `samples/android-app/`](https://github.com/luowensheng/capy/tree/main/samples/android-app)
+    [Full sample → `samples/android-app/`](https://github.com/olivierdevelops/capy/tree/main/samples/android-app)
 
 === "iOS SwiftUI skeleton — 6 files"
 
@@ -1311,7 +1340,7 @@ for its target.
     `HabitTrackerApp` comes from `"Habit Tracker"` via the
     `pascalCase` template helper.
 
-    [Full sample → `samples/ios-app/`](https://github.com/luowensheng/capy/tree/main/samples/ios-app)
+    [Full sample → `samples/ios-app/`](https://github.com/olivierdevelops/capy/tree/main/samples/ios-app)
 
 === "libtorch C++ ML trainer — 5 files"
 
@@ -1350,7 +1379,7 @@ for its target.
     TensorFlow/Keras, ONNX, TFLite — write a new library, keep
     the source.
 
-    [Full sample → `samples/libtorch-train/`](https://github.com/luowensheng/capy/tree/main/samples/libtorch-train)
+    [Full sample → `samples/libtorch-train/`](https://github.com/olivierdevelops/capy/tree/main/samples/libtorch-train)
 
 === "How to use it"
 
@@ -1443,7 +1472,7 @@ async def ${r.handler}_endpoint(*args, **kwargs):
     Each block has a path (subdirectories OK) and a write-style
     body with access to `context` and (for block functions) `body`.
 
-[Full sample → `samples/multi-file-project/`](https://github.com/luowensheng/capy/tree/main/samples/multi-file-project) ·
+[Full sample → `samples/multi-file-project/`](https://github.com/olivierdevelops/capy/tree/main/samples/multi-file-project) ·
 [Pattern docs → multi-file & imports](multi-file-and-imports.md)
 
 ---
@@ -1531,7 +1560,7 @@ After `capy check lib.capy`: **6 functions, 4 types** — three
 functions and all four types come from imports, three functions
 are local. Conflicts resolve importer-wins; cycles are detected.
 
-[Full sample → `samples/lib-composition/`](https://github.com/luowensheng/capy/tree/main/samples/lib-composition)
+[Full sample → `samples/lib-composition/`](https://github.com/olivierdevelops/capy/tree/main/samples/lib-composition)
 
 ---
 
@@ -1643,7 +1672,7 @@ runs a golden test that proves they still match. Add a 4th target
 (Postman? FastAPI server? Rust client?) by writing one 30-line
 library — the contract guarantees compatibility.
 
-[Full sample → `samples/contract-first-api/`](https://github.com/luowensheng/capy/tree/main/samples/contract-first-api) ·
+[Full sample → `samples/contract-first-api/`](https://github.com/olivierdevelops/capy/tree/main/samples/contract-first-api) ·
 [Pattern docs → `grammar-as-contract.md`](grammar-as-contract.md)
 
 ---
@@ -1704,7 +1733,7 @@ declarations while the runtime still consumes plain target syntax.
     `psql -f schema.sql` — your database doesn't know Capy exists.
     Capy is just a preprocessor that ran before `psql`.
 
-    [Full sample → `samples/supercharge-sql/`](https://github.com/luowensheng/capy/tree/main/samples/supercharge-sql)
+    [Full sample → `samples/supercharge-sql/`](https://github.com/olivierdevelops/capy/tree/main/samples/supercharge-sql)
 
 === "Markdown blog with components"
 
@@ -1758,7 +1787,7 @@ declarations while the runtime still consumes plain target syntax.
     </div>
     ```
 
-    [Full sample → `samples/supercharge-markdown/`](https://github.com/luowensheng/capy/tree/main/samples/supercharge-markdown)
+    [Full sample → `samples/supercharge-markdown/`](https://github.com/olivierdevelops/capy/tree/main/samples/supercharge-markdown)
 
 === "The pattern"
 
@@ -1913,7 +1942,7 @@ reading the `type:` blocks — no separate spec to maintain. Typos
 like `log_level verbose` are caught at the boundary instead of
 becoming a silent no-op in production.
 
-[Full sample → `samples/typed-config-dsl/`](https://github.com/luowensheng/capy/tree/main/samples/typed-config-dsl)
+[Full sample → `samples/typed-config-dsl/`](https://github.com/olivierdevelops/capy/tree/main/samples/typed-config-dsl)
 
 ---
 
@@ -1963,7 +1992,7 @@ game-over condition by editing one line. The library never changes.
 
     ← / → to move · space to launch · R to restart
 
-    [Library + source → `samples/interactive-breakout/`](https://github.com/luowensheng/capy/tree/main/samples/interactive-breakout)
+    [Library + source → `samples/interactive-breakout/`](https://github.com/olivierdevelops/capy/tree/main/samples/interactive-breakout)
 
 === "Snake — bindings, events, dual-mapped keys"
 
@@ -2116,7 +2145,7 @@ actually use it.
 
     <iframe src="../assets/demos/canvas-game.html" width="100%" height="380" style="border:1px solid #ccc;border-radius:6px;"></iframe>
 
-    [Full sample →](https://github.com/luowensheng/capy/tree/main/samples/transpile-canvas-game)
+    [Full sample →](https://github.com/olivierdevelops/capy/tree/main/samples/transpile-canvas-game)
 
 === "Landing page"
 
@@ -2131,7 +2160,7 @@ actually use it.
     feature "🧩" "50 sample DSLs"        "From Python to Mermaid to a real x86-64 transpiler."
 
     cta "Get started" "/docs/getting-started"
-    cta "GitHub"      "https://github.com/luowensheng/capy"
+    cta "GitHub"      "https://github.com/olivierdevelops/capy"
     ```
 
     **Generated** — a complete responsive HTML page with embedded CSS,
@@ -2141,7 +2170,7 @@ actually use it.
 
     <iframe src="../assets/demos/landing-page.html" width="100%" height="500" style="border:1px solid #ccc;border-radius:6px;"></iframe>
 
-    [Full sample →](https://github.com/luowensheng/capy/tree/main/samples/transpile-landing-page)
+    [Full sample →](https://github.com/olivierdevelops/capy/tree/main/samples/transpile-landing-page)
 
 === "HTML email"
 
@@ -2166,7 +2195,7 @@ actually use it.
 
     <iframe src="../assets/demos/email.html" width="100%" height="500" style="border:1px solid #ccc;border-radius:6px;background:#f4f4f4;"></iframe>
 
-    [Full sample →](https://github.com/luowensheng/capy/tree/main/samples/transpile-email-html)
+    [Full sample →](https://github.com/olivierdevelops/capy/tree/main/samples/transpile-email-html)
 
 === "HTML form"
 
@@ -2198,7 +2227,7 @@ actually use it.
 
     <iframe src="../assets/demos/form.html" width="100%" height="420" style="border:1px solid #ccc;border-radius:6px;"></iframe>
 
-    [Full sample →](https://github.com/luowensheng/capy/tree/main/samples/transpile-form)
+    [Full sample →](https://github.com/olivierdevelops/capy/tree/main/samples/transpile-form)
 
 === "Component card"
 
@@ -2225,7 +2254,7 @@ actually use it.
 
     <iframe src="../assets/demos/component-card.html" width="100%" height="280" style="border:1px solid #ccc;border-radius:6px;"></iframe>
 
-    [Full sample →](https://github.com/luowensheng/capy/tree/main/samples/html-component)
+    [Full sample →](https://github.com/olivierdevelops/capy/tree/main/samples/html-component)
 
 === "CSS animations"
 
@@ -2255,7 +2284,7 @@ actually use it.
 
     <iframe src="../assets/demos/css-animations.html" width="100%" height="280" style="border:1px solid #ccc;border-radius:6px;"></iframe>
 
-    [Full sample →](https://github.com/luowensheng/capy/tree/main/samples/transpile-css-animations)
+    [Full sample →](https://github.com/olivierdevelops/capy/tree/main/samples/transpile-css-animations)
 
 ---
 
@@ -2296,7 +2325,7 @@ Capy emits Mermaid; the docs site renders it inline.
       d --> e
     ```
 
-    [Full sample →](https://github.com/luowensheng/capy/tree/main/samples/transpile-mermaid)
+    [Full sample →](https://github.com/olivierdevelops/capy/tree/main/samples/transpile-mermaid)
 
 === "State diagram"
 
@@ -2332,7 +2361,7 @@ Capy emits Mermaid; the docs site renders it inline.
       Delivered --> [*]
     ```
 
-    [Full sample →](https://github.com/luowensheng/capy/tree/main/samples/transpile-statemachine)
+    [Full sample →](https://github.com/olivierdevelops/capy/tree/main/samples/transpile-statemachine)
 
 ---
 
@@ -2369,7 +2398,7 @@ page. What you see below is the actual generated text, formatted.
     - [ ] Publish VS Code extension
     - [x] Move .codestyle to docs
 
-    [Full sample →](https://github.com/luowensheng/capy/tree/main/samples/transpile-markdown-todo)
+    [Full sample →](https://github.com/olivierdevelops/capy/tree/main/samples/transpile-markdown-todo)
 
 === "Invoice"
 
@@ -2398,7 +2427,7 @@ page. What you see below is the actual generated text, formatted.
     | Capy enterprise plan  |   1 | $2000.00   |
     | Onboarding workshop   |   2 | $500.00    |
 
-    [Full sample →](https://github.com/luowensheng/capy/tree/main/samples/transpile-invoice)
+    [Full sample →](https://github.com/olivierdevelops/capy/tree/main/samples/transpile-invoice)
 
 === "Changelog"
 
@@ -2432,7 +2461,7 @@ page. What you see below is the actual generated text, formatted.
     - Added: Type system with pattern + options
     - Added: Two block modes
 
-    [Full sample →](https://github.com/luowensheng/capy/tree/main/samples/transpile-changelog)
+    [Full sample →](https://github.com/olivierdevelops/capy/tree/main/samples/transpile-changelog)
 
 ---
 
@@ -2472,7 +2501,7 @@ the generated file, run it.
         print(n)
     ```
 
-    [Full sample →](https://github.com/luowensheng/capy/tree/main/samples/transpile-py)
+    [Full sample →](https://github.com/olivierdevelops/capy/tree/main/samples/transpile-py)
 
 === "PostgreSQL"
 
@@ -2513,7 +2542,7 @@ the generated file, run it.
     CREATE INDEX ix_posts_author_id ON posts(author_id);
     ```
 
-    [Full sample →](https://github.com/luowensheng/capy/tree/main/samples/transpile-postgres-schema)
+    [Full sample →](https://github.com/olivierdevelops/capy/tree/main/samples/transpile-postgres-schema)
 
 === "Express server"
 
@@ -2547,7 +2576,7 @@ the generated file, run it.
     app.listen(8080, () => { console.log("listening on", 8080); });
     ```
 
-    [Full sample →](https://github.com/luowensheng/capy/tree/main/samples/transpile-express-server)
+    [Full sample →](https://github.com/olivierdevelops/capy/tree/main/samples/transpile-express-server)
 
 === "Terraform"
 
@@ -2577,7 +2606,7 @@ the generated file, run it.
     }
     ```
 
-    [Full sample →](https://github.com/luowensheng/capy/tree/main/samples/transpile-terraform)
+    [Full sample →](https://github.com/olivierdevelops/capy/tree/main/samples/transpile-terraform)
 
 === "Kubernetes"
 
@@ -2585,7 +2614,7 @@ the generated file, run it.
 
     ```
     deployment capy_api
-    image    "ghcr.io/luowensheng/capy:0.1.0"
+    image    "ghcr.io/olivierdevelops/capy:0.1.0"
     replicas 3
     port     8080
     ```
@@ -2603,12 +2632,12 @@ the generated file, run it.
         spec:
           containers:
             - name: capy_api
-              image: ghcr.io/luowensheng/capy:0.1.0
+              image: ghcr.io/olivierdevelops/capy:0.1.0
               ports:
                 - containerPort: 8080
     ```
 
-    [Full sample →](https://github.com/luowensheng/capy/tree/main/samples/transpile-kubernetes)
+    [Full sample →](https://github.com/olivierdevelops/capy/tree/main/samples/transpile-kubernetes)
 
 === "Slack Block Kit"
 
@@ -2636,7 +2665,7 @@ the generated file, run it.
     }
     ```
 
-    [Full sample →](https://github.com/luowensheng/capy/tree/main/samples/transpile-slack-blocks)
+    [Full sample →](https://github.com/olivierdevelops/capy/tree/main/samples/transpile-slack-blocks)
 
 === "Assembly (x86-64)"
 
@@ -2675,7 +2704,7 @@ the generated file, run it.
         syscall
     ```
 
-    [Full sample →](https://github.com/luowensheng/capy/tree/main/samples/assembly)
+    [Full sample →](https://github.com/olivierdevelops/capy/tree/main/samples/assembly)
 
 ---
 
@@ -2853,7 +2882,7 @@ different. With Capy you write the scene **once**; each library
 encodes one tool's quirks. Add Maya MEL, Houdini Python, Three.js,
 glTF — write a 50-line library, never touch the source.
 
-[Full sample → `samples/3d-tools-demo/`](https://github.com/luowensheng/capy/tree/main/samples/3d-tools-demo)
+[Full sample → `samples/3d-tools-demo/`](https://github.com/olivierdevelops/capy/tree/main/samples/3d-tools-demo)
 
 ---
 
@@ -2975,7 +3004,7 @@ server. With Capy you write the logic **once**; adding a sixth target
 is a ~50-line library file. The next time you change the algorithm,
 all five (or six, or ten) outputs regenerate.
 
-[Full sample → `samples/multi-language-demo/`](https://github.com/luowensheng/capy/tree/main/samples/multi-language-demo)
+[Full sample → `samples/multi-language-demo/`](https://github.com/olivierdevelops/capy/tree/main/samples/multi-language-demo)
 
 ### Bonus: the library itself
 
@@ -3057,7 +3086,7 @@ input file, three libraries, three completely different artifacts.
 The libraries are 8–15 lines each. Add a fourth target (CSV, YAML,
 HTML table, …) by writing a fourth library — never touch the source.
 
-[Full sample →](https://github.com/luowensheng/capy/tree/main/samples/multi-target-demo)
+[Full sample →](https://github.com/olivierdevelops/capy/tree/main/samples/multi-target-demo)
 
 ---
 
@@ -3073,15 +3102,15 @@ don't fit on a single doc page:
 - **Other**: CSV, Markdown CV, Markdown blog with YAML front matter,
   Markdown API reference
 
-[Browse all 50 demos →](https://github.com/luowensheng/capy/tree/main/samples)
+[Browse all 50 demos →](https://github.com/olivierdevelops/capy/tree/main/samples)
 
 ---
 
 ## How to run any of these locally
 
 ```sh
-go install github.com/luowensheng/capy/cmd/capy@latest
-git clone https://github.com/luowensheng/capy
+go install github.com/olivierdevelops/capy/cmd/capy@latest
+git clone https://github.com/olivierdevelops/capy
 cd capy
 capy run samples/transpile-canvas-game/lib.capy samples/transpile-canvas-game/script.capy > game.html
 open game.html

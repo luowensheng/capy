@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/luowensheng/capy/orchestrator"
+	"github.com/olivierdevelops/capy/orchestrator"
 )
 
 // TestMultiTargetSamples runs every "one source → many files" sample and

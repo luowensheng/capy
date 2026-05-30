@@ -80,10 +80,10 @@ Concrete sub-cases:
 - **Dockerfile + docker-compose** for repeatable dev environments
 - **Helm value files** if you're already on Helm
 
-The [transpile-kubernetes](https://github.com/luowensheng/capy/tree/main/samples/transpile-kubernetes),
-[transpile-terraform](https://github.com/luowensheng/capy/tree/main/samples/transpile-terraform),
-[transpile-nginx](https://github.com/luowensheng/capy/tree/main/samples/transpile-nginx),
-and [transpile-systemd](https://github.com/luowensheng/capy/tree/main/samples/transpile-systemd)
+The [transpile-kubernetes](https://github.com/olivierdevelops/capy/tree/main/samples/transpile-kubernetes),
+[transpile-terraform](https://github.com/olivierdevelops/capy/tree/main/samples/transpile-terraform),
+[transpile-nginx](https://github.com/olivierdevelops/capy/tree/main/samples/transpile-nginx),
+and [transpile-systemd](https://github.com/olivierdevelops/capy/tree/main/samples/transpile-systemd)
 samples show this pattern.
 
 ---
@@ -454,5 +454,5 @@ boring scaffolding around them.
 - **[Library authoring](library-authoring.md)** — write your own.
 - **[AI agents](ai-agents.md)** — token math + sandboxing patterns.
 - **[Cookbook](cookbook.md)** — recipes for common needs.
-- **[50 sample demos](https://github.com/luowensheng/capy/tree/main/samples)**
+- **[50 sample demos](https://github.com/olivierdevelops/capy/tree/main/samples)**
   — find one near your domain and copy the pattern.

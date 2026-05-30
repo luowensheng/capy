@@ -1009,7 +1009,7 @@ samples including playable HTML5 games, and several engine fixes.
   libraries support `extension`, `output_file`, `function`, `type`,
   and `file_template` top-level blocks. See [`docs/capy-libraries.md`](docs/capy-libraries.md).
 
-- **Embedding API** — top-level `github.com/luowensheng/capy` Go
+- **Embedding API** — top-level `github.com/olivierdevelops/capy` Go
   package lets programs define DSLs inline and transpile in-memory
   with no separate binary. Public API:
 
@@ -1103,5 +1103,5 @@ Initial public release.
   — deferred to a future version.
 - No `import` between library files.
 
-[Unreleased]: https://github.com/luowensheng/capy/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/luowensheng/capy/releases/tag/v0.1.0
+[Unreleased]: https://github.com/olivierdevelops/capy/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/olivierdevelops/capy/releases/tag/v0.1.0

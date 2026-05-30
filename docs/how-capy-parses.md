@@ -486,7 +486,7 @@ end
 
 (The `&`, `<`, `>`, `"` are HTML-escaped by `escapeHtml`; indentation
 and the literal source survive untouched.) See
-[`samples/verbatim-pre/`](https://github.com/luowensheng/capy/tree/main/samples/verbatim-pre).
+[`samples/verbatim-pre/`](https://github.com/olivierdevelops/capy/tree/main/samples/verbatim-pre).
 
 ### 28. `block_sections A B … closer NAME` — multi-part block
 
@@ -519,7 +519,7 @@ end
 
 The lead section is `${body}`; each named section (`rescue`,
 `finally`) is its own local. See
-[`samples/error-handling/`](https://github.com/luowensheng/capy/tree/main/samples/error-handling).
+[`samples/error-handling/`](https://github.com/olivierdevelops/capy/tree/main/samples/error-handling).
 
 ---
 
@@ -584,7 +584,7 @@ silently pass:
 
 This is genuine structural parsing — not a regex that happens to match
 angle brackets. See
-[`samples/html-xml-parser/`](https://github.com/luowensheng/capy/tree/main/samples/html-xml-parser).
+[`samples/html-xml-parser/`](https://github.com/olivierdevelops/capy/tree/main/samples/html-xml-parser).
 
 ---
 
@@ -628,7 +628,7 @@ a,b,c             (a, b, c)
 Input is comma-separated (`sep ","`); output joins with comma-space
 (`join ", "`). A signature DSL (`param* sep "," join ", "`) reads
 `a,b,c` and emits `a, b, c`. See
-[`samples/signature-parser/`](https://github.com/luowensheng/capy/tree/main/samples/signature-parser).
+[`samples/signature-parser/`](https://github.com/olivierdevelops/capy/tree/main/samples/signature-parser).
 
 ---
 
@@ -682,9 +682,9 @@ set_email "not-an-email"        function "set_email" arg "e": value "not-an-emai
 
 `base ident` / `base string` etc. inherits the built-in's matching, so
 a type can add a `pattern` *on top of* a base capture shape. See
-[`samples/types/`](https://github.com/luowensheng/capy/tree/main/samples/types)
+[`samples/types/`](https://github.com/olivierdevelops/capy/tree/main/samples/types)
 and
-[`samples/typed-config-dsl/`](https://github.com/luowensheng/capy/tree/main/samples/typed-config-dsl).
+[`samples/typed-config-dsl/`](https://github.com/olivierdevelops/capy/tree/main/samples/typed-config-dsl).
 
 ---
 
@@ -744,7 +744,7 @@ bold **important text**       <strong>important text</strong>
 
 `**` lexes as a single token (punct-merge), so `group_open "**"` /
 `group_close "**"` bound the bold span. See
-[`samples/inline-markdown/`](https://github.com/luowensheng/capy/tree/main/samples/inline-markdown).
+[`samples/inline-markdown/`](https://github.com/olivierdevelops/capy/tree/main/samples/inline-markdown).
 
 ---
 
@@ -794,7 +794,7 @@ Every Capy library is just these pieces composed:
 Because *none* of this is hard-coded to a target language, the same
 mechanics emit Python, SQL, HTML, YAML, assembly, or anything else —
 the template alone decides the output. Browse
-[the samples](https://github.com/luowensheng/capy/tree/main/samples)
+[the samples](https://github.com/olivierdevelops/capy/tree/main/samples)
 to see all 40+ behaviors above in production-sized libraries.
 
 ### See also

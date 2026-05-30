@@ -29,7 +29,7 @@ Beyond plain templating, libraries accumulate a `context` value across
 all statements via a small inner DSL — useful for collecting imports at
 the top of the output, deduplicating, etc.
 
-Repo: https://github.com/luowensheng/capy
+Repo: https://github.com/olivierdevelops/capy
 
 Six worked examples in `samples/` covering Python, JSON, SQL, Makefile,
 HTML components, and TypeScript. Single-binary install, MIT.
@@ -78,7 +78,7 @@ Design questions I'd love feedback on:
    the schema be enforced? Trade-off between authoring friction and
    typo-catching.
 
-Repo with worked examples: https://github.com/luowensheng/capy
+Repo with worked examples: https://github.com/olivierdevelops/capy
 
 Pre-1.0 — open to letting the schema evolve based on real use.
 
@@ -95,7 +95,7 @@ want to learn ANTLR / write a recursive-descent parser by hand, Capy
 might fit. You write a `.capy` file that describes the grammar, and Capy
 gives you a transpiler.
 
-15-minute tutorial: https://github.com/luowensheng/capy/blob/main/docs/tutorials/03-transpile-python.md
+15-minute tutorial: https://github.com/olivierdevelops/capy/blob/main/docs/tutorials/03-transpile-python.md
 
 The example builds a tiny language that compiles to Python:
 

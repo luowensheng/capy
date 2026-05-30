@@ -9,9 +9,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/luowensheng/capy/domain"
-	"github.com/luowensheng/capy/orchestrator"
-	orchfeatures "github.com/luowensheng/capy/orchestrator/features"
+	"github.com/olivierdevelops/capy/domain"
+	"github.com/olivierdevelops/capy/orchestrator"
+	orchfeatures "github.com/olivierdevelops/capy/orchestrator/features"
 )
 
 func cmdRun(args []string) error {

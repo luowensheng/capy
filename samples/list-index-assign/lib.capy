@@ -1,0 +1,57 @@
+# list-index-assign — retroactive buffer rewrite via `set context.buf[i] …`
+#
+# Demonstrates the inner-DSL capability to overwrite a LIST element in
+# place by index (not just map keys). This is what a back-end needs to
+# edit already-buffered output after the fact — here, a dead-store
+# eliminator that uses DEFERRED EMISSION:
+#
+#   - body ops don't write; they append their instruction to context.buf
+#     and record, per location, the buffer index of the last store and
+#     whether that store has been read since.
+#   - when a new store to a location lands while the previous store was
+#     never read, that previous store is DEAD: overwrite its buffer slot
+#     in place with a comment (`set context.buf[idx] …`).
+#   - `flush` emits the buffer in order — eliminated stores show as
+#     comments, everything else survives.
+extension asm
+context
+    buf []            # buffered instruction stream (a list)
+    n 0               # next buffer index
+    laststore {}      # location -> buffer index of its last store
+    readsince {}      # location -> 1 if read since last store, else 0
+end
+function st
+    arg literal "st"
+    arg capture loc ident
+    arg capture v int
+    # If a prior store to loc was never read, it's dead — rewrite its slot.
+    for l, idx in context.laststore
+        if l == loc
+            for l2, r in context.readsince
+                if l2 == loc
+                    if r == 0
+                        set context.buf[idx] `    ; (dead store to ${loc} eliminated)`
+                    end
+                end
+            end
+        end
+    end
+    append context.buf `    mov [${loc}], ${v}`
+    set context.laststore[loc] context.n
+    set context.readsince[loc] 0
+    set context.n (add context.n 1)
+end
+function ld
+    arg literal "ld"
+    arg capture loc ident
+    append context.buf `    mov rax, [${loc}]`
+    set context.readsince[loc] 1
+    set context.n (add context.n 1)
+end
+function flush
+    arg literal "flush"
+    for i, line in context.buf
+        write `${line}
+`
+    end
+end

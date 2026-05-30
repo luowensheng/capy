@@ -15,7 +15,7 @@ contributor; we may close or delete unsolicited PRs without review.
 - **Read the code.** Browse the engine, samples, and docs.
 - **Build it locally.** Clone the repo and run `go build ./...` for
   personal evaluation.
-- **Try the playground.** <https://luowensheng.github.io/capy/playground/>
+- **Try the playground.** <https://olivierdevelops.github.io/capy/playground/>
 - **File a bug report.** Use the templates under
   `.github/ISSUE_TEMPLATE/`. We read what comes in; we don't promise
   to act on it.

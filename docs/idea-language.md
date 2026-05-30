@@ -43,7 +43,7 @@ they re-targeted a stable contract.
 
 ## Already shipped: a small example
 
-[`samples/multi-language-demo/`](https://github.com/luowensheng/capy/tree/main/samples/multi-language-demo)
+[`samples/multi-language-demo/`](https://github.com/olivierdevelops/capy/tree/main/samples/multi-language-demo)
 is the canonical demonstration. One 10-line source:
 
 ```
@@ -112,14 +112,14 @@ Real workflows that fit:
   alongside `lib_go.capy`, runs benchmarks, switches over a service
   at a time. The DSL stays the same; the runtime moves.
 
-- **Cross-platform mobile.** [`samples/android-app/`](https://github.com/luowensheng/capy/tree/main/samples/android-app)
-  and [`samples/ios-app/`](https://github.com/luowensheng/capy/tree/main/samples/ios-app)
+- **Cross-platform mobile.** [`samples/android-app/`](https://github.com/olivierdevelops/capy/tree/main/samples/android-app)
+  and [`samples/ios-app/`](https://github.com/olivierdevelops/capy/tree/main/samples/ios-app)
   use the **same source shape**. One declaration, two platforms.
   Same idea ("a Habit Tracker with two screens"), two
   implementations.
 
 - **Same backend, two stacks** — the design-system pattern from
-  [`samples/design-system-components/`](https://github.com/luowensheng/capy/tree/main/samples/design-system-components)
+  [`samples/design-system-components/`](https://github.com/olivierdevelops/capy/tree/main/samples/design-system-components)
   works for React, Vue, and Svelte from the same UI declaration.
   Identical visual semantics across three frameworks.
 

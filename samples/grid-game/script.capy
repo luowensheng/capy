@@ -1,0 +1,6 @@
+place 0 0 X
+place 1 1 O
+place 2 2 X
+place 0 2 O
+place 2 0 X
+show

@@ -3,10 +3,10 @@
 > A transpiler engine with zero default grammar. You define a tiny source
 > language in a `.capy` library file, and Capy generates the target output.
 
-[![CI](https://github.com/luowensheng/capy/actions/workflows/ci.yml/badge.svg)](https://github.com/luowensheng/capy/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/luowensheng/capy?include_prereleases)](https://github.com/luowensheng/capy/releases)
+[![CI](https://github.com/olivierdevelops/capy/actions/workflows/ci.yml/badge.svg)](https://github.com/olivierdevelops/capy/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/olivierdevelops/capy?include_prereleases)](https://github.com/olivierdevelops/capy/releases)
 [![License: Source-Available](https://img.shields.io/badge/License-Source--Available-orange.svg)](LICENSE)
-[![Go Report Card](https://goreportcard.com/badge/github.com/luowensheng/capy)](https://goreportcard.com/report/github.com/luowensheng/capy)
+[![Go Report Card](https://goreportcard.com/badge/github.com/olivierdevelops/capy)](https://goreportcard.com/report/github.com/olivierdevelops/capy)
 
 Capy reads source code, matches each statement against library-defined
 function shapes, and for each match (a) renders a template fragment and
@@ -112,34 +112,34 @@ Continue, and Aider.
 
 ```sh
 # Go users — CLI
-go install github.com/luowensheng/capy/cmd/capy@latest
+go install github.com/olivierdevelops/capy/cmd/capy@latest
 
 # Go users — embed Capy as a library
-go get github.com/luowensheng/capy
+go get github.com/olivierdevelops/capy
 
 # MCP server for AI agents (Claude Desktop, Claude Code, Cursor, Zed)
-go install github.com/luowensheng/capy/cmd/capy-mcp@latest
+go install github.com/olivierdevelops/capy/cmd/capy-mcp@latest
 
 # Or: try it in your browser, no install — playground runs Capy compiled
 # to WebAssembly with six curated samples (recipe / invite / meal plan /
 # reading log / Breakout / Snake). Live editor, preview, download:
-# https://luowensheng.github.io/capy/playground/
+# https://olivierdevelops.github.io/capy/playground/
 
 # macOS / Linux (binary, no Go required)
-curl -fsSL https://raw.githubusercontent.com/luowensheng/capy/main/scripts/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/olivierdevelops/capy/main/scripts/install.sh | sh
 
 # Homebrew
-brew install luowensheng/tap/capy
+brew install olivierdevelops/tap/capy
 ```
 
-Or download a binary from the [releases page](https://github.com/luowensheng/capy/releases).
+Or download a binary from the [releases page](https://github.com/olivierdevelops/capy/releases).
 
 ### Embed in your Go program
 
 No `capy` binary required at runtime. Your program defines its own grammar inline:
 
 ```go
-import "github.com/luowensheng/capy"
+import "github.com/olivierdevelops/capy"
 
 lib, _ := capy.NewLibrary(`
     extension html
@@ -162,7 +162,7 @@ patterns (loading from disk, multiple grammars per process, hot-swap).
 ## Quick try
 
 ```sh
-git clone https://github.com/luowensheng/capy
+git clone https://github.com/olivierdevelops/capy
 cd capy
 go build -o capy ./cmd/capy
 ./capy run samples/recipe-card/lib.capy samples/recipe-card/script.capy

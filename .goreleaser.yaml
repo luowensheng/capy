@@ -84,7 +84,7 @@ changelog:
 
 release:
   github:
-    owner: luowensheng
+    owner: olivierdevelops
     name: capy
   draft: false
   prerelease: auto
@@ -93,10 +93,10 @@ release:
 # brews:
 #   - name: capy
 #     tap:
-#       owner: luowensheng
+#       owner: olivierdevelops
 #       name: homebrew-tap
 #     description: "Capy — a transpiler engine driven by a YAML library."
-#     homepage: "https://github.com/luowensheng/capy"
+#     homepage: "https://github.com/olivierdevelops/capy"
 #     license: MIT
 #     test: |
 #       system "#{bin}/capy", "version"

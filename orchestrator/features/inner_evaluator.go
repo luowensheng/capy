@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/luowensheng/capy/domain"
-	"github.com/luowensheng/capy/infra"
+	"github.com/olivierdevelops/capy/domain"
+	"github.com/olivierdevelops/capy/infra"
 )
 
 // osChdir is a thin wrapper kept here so command bodies can call
@@ -307,6 +307,47 @@ func (e *InnerEvaluator) descend(parent any, step domain.PathStep, caps map[stri
 }
 
 func (e *InnerEvaluator) applyOp(parent any, step domain.PathStep, value any, caps map[string]domain.CaptureValue, locals map[string]any, op string) error {
+	// List element target: `set context.buf[i] value` overwrites element i
+	// in place (slices are references, so the stored list mutates). This is
+	// what retroactive buffer-rewrite optimizations need — e.g. nulling out
+	// a dead store after the fact, or back-patching a jump offset once the
+	// target index is known. `append`/`prepend` target a *nested* list at
+	// element i. Negative indices count from the end (-1 = last element),
+	// matching the read-side `descend` behaviour.
+	if step.IsIndex {
+		if list, ok := parent.([]any); ok {
+			idxVal, err := e.eval(step.Index, caps, locals)
+			if err != nil {
+				return err
+			}
+			i, ok := idxVal.(int64)
+			if !ok {
+				return fmt.Errorf("%s: list index must be int, got %T", op, idxVal)
+			}
+			n := int64(len(list))
+			if i < 0 {
+				i += n
+			}
+			if i < 0 || i >= n {
+				return fmt.Errorf("%s: list index %d out of range (len=%d)", op, i, n)
+			}
+			switch op {
+			case "set":
+				list[int(i)] = value
+			case "append":
+				inner, _ := list[int(i)].([]any)
+				list[int(i)] = append(inner, value)
+			case "prepend":
+				inner, _ := list[int(i)].([]any)
+				list[int(i)] = append([]any{value}, inner...)
+			case "delete":
+				return fmt.Errorf("%s: cannot delete a list element by index (set it instead)", op)
+			default:
+				return fmt.Errorf("%s: unsupported op on list element", op)
+			}
+			return nil
+		}
+	}
 	m, mok := parent.(map[string]any)
 	var key string
 	if step.IsIndex {
@@ -486,7 +527,7 @@ func (e *InnerEvaluator) evalRender(x domain.Expr, locals map[string]any) (any, 
 	case domain.NullLit:
 		return nil, nil
 	case domain.VarRef:
-		v, err := e.resolveRender(n.Path, locals)
+		v, err := e.resolveRender(n.Steps, locals)
 		if err != nil {
 			// Templates tolerate missing paths — emit empty.
 			return "", nil
@@ -716,14 +757,104 @@ func (e *InnerEvaluator) evalInterpAtom(s string, locals map[string]any) (any, e
 	if len(s) >= 2 && s[0] == '(' && s[len(s)-1] == ')' {
 		return e.evalInterp(s[1:len(s)-1], locals)
 	}
-	// Path lookup: split on `.` and resolve.
-	path := strings.Split(s, ".")
-	v, err := e.resolveRender(path, locals)
+	// Path lookup: `a.b.c`, optionally with `[index]` steps such as
+	// `context.buf[i]` or `context.known[name]`. Brackets resolve their
+	// contents as a nested `${…}` expression (a number, a local, or a
+	// `(sub n 1)` call).
+	v, err := e.evalInterpPath(s, locals)
 	if err != nil {
 		// Missing paths render empty — matches Go template tolerance.
 		return "", nil
 	}
 	return v, nil
+}
+
+// evalInterpPath resolves a dotted/indexed path atom inside `${…}`.
+// It walks the atom left to right: a `.field` step keys a map, a
+// `[expr]` step evaluates `expr` (via evalInterp) and indexes a map (by
+// string) or a list (by int, negative-from-end) through descendRead —
+// identical semantics to the inner-DSL and write-side resolvers.
+func (e *InnerEvaluator) evalInterpPath(s string, locals map[string]any) (any, error) {
+	i := 0
+	// readSegment consumes a path name up to the next `.` or `[`.
+	readSegment := func() string {
+		start := i
+		for i < len(s) && s[i] != '.' && s[i] != '[' {
+			i++
+		}
+		return s[start:i]
+	}
+	root := readSegment()
+	if root == "" {
+		return nil, fmt.Errorf("empty path atom %q", s)
+	}
+	var cur any
+	if v, ok := locals[root]; ok {
+		cur = v
+	} else if root == "context" {
+		cur = e.Context
+	} else {
+		return nil, fmt.Errorf("undefined %q", root)
+	}
+	for i < len(s) {
+		switch s[i] {
+		case '.':
+			i++
+			field := readSegment()
+			v, ok := descendRead(cur, field)
+			if !ok {
+				return nil, fmt.Errorf("cannot access %q on non-map (%T)", field, cur)
+			}
+			cur = v
+		case '[':
+			// Find the matching `]`, skipping nested brackets and
+			// quoted strings (so `m["a]b"]` and `grid[i][j]` parse).
+			depth := 1
+			j := i + 1
+			inStr := false
+			for ; j < len(s); j++ {
+				ch := s[j]
+				if inStr {
+					if ch == '\\' {
+						j++
+						continue
+					}
+					if ch == '"' {
+						inStr = false
+					}
+					continue
+				}
+				switch ch {
+				case '"':
+					inStr = true
+				case '[':
+					depth++
+				case ']':
+					depth--
+				}
+				if depth == 0 {
+					break
+				}
+			}
+			if depth != 0 {
+				return nil, fmt.Errorf("unbalanced [ ] in path %q", s)
+			}
+			inner := strings.TrimSpace(s[i+1 : j])
+			idx, err := e.evalInterp(inner, locals)
+			if err != nil {
+				return nil, err
+			}
+			v, ok := descendRead(cur, idx)
+			if !ok {
+				return nil, fmt.Errorf("cannot index into %T", cur)
+			}
+			cur = v
+			i = j + 1
+		default:
+			return nil, fmt.Errorf("unexpected %q in path %q", s[i], s)
+		}
+	}
+	return cur, nil
 }
 
 // unescapeStringLitInner does one pass of Go-style escape decoding
@@ -768,6 +899,7 @@ func splitInterpPipeRuntime(s string) []string {
 	var out []string
 	var cur strings.Builder
 	depth := 0
+	brack := 0
 	inStr := false
 	for i := 0; i < len(s); i++ {
 		c := s[i]
@@ -793,8 +925,16 @@ func splitInterpPipeRuntime(s string) []string {
 		case ')':
 			depth--
 			cur.WriteByte(c)
+		case '[':
+			brack++
+			cur.WriteByte(c)
+		case ']':
+			if brack > 0 {
+				brack--
+			}
+			cur.WriteByte(c)
 		case '|':
-			if depth == 0 {
+			if depth == 0 && brack == 0 {
 				out = append(out, cur.String())
 				cur.Reset()
 				continue
@@ -818,6 +958,7 @@ func tokeniseInterpRuntime(s string) []string {
 	var cur strings.Builder
 	inStr := false
 	depth := 0
+	brack := 0
 	for i := 0; i < len(s); i++ {
 		c := s[i]
 		if inStr {
@@ -829,7 +970,7 @@ func tokeniseInterpRuntime(s string) []string {
 			}
 			if c == '"' {
 				inStr = false
-				if depth == 0 {
+				if depth == 0 && brack == 0 {
 					out = append(out, cur.String())
 					cur.Reset()
 				}
@@ -849,13 +990,29 @@ func tokeniseInterpRuntime(s string) []string {
 		if c == ')' {
 			depth--
 			cur.WriteByte(c)
-			if depth == 0 {
+			if depth == 0 && brack == 0 {
 				out = append(out, cur.String())
 				cur.Reset()
 			}
 			continue
 		}
-		if depth > 0 {
+		// A postfix `[index]` stays attached to its path atom — track
+		// bracket depth so spaces inside (e.g. `buf[(sub n 1)]`) don't
+		// split the atom, and don't emit on `]` (the bracket is part of
+		// the preceding path, not a standalone token like `(…)`).
+		if c == '[' {
+			brack++
+			cur.WriteByte(c)
+			continue
+		}
+		if c == ']' {
+			if brack > 0 {
+				brack--
+			}
+			cur.WriteByte(c)
+			continue
+		}
+		if depth > 0 || brack > 0 {
 			cur.WriteByte(c)
 			continue
 		}
@@ -874,11 +1031,70 @@ func tokeniseInterpRuntime(s string) []string {
 	return out
 }
 
-// resolveRender looks up a path in render scope: locals → context.
-// VarRef paths support map indexing (a.b.c) all the way down.
-func (e *InnerEvaluator) resolveRender(path []string, locals map[string]any) (any, error) {
-	root := path[0]
-	rest := path[1:]
+// descendRead resolves one read step against a container parent. It is
+// the read-side twin of the write-side `descend`/`applyOp` list branch:
+// a map is keyed by the stringified key, a list is indexed by an int64
+// (negative counts from the end, like writes). The bool reports whether
+// `parent` was an indexable container at all (map, list, or nil) — a
+// missing map key or out-of-range list index returns (nil, true) so
+// reads stay tolerant, while a scalar parent returns (nil, false) so the
+// caller can raise "cannot access on non-map".
+func descendRead(parent any, key any) (any, bool) {
+	switch p := parent.(type) {
+	case map[string]any:
+		return p[toString(key)], true
+	case []any:
+		// Accept int / int64 / whole float64 — a `for k,v in list` index
+		// binds as Go int, so requiring int64 alone would miss it.
+		i, ok := asListIndex(key)
+		if !ok {
+			return nil, true
+		}
+		n := int64(len(p))
+		if i < 0 {
+			i += n
+		}
+		if i < 0 || i >= n {
+			return nil, true
+		}
+		return p[int(i)], true
+	case nil:
+		return nil, true
+	}
+	return nil, false
+}
+
+// asListIndex coerces a runtime value to a list index. Accepts int,
+// int64, whole-number float64, and a numeric string — the last because a
+// captured int read in TEMPLATE scope arrives as its source text (e.g.
+// "1"), so `${context.days[d]}` must still index by number. Everything
+// else is a miss.
+func asListIndex(v any) (int64, bool) {
+	switch n := v.(type) {
+	case int64:
+		return n, true
+	case int:
+		return int64(n), true
+	case float64:
+		if n == float64(int64(n)) {
+			return int64(n), true
+		}
+	case string:
+		if i, err := strconv.ParseInt(strings.TrimSpace(n), 10, 64); err == nil {
+			return i, true
+		}
+	}
+	return 0, false
+}
+
+// resolveRender looks up a step-based path in render scope: locals →
+// context. Field steps walk maps; index steps walk maps (string key) or
+// lists (int index, negative-from-end), matching the write side.
+func (e *InnerEvaluator) resolveRender(steps []domain.PathStep, locals map[string]any) (any, error) {
+	if len(steps) == 0 {
+		return nil, fmt.Errorf("empty path")
+	}
+	root := steps[0].Field
 	var cur any
 	if v, ok := locals[root]; ok {
 		cur = v
@@ -887,15 +1103,22 @@ func (e *InnerEvaluator) resolveRender(path []string, locals map[string]any) (an
 	} else {
 		return nil, fmt.Errorf("undefined %q", root)
 	}
-	for _, step := range rest {
-		switch m := cur.(type) {
-		case map[string]any:
-			cur = m[step]
-		case nil:
-			return nil, nil
-		default:
-			return nil, fmt.Errorf("cannot access %q on non-map (%T)", step, cur)
+	for _, step := range steps[1:] {
+		var key any
+		if step.IsIndex {
+			idx, err := e.evalRender(step.Index, locals)
+			if err != nil {
+				return nil, err
+			}
+			key = idx
+		} else {
+			key = step.Field
 		}
+		v, ok := descendRead(cur, key)
+		if !ok {
+			return nil, fmt.Errorf("cannot access %v on non-map (%T)", key, cur)
+		}
+		cur = v
 	}
 	return cur, nil
 }
@@ -918,7 +1141,7 @@ func (e *InnerEvaluator) eval(x domain.Expr, caps map[string]domain.CaptureValue
 	case domain.NullLit:
 		return nil, nil
 	case domain.VarRef:
-		return e.resolvePath(n.Path, caps, locals)
+		return e.resolvePathSteps(n.Steps, caps, locals)
 	case domain.NotExpr:
 		v, err := e.eval(n.X, caps, locals)
 		if err != nil {
@@ -1132,11 +1355,12 @@ func (e *InnerEvaluator) eval(x domain.Expr, caps map[string]domain.CaptureValue
 // a string. That matches transpile semantics — the source name flows through
 // to the output unchanged.
 func (e *InnerEvaluator) evalExprFallback(x domain.Expr, caps map[string]domain.CaptureValue, locals map[string]any) (any, error) {
-	if vr, ok := x.(domain.VarRef); ok {
-		if _, found := locals[vr.Path[0]]; !found {
-			if _, found := caps[vr.Path[0]]; !found {
-				if vr.Path[0] != "context" {
-					return strings.Join(vr.Path, "."), nil
+	if vr, ok := x.(domain.VarRef); ok && len(vr.Steps) > 0 {
+		root := vr.Steps[0].Field
+		if _, found := locals[root]; !found {
+			if _, found := caps[root]; !found {
+				if root != "context" {
+					return varRefToText(vr, ExprToText), nil
 				}
 			}
 		}
@@ -1144,10 +1368,27 @@ func (e *InnerEvaluator) evalExprFallback(x domain.Expr, caps map[string]domain.
 	return e.eval(x, caps, locals)
 }
 
-// resolvePath walks `path` against locals → captures → context.
+// resolvePath walks a dotted `[]string` path against
+// locals → captures → context. It adapts to the step-based resolver so
+// the string-literal interpolation callback (which only knows dotted
+// names) and the indexed VarRef path share one walk.
 func (e *InnerEvaluator) resolvePath(path []string, caps map[string]domain.CaptureValue, locals map[string]any) (any, error) {
-	root := path[0]
-	rest := path[1:]
+	steps := make([]domain.PathStep, len(path))
+	for i, name := range path {
+		steps[i] = domain.PathStep{Field: name}
+	}
+	return e.resolvePathSteps(steps, caps, locals)
+}
+
+// resolvePathSteps walks a step-based path against
+// locals → captures → context. Field steps walk maps; index steps walk
+// maps (string key) or lists (int index, negative-from-end) via
+// descendRead, identical to the write side.
+func (e *InnerEvaluator) resolvePathSteps(steps []domain.PathStep, caps map[string]domain.CaptureValue, locals map[string]any) (any, error) {
+	if len(steps) == 0 {
+		return nil, fmt.Errorf("empty path")
+	}
+	root := steps[0].Field
 	var cur any
 	if v, ok := locals[root]; ok {
 		cur = v
@@ -1171,12 +1412,22 @@ func (e *InnerEvaluator) resolvePath(path []string, caps map[string]domain.Captu
 	} else {
 		return nil, fmt.Errorf("undefined %q", root)
 	}
-	for _, step := range rest {
-		m, ok := cur.(map[string]any)
-		if !ok {
-			return nil, fmt.Errorf("cannot access %q on non-map", step)
+	for _, step := range steps[1:] {
+		var key any
+		if step.IsIndex {
+			idx, err := e.eval(step.Index, caps, locals)
+			if err != nil {
+				return nil, err
+			}
+			key = idx
+		} else {
+			key = step.Field
 		}
-		cur = m[step]
+		v, ok := descendRead(cur, key)
+		if !ok {
+			return nil, fmt.Errorf("cannot access %v on non-map", key)
+		}
+		cur = v
 	}
 	return cur, nil
 }

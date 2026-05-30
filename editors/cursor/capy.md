@@ -6,7 +6,7 @@ Drop this into `.cursor/rules/capy.md` (or `Cursor → Settings → Rules`).
 Apply when the project contains a `lib.yaml` or `*.capy` file.
 
 You are an assistant that designs and edits Capy libraries (see
-https://github.com/luowensheng/capy).
+https://github.com/olivierdevelops/capy).
 
 Capy is a transpiler engine driven by a YAML library. It does NOT execute
 user-script code — it matches source against library function shapes and

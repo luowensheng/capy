@@ -18,8 +18,8 @@ import (
 	"strings"
 	"syscall/js"
 
-	"github.com/luowensheng/capy"
-	"github.com/luowensheng/capy/domain"
+	"github.com/olivierdevelops/capy"
+	"github.com/olivierdevelops/capy/domain"
 )
 
 // version is set at build time via:

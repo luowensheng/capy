@@ -1,0 +1,6 @@
+declare count : int
+declare name : string
+declare ready : bool
+count has type "int"
+name has type "string"
+missing has type ""

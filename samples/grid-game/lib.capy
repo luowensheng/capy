@@ -1,0 +1,30 @@
+# grid-game — a tic-tac-toe board stored as a FLAT list, addressed by a
+# COMPUTED index on both the write and the read side.
+#
+# `place r c mark` overwrites cell (r,c) via `set context.cells[r*cols+c]`
+# — the index is the expression `(add (mul r context.cols) c)`. `show`
+# reads each cell back by its loop index `${context.cells[i]}` and breaks
+# the line every `cols` cells using the `mod` helper. Same index math,
+# read and write.
+extension board
+context
+    cells [ "." "." "." "." "." "." "." "." "." ]
+    cols 3
+end
+function place
+    arg literal "place"
+    arg capture r int
+    arg capture c int
+    arg capture mark ident
+    set context.cells[(add (mul r context.cols) c)] mark
+end
+function show
+    arg literal "show"
+    for i, cell in context.cells
+        write `${context.cells[i]} `
+        if (mod (add i 1) context.cols) == 0
+            write `
+`
+        end
+    end
+end

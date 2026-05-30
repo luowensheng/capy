@@ -1,4 +1,4 @@
 deployment capy_api
-image    "ghcr.io/luowensheng/capy:0.1.0"
+image    "ghcr.io/olivierdevelops/capy:0.1.0"
 replicas 3
 port     8080

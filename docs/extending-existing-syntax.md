@@ -60,7 +60,7 @@ Capy fixes all three:
 
 ## Worked sample — SQL DDL with macros
 
-[`samples/supercharge-sql/`](https://github.com/luowensheng/capy/tree/main/samples/supercharge-sql)
+[`samples/supercharge-sql/`](https://github.com/olivierdevelops/capy/tree/main/samples/supercharge-sql)
 
 Source (32 lines):
 
@@ -103,7 +103,7 @@ and you've removed every audit-column typo from the codebase.
 
 ## Worked sample — Markdown blog with components
 
-[`samples/supercharge-markdown/`](https://github.com/luowensheng/capy/tree/main/samples/supercharge-markdown)
+[`samples/supercharge-markdown/`](https://github.com/olivierdevelops/capy/tree/main/samples/supercharge-markdown)
 
 Source (26 lines):
 

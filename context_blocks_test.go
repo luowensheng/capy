@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/luowensheng/capy"
+	"github.com/olivierdevelops/capy"
 )
 
 // Tests for the round-4 grammar features that closed the last two gaps in

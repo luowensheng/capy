@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/luowensheng/capy/orchestrator"
+	"github.com/olivierdevelops/capy/orchestrator"
 )
 
 // TestMultiFileProject guards the multi-file generation feature: one source

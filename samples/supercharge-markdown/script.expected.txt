@@ -40,7 +40,7 @@ We replaced 3 hand-rolled code generators with a single Capy library. Here is wh
 ## Try it
 
 ```sh
-go install github.com/luowensheng/capy/cmd/capy@latest
+go install github.com/olivierdevelops/capy/cmd/capy@latest
 ```
 ```sh
 capy run lib.capy script.capy

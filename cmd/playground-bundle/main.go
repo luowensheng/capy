@@ -103,6 +103,26 @@ var CURATED = []struct {
 		"`plot \"EXPR\" … end` → a self-contained `<canvas>` + `drawPlot()` call. Uses `template … end`, `${decoded}`, `${escapeHtml}` and context accumulation.",
 		"Change an expression, domain, color, or sample count.", "", ""},
 
+	// ─── Indexed reads (lists & maps by index/key) ──────────────────
+	{"word-frequency", "Indexed reads", "🔢 Word frequency (map increment)",
+		"`see word` does `set context.counts[w] (add context.counts[w] 1)` — a map element read, incremented, and written back (nil counts as 0). `bar word` then reads `${context.counts[w]}` to draw a star bar. The whole counter is one indexed read/write idiom.",
+		"Add more `see <word>` lines; the bars grow.", "", ""},
+	{"memo-fib", "Indexed reads", "🔢 Memoised Fibonacci (computed index)",
+		"`memo [ 0 1 ]` seeds a list; `fib n` appends and reads back two earlier cells with computed indices `${context.memo[(sub n 1)]}` + `${context.memo[(sub n 2)]}`. Arithmetic inside the `[…]` resolves at read time.",
+		"Ask for more `fib` values; each reuses the memo table.", "", ""},
+	{"stack-top", "Indexed reads", "🔢 Stack peek (negative index)",
+		"`push v` appends; `top` reads `${context.stack[-1]}` and `${context.stack[-2]}` — negative indices count from the end, matching write-side semantics.",
+		"Push or pop values and re-peek the top.", "", ""},
+	{"enum-lookup", "Indexed reads", "🔢 Enum lookup (list by index)",
+		"`days`/`months` are fixed lists; `event d m …` reads `${context.days[d]}` / `${context.months[m]}` to resolve a weekday and month name by numeric index — a classic lookup table.",
+		"Change the day/month numbers or add an `event` line.", "", ""},
+	{"leaderboard", "Indexed reads", "🔢 Leaderboard (positional reads)",
+		"`rank name` builds a list; `podium` reads fixed positions `[0]`/`[1]`/`[2]` for gold/silver/bronze and `[-1]` for last place.",
+		"Add or reorder `rank` lines; the podium tracks positions.", "", ""},
+	{"color-palette", "Indexed reads", "🔢 Color palette (map by name)",
+		"`def name color` records `context.palette[name]`; `swatch name` reads `${context.palette[name]}` by key to emit a colored chip. One `swatch` function serves any color the palette defines.",
+		"Add a `def <name> <css-color>` then a matching `swatch`.", "", ""},
+
 	// ─── Everyday / no-code-required ────────────────────────────────
 	{"recipe-card", "Everyday", "🍋 Recipe card",
 		"Write a recipe in plain words; get a printable HTML recipe card.",

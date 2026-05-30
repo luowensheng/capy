@@ -1,0 +1,22 @@
+# word-frequency — a counter map you increment AND read by key.
+#
+# `see word` does `set context.counts[w] (add context.counts[w] 1)` —
+# the read `context.counts[w]` feeds its own increment, and a key that
+# doesn't exist yet reads as nil (treated as 0 by `add`), so the first
+# sighting becomes 1 with no special-casing. `bar word` reads the tally
+# back and draws it with the `stars` helper.
+extension wc
+context
+    counts {}
+end
+function see
+    arg literal "see"
+    arg capture w ident
+    set context.counts[w] (add context.counts[w] 1)
+end
+function bar
+    arg literal "bar"
+    arg capture w ident
+    write `${w}	${stars context.counts[w]} ${context.counts[w]}
+`
+end

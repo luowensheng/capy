@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/luowensheng/capy/domain"
+	"github.com/olivierdevelops/capy/domain"
 )
 
 // tokReader is the read-only token cursor used by the value-expression parser.
@@ -92,17 +92,40 @@ func parsePrimary(r tokReader, stop []string) (domain.Expr, error) {
 			return domain.NullLit{}, nil
 		}
 		r.Advance()
-		path := []string{t.Text}
-		for r.Peek().Kind == domain.TokPunct && r.Peek().Text == "." {
-			r.Advance()
+		// Steps[0] is the root name; subsequent `.field` and `[expr]`
+		// steps alternate freely so `context.rows[i].name[j]` parses.
+		steps := []domain.PathStep{{Field: t.Text}}
+		for {
 			n := r.Peek()
-			if n.Kind != domain.TokIdent {
-				return nil, fmt.Errorf("expected identifier after .")
+			if n.Kind == domain.TokPunct && n.Text == "." {
+				r.Advance()
+				name := r.Peek()
+				if name.Kind != domain.TokIdent {
+					return nil, fmt.Errorf("expected identifier after .")
+				}
+				r.Advance()
+				steps = append(steps, domain.PathStep{Field: name.Text})
+				continue
 			}
-			r.Advance()
-			path = append(path, n.Text)
+			if n.Kind == domain.TokLBrack {
+				// Postfix index: `[expr]`. `[` is only a list literal
+				// when it's the FIRST token of a primary; here it
+				// follows an identifier path, so the two never collide.
+				r.Advance()
+				idx, err := parseValue(r, nil)
+				if err != nil {
+					return nil, err
+				}
+				if r.Peek().Kind != domain.TokRBrack {
+					return nil, fmt.Errorf("expected ]")
+				}
+				r.Advance()
+				steps = append(steps, domain.PathStep{IsIndex: true, Index: idx})
+				continue
+			}
+			break
 		}
-		return domain.VarRef{Path: path}, nil
+		return domain.VarRef{Steps: steps}, nil
 	case domain.TokLParen:
 		r.Advance()
 		skipNewlines(r)

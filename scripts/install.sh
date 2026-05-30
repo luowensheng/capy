@@ -1,16 +1,16 @@
 #!/bin/sh
 # Capy installer. Downloads the latest release for the current OS/arch
-# from https://github.com/luowensheng/capy/releases and installs into a
+# from https://github.com/olivierdevelops/capy/releases and installs into a
 # directory on $PATH.
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/luowensheng/capy/main/scripts/install.sh | sh
-#   curl -fsSL https://raw.githubusercontent.com/luowensheng/capy/main/scripts/install.sh | sh -s -- --version v0.1.0
-#   curl -fsSL https://raw.githubusercontent.com/luowensheng/capy/main/scripts/install.sh | sh -s -- --dir ~/.local/bin
+#   curl -fsSL https://raw.githubusercontent.com/olivierdevelops/capy/main/scripts/install.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/olivierdevelops/capy/main/scripts/install.sh | sh -s -- --version v0.1.0
+#   curl -fsSL https://raw.githubusercontent.com/olivierdevelops/capy/main/scripts/install.sh | sh -s -- --dir ~/.local/bin
 
 set -e
 
-REPO="luowensheng/capy"
+REPO="olivierdevelops/capy"
 VERSION="latest"
 INSTALL_DIR=""
 

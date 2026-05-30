@@ -1,0 +1,21 @@
+# enum-lookup — name tables addressed by a numeric index.
+#
+# `context.days` and `context.months` are plain lists; an event line
+# carries integer indices and the template reads the human name back by
+# index: `${context.days[d]}`, `${context.months[m]}`. A 0-based number
+# in the source becomes a readable label in the output — no `if`/`else`
+# ladder, just a list read.
+extension cal
+context
+    days [ "Sunday" "Monday" "Tuesday" "Wednesday" "Thursday" "Friday" "Saturday" ]
+    months [ "Jan" "Feb" "Mar" "Apr" "May" "Jun" "Jul" "Aug" "Sep" "Oct" "Nov" "Dec" ]
+end
+function event
+    arg literal "event"
+    arg capture d int
+    arg capture m int
+    arg capture day int
+    arg capture title tail
+    write `${context.days[d]}, ${context.months[m]} ${day} — ${title}
+`
+end

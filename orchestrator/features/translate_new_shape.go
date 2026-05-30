@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/luowensheng/capy/domain"
+	"github.com/olivierdevelops/capy/domain"
 )
 
 // translateNewShape walks an inner-DSL block (write calls intermixed
@@ -178,7 +178,7 @@ func renderExpr(e domain.Expr) string {
 	case domain.NullLit:
 		return "null"
 	case domain.VarRef:
-		return strings.Join(n.Path, ".")
+		return varRefToText(n, renderExpr)
 	case domain.CallExpr:
 		out := "(" + strings.Join(n.Name, ".")
 		for _, a := range n.Args {

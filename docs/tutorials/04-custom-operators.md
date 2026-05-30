@@ -163,4 +163,4 @@ Object literals accept either quoted strings OR bare identifiers as keys
 
 You now have the full toolkit. Look at the [cookbook](../cookbook.md)
 for more recipes, or build something real and share it via
-[Discussions](https://github.com/luowensheng/capy/discussions).
+[Discussions](https://github.com/olivierdevelops/capy/discussions).

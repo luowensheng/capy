@@ -1,6 +1,6 @@
 package features
 
-import "github.com/luowensheng/capy/domain"
+import "github.com/olivierdevelops/capy/domain"
 
 // The outer parser is a pattern matcher driven by the library's functions.
 // Each function's args list (literals + typed captures) is the entire shape.

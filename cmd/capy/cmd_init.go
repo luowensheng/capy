@@ -67,5 +67,5 @@ Run:
     capy run lib.yaml script.capy
 
 Edit ` + "`lib.yaml`" + ` to define your own functions, types, and file template.
-See https://github.com/luowensheng/capy for documentation.
+See https://github.com/olivierdevelops/capy for documentation.
 `

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	orchfeatures "github.com/luowensheng/capy/orchestrator/features"
+	orchfeatures "github.com/olivierdevelops/capy/orchestrator/features"
 )
 
 // `capy check <library.yaml>` parses + validates a library file without

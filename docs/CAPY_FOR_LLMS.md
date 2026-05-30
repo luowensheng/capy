@@ -223,7 +223,15 @@ Rooted at `context` (or at a `loop` local). Examples:
 context.imports
 context.config.api.url
 context.scripts[name]          # `name` is a capture/local; evaluated to a key
+context.buf[i]                 # list element by integer index (negative = from end)
+context.grid[i][j]             # nested; index then field also works: rows[i].name
 ```
+
+`[<expr>]` index steps work in **read** position too (inner-DSL value
+position and `${…}` templates), not just as a `set …[key]` write target —
+same semantics both ways. Map parents key on the index's string form,
+list parents on an integer. A missing key / out-of-range index is `nil`
+(falsy) / empty, so `if context.seen[k]` guards without a `for`-scan.
 
 ### Expressions
 

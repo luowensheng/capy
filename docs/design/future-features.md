@@ -359,7 +359,7 @@ samples.
 ### Walkthrough
 
 ```sh
-# Browser visits luowensheng.github.io/capy/libraries/
+# Browser visits olivierdevelops.github.io/capy/libraries/
 # User searches "kubernetes", filters by Kind: yaml
 # Picks the `k8s-deploy` library, clicks Install:
 capy lib add github.com/example/k8s-deploy
@@ -1896,7 +1896,7 @@ With LSP: type `serv` → see "serves" in the dropdown → tab.
 
 ```sh
 # Install the LSP.
-go install github.com/luowensheng/capy/cmd/capy-lsp@latest
+go install github.com/olivierdevelops/capy/cmd/capy-lsp@latest
 
 # VS Code: install the Capy extension; it auto-launches capy-lsp.
 # Vim: add to config.
@@ -2048,7 +2048,7 @@ $ capy watch chart revenue.chart --browser
 
 `capy play [LIB]` spins up an HTTP server on `localhost:8080`
 serving the same playground UI used at
-`luowensheng.github.io/capy/playground/`. Difference:
+`olivierdevelops.github.io/capy/playground/`. Difference:
 
 - All libraries from `CAPY_LIBS` are available (not just curated
   samples).
@@ -2125,7 +2125,7 @@ now.
 
 ## 9.1 Go SDK (current — already shipped)
 
-`import "github.com/luowensheng/capy"` works today.
+`import "github.com/olivierdevelops/capy"` works today.
 
 ## 9.2 Python SDK
 

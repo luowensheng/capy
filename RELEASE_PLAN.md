@@ -279,7 +279,7 @@ Out of scope for v0.1.0. Note in roadmap.
 |---|---|
 | Go | `go install github.com/<you>/capy/cmd/capy@latest` |
 | Homebrew | `brew install <you>/tap/capy` |
-| Curl | `curl -fsSL https://raw.githubusercontent.com/luowensheng/capy/main/scripts/install.sh \| sh` |
+| Curl | `curl -fsSL https://raw.githubusercontent.com/olivierdevelops/capy/main/scripts/install.sh \| sh` |
 | Binary | Download from GitHub Releases |
 | Docker | `docker run ghcr.io/<you>/capy:0.1.0 capy ...` |
 

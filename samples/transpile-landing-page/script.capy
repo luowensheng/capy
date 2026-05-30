@@ -6,4 +6,4 @@ feature "⚡" "Fast"                  "Single-binary Go. Boots in milliseconds."
 feature "🧩" "50 sample DSLs"        "From Python to Mermaid to a real x86-64 transpiler."
 
 cta "Get started" "/docs/getting-started"
-cta "GitHub"      "https://github.com/luowensheng/capy"
+cta "GitHub"      "https://github.com/olivierdevelops/capy"

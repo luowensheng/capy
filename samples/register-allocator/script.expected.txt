@@ -1,0 +1,5 @@
+; a := rax
+; b := rbx
+; c := rcx
+    mov rax, rbx
+    add rax, rcx

@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/luowensheng/capy/orchestrator"
+	"github.com/olivierdevelops/capy/orchestrator"
 )
 
 // TestThreeDToolsDemo runs every lib_*.capy in samples/3d-tools-demo against

@@ -171,7 +171,7 @@ earns its keep when the **grammar itself** is worth defining.
 ### As a command-line tool
 
 ```sh
-go install github.com/luowensheng/capy/cmd/capy@latest
+go install github.com/olivierdevelops/capy/cmd/capy@latest
 capy version
 ```
 
@@ -184,16 +184,16 @@ build step in any language.
 From your module root:
 
 ```sh
-go get github.com/luowensheng/capy@latest
+go get github.com/olivierdevelops/capy@latest
 go mod tidy
 ```
 
-Then `import "github.com/luowensheng/capy"`. If you need a specific commit
+Then `import "github.com/olivierdevelops/capy"`. If you need a specific commit
 (for a feature that's on `main` but not yet tagged), pin it:
 
 ```sh
-go get github.com/luowensheng/capy@<commit-sha>
-go list -m github.com/luowensheng/capy   # verify what resolved
+go get github.com/olivierdevelops/capy@<commit-sha>
+go list -m github.com/olivierdevelops/capy   # verify what resolved
 ```
 
 ### As a WebAssembly bundle
@@ -273,7 +273,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/luowensheng/capy"
+	"github.com/olivierdevelops/capy"
 )
 
 const librarySrc = `
@@ -936,7 +936,7 @@ read your environment or filesystem.
 To opt in (only for trusted library source), install `OSHost`:
 
 ```go
-import "github.com/luowensheng/capy/infra"
+import "github.com/olivierdevelops/capy/infra"
 
 lib.SetHost(infra.OSHost{
 	Env:  os.Getenv,
@@ -1073,7 +1073,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/luowensheng/capy"
+	"github.com/olivierdevelops/capy"
 )
 
 //go:embed config.capy
@@ -1631,8 +1631,8 @@ Capy is **additive** — adopting it never forces a rewrite. A low-risk path:
    you need an unreleased feature:
 
    ```sh
-   go get github.com/luowensheng/capy@<tag-or-commit>
-   go list -m github.com/luowensheng/capy   # confirm what resolved
+   go get github.com/olivierdevelops/capy@<tag-or-commit>
+   go list -m github.com/olivierdevelops/capy   # confirm what resolved
    ```
 
 3. **Test the grammar.** Add golden tests (section 22) before anyone
@@ -1810,7 +1810,7 @@ capy docs lib.capy > REFERENCE.md
 ## Appendix 3 — Go API reference
 
 ```go
-import "github.com/luowensheng/capy"
+import "github.com/olivierdevelops/capy"
 
 // Compile a library (do this once, reuse).
 lib, err := capy.NewLibrary(librarySrc)        // from a string
@@ -1866,5 +1866,5 @@ gets a fresh accumulating context — no state leaks between calls.
 
 ---
 
-*Built with [Capy](https://github.com/luowensheng/capy). One grammar; CLI,
+*Built with [Capy](https://github.com/olivierdevelops/capy). One grammar; CLI,
 embedded, and in-browser; any text target.*

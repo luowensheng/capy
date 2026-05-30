@@ -383,22 +383,22 @@ compiler runs as WebAssembly.
 
 ```sh
 # CLI
-go install github.com/luowensheng/capy/cmd/capy@latest
+go install github.com/olivierdevelops/capy/cmd/capy@latest
 
 # Embed as a Go library
-go get github.com/luowensheng/capy
+go get github.com/olivierdevelops/capy
 
 # MCP server for AI agents
-go install github.com/luowensheng/capy/cmd/capy-mcp@latest
+go install github.com/olivierdevelops/capy/cmd/capy-mcp@latest
 
 # Or grab a release tarball (no Go needed)
-curl -fsSL https://raw.githubusercontent.com/luowensheng/capy/main/scripts/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/olivierdevelops/capy/main/scripts/install.sh | sh
 ```
 
 Run a sample:
 
 ```sh
-git clone https://github.com/luowensheng/capy
+git clone https://github.com/olivierdevelops/capy
 cd capy
 capy run samples/recipe-card/lib.capy samples/recipe-card/script.capy > my-recipe.html
 open my-recipe.html
@@ -411,7 +411,7 @@ open my-recipe.html
 <small>**Capy v0.10** — engine + library schema stable. CLI ships
 binaries for linux / darwin / windows × amd64 / arm64. MCP server
 ships in every release. Browser playground runs the same engine.
-[Full changelog](https://github.com/luowensheng/capy/blob/main/CHANGELOG.md).</small>
+[Full changelog](https://github.com/olivierdevelops/capy/blob/main/CHANGELOG.md).</small>
 
 *Open source under MIT. Contributions at
-[github.com/luowensheng/capy](https://github.com/luowensheng/capy).*
+[github.com/olivierdevelops/capy](https://github.com/olivierdevelops/capy).*

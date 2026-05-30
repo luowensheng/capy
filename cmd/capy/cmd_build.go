@@ -89,15 +89,15 @@ func cmdBuild(args []string) error {
 
 go 1.22
 
-require github.com/luowensheng/capy v0.0.0
-replace github.com/luowensheng/capy => %s
+require github.com/olivierdevelops/capy v0.0.0
+replace github.com/olivierdevelops/capy => %s
 `, capyRoot)
 	} else {
 		gomod = `module capybuild
 
 go 1.22
 
-require github.com/luowensheng/capy latest
+require github.com/olivierdevelops/capy latest
 `
 	}
 	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte(gomod), 0644); err != nil {
@@ -156,7 +156,7 @@ func buildMainGo(libName, libSrc string) string {
 		"\t\"fmt\"\n" +
 		"\t\"os\"\n" +
 		"\n" +
-		"\t\"github.com/luowensheng/capy/orchestrator\"\n" +
+		"\t\"github.com/olivierdevelops/capy/orchestrator\"\n" +
 		")\n" +
 		"\n" +
 		"const libName = %q\n" +
@@ -226,7 +226,7 @@ func goRawStringLiteral(s string) string {
 
 // findCapyModuleRoot looks up from the current working directory
 // (and from the capy binary's location) for a go.mod that declares
-// `module github.com/luowensheng/capy`. Returns the path, or empty
+// `module github.com/olivierdevelops/capy`. Returns the path, or empty
 // when we're not in a checkout.
 func findCapyModuleRoot() string {
 	candidates := []string{}
@@ -241,7 +241,7 @@ func findCapyModuleRoot() string {
 		for i := 0; i < 12; i++ {
 			gomod := filepath.Join(dir, "go.mod")
 			if data, err := os.ReadFile(gomod); err == nil {
-				if strings.Contains(string(data), "module github.com/luowensheng/capy") {
+				if strings.Contains(string(data), "module github.com/olivierdevelops/capy") {
 					return dir
 				}
 			}

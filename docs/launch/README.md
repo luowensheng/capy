@@ -13,7 +13,7 @@ has been tagged and the binaries are out.
 Order of operations:
 
 1. Tag `v0.1.0`. Confirm GoReleaser produced binaries for all platforms.
-2. Verify `go install github.com/luowensheng/capy/cmd/capy@latest` works.
+2. Verify `go install github.com/olivierdevelops/capy/cmd/capy@latest` works.
 3. Test the install script on a fresh Linux VM and a fresh macOS shell.
 4. Publish the blog post.
 5. Submit HN.

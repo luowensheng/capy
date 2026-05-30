@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/luowensheng/capy/orchestrator"
+	"github.com/olivierdevelops/capy/orchestrator"
 )
 
 // cmdNew scaffolds a new project using a library.

@@ -7,7 +7,7 @@ Short version (single post):
 > Single-binary install. Six worked examples (Python, JSON, SQL,
 > Makefile, HTML, TS).
 >
-> github.com/luowensheng/capy
+> github.com/olivierdevelops/capy
 
 ---
 
@@ -43,4 +43,4 @@ of the binary releases. MIT.
 5/ Pre-1.0 — the `.capy` schema will likely evolve. Roadmap includes:
 `else` arm, multi-output, configurable surface syntax, `validate`
 snippets in inner Capy. Feedback wanted.
-github.com/luowensheng/capy
+github.com/olivierdevelops/capy

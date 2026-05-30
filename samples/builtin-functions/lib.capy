@@ -31,7 +31,7 @@ asString:   ${asString s}
 `
 end
 
-# Numeric helpers: add / sub / mul / percent / stars.
+# Numeric helpers: add / sub / mul / div / mod / align / percent / stars.
 function calc
     arg literal "calc"
     arg capture a int
@@ -39,6 +39,9 @@ function calc
     write `add:     ${add a b}
 sub:     ${sub a b}
 mul:     ${mul a b}
+div:     ${div a b}
+mod:     ${mod a b}
+align:   ${align a b}
 percent: ${percent a b}
 stars:   ${stars a}
 `

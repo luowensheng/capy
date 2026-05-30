@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/luowensheng/capy/domain"
+	"github.com/olivierdevelops/capy/domain"
 )
 
 // ExprToText converts a parsed value expression back into a source-like text
@@ -31,7 +31,7 @@ func ExprToText(x domain.Expr) string {
 	case domain.NullLit:
 		return "null"
 	case domain.VarRef:
-		return strings.Join(n.Path, ".")
+		return varRefToText(n, ExprToText)
 	case domain.CompareExpr:
 		return ExprToText(n.Left) + " " + n.Op + " " + ExprToText(n.Right)
 	case domain.NotExpr:
@@ -56,4 +56,26 @@ func ExprToText(x domain.Expr) string {
 		return "(" + strings.Join(n.Name, ".") + " " + strings.Join(args, " ") + ")"
 	}
 	return fmt.Sprintf("%v", x)
+}
+
+// varRefToText renders a step-based VarRef back to its source form:
+// the root, then `.field` for field steps and `[expr]` for index steps
+// (the index expression rendered via the supplied recursive renderer).
+// Shared by ExprToText and translate's renderExpr so both round-trip
+// indexed reads like `context.buf[i]` identically.
+func varRefToText(v domain.VarRef, renderExpr func(domain.Expr) string) string {
+	var b strings.Builder
+	for i, s := range v.Steps {
+		if s.IsIndex {
+			b.WriteString("[")
+			b.WriteString(renderExpr(s.Index))
+			b.WriteString("]")
+		} else {
+			if i > 0 {
+				b.WriteString(".")
+			}
+			b.WriteString(s.Field)
+		}
+	}
+	return b.String()
 }

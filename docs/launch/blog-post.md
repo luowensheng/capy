@@ -15,7 +15,7 @@ generator, no template engine alone — a small runtime that does all
 three.
 
 ```sh
-go install github.com/luowensheng/capy/cmd/capy@latest
+go install github.com/olivierdevelops/capy/cmd/capy@latest
 ```
 
 ## The shape
@@ -136,17 +136,17 @@ Pre-1.0. The Capy library schema may change. Specifically:
 - No configurable surface syntax beyond what's there (block delimiters,
   arg separators — fixed for v0.1).
 
-See [docs/roadmap.md](https://github.com/luowensheng/capy/blob/main/docs/roadmap.md).
+See [docs/roadmap.md](https://github.com/olivierdevelops/capy/blob/main/docs/roadmap.md).
 
 ## Try it
 
 ```sh
-go install github.com/luowensheng/capy/cmd/capy@latest
-git clone https://github.com/luowensheng/capy
+go install github.com/olivierdevelops/capy/cmd/capy@latest
+git clone https://github.com/olivierdevelops/capy
 cd capy
 capy run samples/transpile-py/lib.capy samples/transpile-py/script.capy
 ```
 
 Then `capy init my-dsl` to scaffold your own.
 
-[GitHub](https://github.com/luowensheng/capy) · [Discussions](https://github.com/luowensheng/capy/discussions) · MIT licensed.
+[GitHub](https://github.com/olivierdevelops/capy) · [Discussions](https://github.com/olivierdevelops/capy/discussions) · MIT licensed.

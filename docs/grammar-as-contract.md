@@ -109,7 +109,7 @@ the goldens.
 
 ## The worked sample
 
-Look at [`samples/contract-first-api/`](https://github.com/luowensheng/capy/tree/main/samples/contract-first-api):
+Look at [`samples/contract-first-api/`](https://github.com/olivierdevelops/capy/tree/main/samples/contract-first-api):
 
 ```
 samples/contract-first-api/

@@ -369,7 +369,7 @@ read environment. The trust model today:
 
 A richer trust model (`~/.capy/trusted.capy`, per-library SHA
 pins, `--dry-run`) is on the roadmap — see
-[future-features § 6.5](https://github.com/luowensheng/capy/blob/main/docs/design/future-features.md).
+[future-features § 6.5](https://github.com/olivierdevelops/capy/blob/main/docs/design/future-features.md).
 
 Only put libraries on `CAPY_LIBS` that you'd trust to run as
 yourself. Library files cloned from random URLs should land
@@ -472,14 +472,14 @@ Caveats:
   capy build recipe -o recipe-linux-arm64`.
 - The compiled binary embeds the library at build time;
   upgrade-on-the-fly isn't a thing — rebuild.
-- Section 2(b) of the [LICENSE](https://github.com/luowensheng/capy/blob/main/LICENSE)
+- Section 2(b) of the [LICENSE](https://github.com/olivierdevelops/capy/blob/main/LICENSE)
   applies — redistribution of compiled binaries is permitted for
   the library author (you embedded YOUR library) but the engine
   itself isn't open-redistribution.
 
 ## What's still on the roadmap
 
-Per the [comprehensive design](https://github.com/luowensheng/capy/blob/main/docs/design/future-features.md):
+Per the [comprehensive design](https://github.com/olivierdevelops/capy/blob/main/docs/design/future-features.md):
 
 - Argument / flag parsing with auto-generated `--help` per command.
 - Trust model: `~/.capy/trusted.capy`, `--trust` / `--dry-run`.

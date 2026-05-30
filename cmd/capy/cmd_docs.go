@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/luowensheng/capy/domain"
-	orchfeatures "github.com/luowensheng/capy/orchestrator/features"
+	"github.com/olivierdevelops/capy/domain"
+	orchfeatures "github.com/olivierdevelops/capy/orchestrator/features"
 )
 
 // `capy docs <library>` parses the library and emits Markdown reference

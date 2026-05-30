@@ -1,0 +1,24 @@
+# stack-top — peek at a stack with NEGATIVE indices.
+#
+# `push v` appends to `context.stack`. `top` reads the last element with
+# `context.stack[-1]` and the one beneath it with `[-2]` — negative
+# indices count from the end, the same convention as the write side. The
+# inspector even folds them: `${add context.stack[-1] context.stack[-2]}`.
+extension vm
+context
+    stack [ ]
+end
+function push
+    arg literal "push"
+    arg capture v int
+    append context.stack v
+    write `push ${v}
+`
+end
+function top
+    arg literal "top"
+    write `   top    = ${context.stack[-1]}
+   under  = ${context.stack[-2]}
+   sum    = ${add context.stack[-1] context.stack[-2]}
+`
+end

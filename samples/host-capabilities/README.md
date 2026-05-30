@@ -42,8 +42,8 @@ your env/files, opt in explicitly:
 
 ```go
 import (
-    "github.com/luowensheng/capy"
-    "github.com/luowensheng/capy/infra"
+    "github.com/olivierdevelops/capy"
+    "github.com/olivierdevelops/capy/infra"
 )
 lib, _ := capy.NewLibraryFromFile("lib.capy")
 lib.SetHost(infra.OSHost{

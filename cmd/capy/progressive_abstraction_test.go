@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/luowensheng/capy/orchestrator"
+	"github.com/olivierdevelops/capy/orchestrator"
 )
 
 // TestProgressiveAbstraction runs the SAME library against three scripts

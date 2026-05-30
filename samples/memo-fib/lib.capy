@@ -1,0 +1,21 @@
+# memo-fib — a memo table you GROW and READ by computed index.
+#
+# `context.memo` seeds [0, 1]. Each `fib n` reads the two previous
+# entries by index — `context.memo[n-1]` and `context.memo[n-2]`,
+# written `[(sub n 1)]` / `[(sub n 2)]` — to both append the next value
+# (for later calls) and print it. The lookup is O(1), not a re-scan.
+#
+# Note: `append` mutates state for the NEXT statement, so the printed
+# value is computed inline from the (already-present) predecessors —
+# a function's own `write` never sees its own `append` (one-call lag).
+extension fib
+context
+    memo [ 0 1 ]
+end
+function fib
+    arg literal "fib"
+    arg capture n int
+    append context.memo (add context.memo[(sub n 1)] context.memo[(sub n 2)])
+    write `fib(${n}) = ${add context.memo[(sub n 1)] context.memo[(sub n 2)]}
+`
+end

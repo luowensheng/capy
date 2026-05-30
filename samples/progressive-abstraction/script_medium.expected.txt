@@ -38,7 +38,7 @@
     <div class="hero">
       <h1>Capy</h1>
       <p>Describe what you want. Capy produces what you need.</p>
-      <a class="cta" href="https://luowensheng.github.io/capy/playground/">Open the playground</a>
+      <a class="cta" href="https://olivierdevelops.github.io/capy/playground/">Open the playground</a>
     </div>
     <div class="features">
       <div class="feature">
@@ -60,7 +60,7 @@
     </div>
   </div>
   <footer>
-    Built with <a href="https://github.com/luowensheng/capy" style="color:var(--accent)">Capy</a>.
+    Built with <a href="https://github.com/olivierdevelops/capy" style="color:var(--accent)">Capy</a>.
   </footer>
 </body>
 </html>

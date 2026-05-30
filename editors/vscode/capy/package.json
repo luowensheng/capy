@@ -3,13 +3,13 @@
   "displayName": "Capy",
   "description": "Syntax highlighting for Capy (.capy) and validation for Capy libraries (lib.yaml).",
   "version": "0.1.0",
-  "publisher": "luowensheng",
+  "publisher": "olivierdevelops",
   "engines": { "vscode": "^1.80.0" },
   "categories": ["Programming Languages"],
   "keywords": ["capy", "transpiler", "dsl", "code generation"],
   "repository": {
     "type": "git",
-    "url": "https://github.com/luowensheng/capy"
+    "url": "https://github.com/olivierdevelops/capy"
   },
   "contributes": {
     "languages": [
@@ -30,7 +30,7 @@
     "yamlValidation": [
       {
         "fileMatch": ["**/lib.yaml", "**/lib.yml", "**/capy.yaml", "**/capy.yml"],
-        "url": "https://raw.githubusercontent.com/luowensheng/capy/main/schemas/library.schema.json"
+        "url": "https://raw.githubusercontent.com/olivierdevelops/capy/main/schemas/library.schema.json"
       }
     ]
   }

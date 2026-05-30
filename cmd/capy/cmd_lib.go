@@ -195,7 +195,7 @@ func cmdLibNew(args []string) error {
 	}
 
 	// Scaffolded files.
-	manifest := fmt.Sprintf(`# Library manifest. See https://luowensheng.github.io/capy/
+	manifest := fmt.Sprintf(`# Library manifest. See https://olivierdevelops.github.io/capy/
 name        "%s"
 version     "0.1.0"
 description "A new Capy library."

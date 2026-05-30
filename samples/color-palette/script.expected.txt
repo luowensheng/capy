@@ -1,0 +1,16 @@
+<div style="display:flex;align-items:center;gap:.6rem;font-family:system-ui">
+  <span style="width:28px;height:28px;border-radius:6px;background:royalblue;border:1px solid #0002"></span>
+  <code>primary</code><small>royalblue</small>
+</div>
+<div style="display:flex;align-items:center;gap:.6rem;font-family:system-ui">
+  <span style="width:28px;height:28px;border-radius:6px;background:seagreen;border:1px solid #0002"></span>
+  <code>success</code><small>seagreen</small>
+</div>
+<div style="display:flex;align-items:center;gap:.6rem;font-family:system-ui">
+  <span style="width:28px;height:28px;border-radius:6px;background:crimson;border:1px solid #0002"></span>
+  <code>danger</code><small>crimson</small>
+</div>
+<div style="display:flex;align-items:center;gap:.6rem;font-family:system-ui">
+  <span style="width:28px;height:28px;border-radius:6px;background:goldenrod;border:1px solid #0002"></span>
+  <code>warning</code><small>goldenrod</small>
+</div>

@@ -1,10 +1,10 @@
 package orchestrator
 
 import (
-	"github.com/luowensheng/capy/infra"
-	orchfeatures "github.com/luowensheng/capy/orchestrator/features"
-	orchusecases "github.com/luowensheng/capy/orchestrator/usecases"
-	orchviews "github.com/luowensheng/capy/orchestrator/views"
+	"github.com/olivierdevelops/capy/infra"
+	orchfeatures "github.com/olivierdevelops/capy/orchestrator/features"
+	orchusecases "github.com/olivierdevelops/capy/orchestrator/usecases"
+	orchviews "github.com/olivierdevelops/capy/orchestrator/views"
 )
 
 type AppOrchestrator struct{}

@@ -110,7 +110,7 @@ Output:
 </div>
 </div>
 
-[Full sample → `samples/metaprogramming/`](https://github.com/luowensheng/capy/tree/main/samples/metaprogramming)
+[Full sample → `samples/metaprogramming/`](https://github.com/olivierdevelops/capy/tree/main/samples/metaprogramming)
 
 ---
 

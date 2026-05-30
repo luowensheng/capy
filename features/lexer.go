@@ -1,6 +1,6 @@
 package features
 
-import "github.com/luowensheng/capy/domain"
+import "github.com/olivierdevelops/capy/domain"
 
 // Lexer is a struct of capability functions. The orchestrator builds it.
 type Lexer struct {

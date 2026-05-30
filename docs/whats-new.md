@@ -4,6 +4,95 @@ title: What's new — engine primitives shipped in this release
 
 # What's new
 
+## Inner DSL — list & map elements are readable by index
+
+A `[<expr>]` index may now appear in a **read** position, mirroring the
+write target that already existed. Inside both inner-DSL value position
+and `${…}` templates:
+
+```
+if context.readsince[loc] == 0      # map read by captured key
+    set context.buf[context.laststore[loc]] `… eliminated`
+end
+write `${context.buf[i]}`           # list read by loop index
+${context.grid[i][j]}               # nested
+${context.rows[i].name}             # index then field
+${context.buf[(sub n 1)]}           # computed index expression
+${context.buf[-1]}                  # negative → last
+```
+
+Map parents key on the index's string form; list parents key on an
+integer (negative from the end) — read and write semantics are
+identical, so a value written by `set context.buf[i] …` reads back by the
+same index. Missing keys / out-of-range indices are `nil` (falsy) in
+value position and render empty in a template, so `if context.seen[k]`
+guards without a `for`-scan. This retires the
+`for k,v in … / if k == name` linear-lookup idiom: the new
+[`samples/value-index-read/`](https://github.com/olivierdevelops/capy/tree/main/samples/value-index-read)
+rewrites the dead-store eliminator's nested scans as two direct indexed
+reads and produces byte-identical output. Design notes:
+[value-position indexing](design/value-position-indexing.md).
+
+Ten new samples show the idiom across map-by-key, list-by-index,
+computed and negative indices — all in the playground under the
+**Indexed reads** category:
+[`word-frequency`](https://github.com/olivierdevelops/capy/tree/main/samples/word-frequency)
+(map increment),
+[`memo-fib`](https://github.com/olivierdevelops/capy/tree/main/samples/memo-fib)
+(computed index),
+[`stack-top`](https://github.com/olivierdevelops/capy/tree/main/samples/stack-top)
+(negative index),
+[`enum-lookup`](https://github.com/olivierdevelops/capy/tree/main/samples/enum-lookup)
+(list by index),
+[`leaderboard`](https://github.com/olivierdevelops/capy/tree/main/samples/leaderboard)
+(positional reads),
+[`color-palette`](https://github.com/olivierdevelops/capy/tree/main/samples/color-palette)
+(map by name),
+[`symbol-types`](https://github.com/olivierdevelops/capy/tree/main/samples/symbol-types),
+[`register-allocator`](https://github.com/olivierdevelops/capy/tree/main/samples/register-allocator),
+[`grid-game`](https://github.com/olivierdevelops/capy/tree/main/samples/grid-game)
+and
+[`emoji-react`](https://github.com/olivierdevelops/capy/tree/main/samples/emoji-react).
+See the [🔢 Indexed reads showcase](showcase.md#indexed-reads-lists-maps-read-back-by-index-or-key)
+for the full gallery.
+
+## Inner DSL — list elements are writable by index
+
+`set context.buf[i] value` now overwrites a **list** element in place
+(previously only map keys accepted a `[…]` write target; a list parent
+errored with "target parent is not a map"). `append`/`prepend` against an
+indexed target reach the nested list at that element, and negative
+indices count from the end (`-1` = last).
+
+This unlocks **retroactive rewrites of buffered output** — the pattern a
+code generator uses when a decision can't be made until later. Buffer the
+instruction stream in a `context` list, keep side-tables as you go, and
+then edit a past slot once the future is known: null out a dead store,
+back-patch a jump offset, or drop a redundant reload. The new
+[`samples/list-index-assign/`](https://github.com/olivierdevelops/capy/tree/main/samples/list-index-assign)
+is a working **dead-store eliminator** built entirely in-library this
+way, and the [cross-arch assembler notes](design/asm-backend-remaining.md)
+use it to show that "looking back at already-emitted code" is
+bookkeeping, not whole-program reasoning.
+
+## Helpers — integer `div` / `mod` / `align`
+
+Three new numeric template helpers join `add`/`sub`/`mul`:
+
+- `div a b` — integer quotient `a / b` (returns `0` when `b == 0`).
+- `mod a b` — remainder `a % b` (returns `0` when `b == 0`).
+- `align n a` — round `n` **up** to the next multiple of `a`
+  (`(n + a - 1) / a * a`).
+
+`align` is the op a code generator needs for ABI-correct layout: struct
+field offsets, struct total size, and 16-byte stack-frame rounding all
+reduce to it. Previously the only arithmetic helpers were
+`add`/`sub`/`mul`/`percent`, so alignment rounding (which needs division
+or bitwise AND) couldn't be expressed in-library — `align` closes that
+gap. See the [function cookbook](function-cookbook.md#div-mod-align) and
+the [cross-arch assembler design notes](design/asm-backend-remaining.md),
+where this unblocks Problems 6 (struct layout) and 7 (stack frames).
+
 ## Docs — how Capy parses & extracts content
 
 A new end-to-end walkthrough,
@@ -27,19 +116,19 @@ openers, `write`/`template`, the file-level directives (`extension`,
 capture types, and `type` definitions. It also answers "how do I know a
 function can have a body?" — it declares exactly one `block_*` directive.
 The canonical `if … end` example is verified by
-[`samples/library-keywords/`](https://github.com/luowensheng/capy/tree/main/samples/library-keywords).
+[`samples/library-keywords/`](https://github.com/olivierdevelops/capy/tree/main/samples/library-keywords).
 
 ## Docs — built-in function cookbook
 
 Every built-in template helper (the functions you call inside `${ … }`)
 now has a single reference page:
-[Built-in function cookbook](function-cookbook.md). All 26 helpers —
+[Built-in function cookbook](function-cookbook.md). All 29 helpers —
 `indent`, `pascalCase`/`camelCase`/`snakeCase`, `dasherize`, `unquote`,
 `decoded`, `escapeHtml`, `toQuoted`, `asString`, `unescape`,
 `trimSuffix`/`trimPrefix`, `join`/`split`/`nonEmpty`, `toJSON`/
-`toJSONIndent`/`toPyLit`, `add`/`sub`/`mul`, `percent`, `stars`,
-`lower`/`upper` — with a worked example each. The examples are mirrored by
-the CI-checked [`samples/builtin-functions/`](https://github.com/luowensheng/capy/tree/main/samples/builtin-functions)
+`toJSONIndent`/`toPyLit`, `add`/`sub`/`mul`/`div`/`mod`/`align`,
+`percent`, `stars`, `lower`/`upper` — with a worked example each. The examples are mirrored by
+the CI-checked [`samples/builtin-functions/`](https://github.com/olivierdevelops/capy/tree/main/samples/builtin-functions)
 sample, also runnable in the playground.
 
 ## Round 6 — matched-pair HTML: sequence closers & named nonterminals
@@ -94,13 +183,13 @@ Four runnable demos, all in the [playground](playground.md) under
 
 | Demo | Shows |
 |---|---|
-| [`html-xml-parser`](https://github.com/luowensheng/capy/tree/main/samples/html-xml-parser) | One generic `element` parses any `<tag>` — capture-bound `</NAME>` closer + `attribute*` |
-| [`bbcode-parser`](https://github.com/luowensheng/capy/tree/main/samples/bbcode-parser) | Same primitive, **bracket** delimiters: `[b]…[/b]` with literal close-seqs |
-| [`markdown-from-tags`](https://github.com/luowensheng/capy/tree/main/samples/markdown-from-tags) | The same tag markup rewritten to **Markdown** — target-agnostic |
-| [`signature-parser`](https://github.com/luowensheng/capy/tree/main/samples/signature-parser) | Param lists via `param* sep "," join ", "` |
+| [`html-xml-parser`](https://github.com/olivierdevelops/capy/tree/main/samples/html-xml-parser) | One generic `element` parses any `<tag>` — capture-bound `</NAME>` closer + `attribute*` |
+| [`bbcode-parser`](https://github.com/olivierdevelops/capy/tree/main/samples/bbcode-parser) | Same primitive, **bracket** delimiters: `[b]…[/b]` with literal close-seqs |
+| [`markdown-from-tags`](https://github.com/olivierdevelops/capy/tree/main/samples/markdown-from-tags) | The same tag markup rewritten to **Markdown** — target-agnostic |
+| [`signature-parser`](https://github.com/olivierdevelops/capy/tree/main/samples/signature-parser) | Param lists via `param* sep "," join ", "` |
 
-Tests: [`functype_test.go`](https://github.com/luowensheng/capy/blob/main/functype_test.go),
-[`multitoken_closer_test.go`](https://github.com/luowensheng/capy/blob/main/multitoken_closer_test.go).
+Tests: [`functype_test.go`](https://github.com/olivierdevelops/capy/blob/main/functype_test.go),
+[`multitoken_closer_test.go`](https://github.com/olivierdevelops/capy/blob/main/multitoken_closer_test.go).
 
 ---
 
@@ -125,7 +214,7 @@ breaks (only quoted tokens inside a `tail` change, and none of the
 samples relied on the old quote-stripping). This lets a single `tail`
 function replace a hand-written `word`-ladder for shell-style argv.
 
-Tests: [`missing_features_test.go`](https://github.com/luowensheng/capy/blob/main/missing_features_test.go) (`TestTailPreservesQuotedSlots`).
+Tests: [`missing_features_test.go`](https://github.com/olivierdevelops/capy/blob/main/missing_features_test.go) (`TestTailPreservesQuotedSlots`).
 
 ---
 
@@ -147,8 +236,8 @@ function try
 end
 ```
 
-Tests: [`context_blocks_test.go`](https://github.com/luowensheng/capy/blob/main/context_blocks_test.go).
-Sample: [`samples/error-handling/`](https://github.com/luowensheng/capy/tree/main/samples/error-handling).
+Tests: [`context_blocks_test.go`](https://github.com/olivierdevelops/capy/blob/main/context_blocks_test.go).
+Sample: [`samples/error-handling/`](https://github.com/olivierdevelops/capy/tree/main/samples/error-handling).
 
 ---
 
@@ -167,7 +256,7 @@ These close concrete parser and tokenizer gaps. All additive, all opt-in:
 | `${asString x}` helper | Emits exactly one valid JSON string, quoting iff the capture isn't already a string. `exec echo foo` and `exec echo "foo"` both interpolate correctly — no more `${toJSON}` double-quoting or bare-ident invalid JSON. |
 | **Source-level metaprogramming** (`define … end`) | A script can declare its own DSL functions inline — same grammar as a library `function` — then use them in the same file. The library stays minimal; power users extend the vocabulary without forking it. Embedded callers get the same behaviour through `capy.Library.Run` / `RunMulti`. |
 
-Tests: [`missing_features_test.go`](https://github.com/luowensheng/capy/blob/main/missing_features_test.go).
+Tests: [`missing_features_test.go`](https://github.com/olivierdevelops/capy/blob/main/missing_features_test.go).
 
 **Metaprogramming in one breath.** The source below ships with a library
 that defines *only* `print` — `heading`, `todo`, and `quote` are declared
@@ -185,7 +274,7 @@ heading "Capy metaprogramming"
 todo yes "Ship metaprogramming feature"
 ```
 
-Full worked example: [`samples/metaprogramming/`](https://github.com/luowensheng/capy/tree/main/samples/metaprogramming)
+Full worked example: [`samples/metaprogramming/`](https://github.com/olivierdevelops/capy/tree/main/samples/metaprogramming)
 · pattern docs: [metaprogramming.md](metaprogramming.md)
 · runnable in the [playground](playground.md) under **🧬 Metaprogramming**.
 
@@ -207,12 +296,12 @@ hover-docs / scroll-sync). All additive, all opt-in:
 | Backtick code spans in captures | `` markdown `inline \`code\` here` `` keeps the span. |
 | Optional args with defaults | `arg capture variant string default "primary"` — collapses `button` / `button_link` / `submit` families into one function. |
 
-Samples: [`line-mapping`](https://github.com/luowensheng/capy/tree/main/samples/line-mapping),
-[`backtick-codespan`](https://github.com/luowensheng/capy/tree/main/samples/backtick-codespan),
-[`optional-args`](https://github.com/luowensheng/capy/tree/main/samples/optional-args),
-plus extended [`string-decoded`](https://github.com/luowensheng/capy/tree/main/samples/string-decoded),
-[`template-sugar`](https://github.com/luowensheng/capy/tree/main/samples/template-sugar),
-[`verbatim-pre`](https://github.com/luowensheng/capy/tree/main/samples/verbatim-pre).
+Samples: [`line-mapping`](https://github.com/olivierdevelops/capy/tree/main/samples/line-mapping),
+[`backtick-codespan`](https://github.com/olivierdevelops/capy/tree/main/samples/backtick-codespan),
+[`optional-args`](https://github.com/olivierdevelops/capy/tree/main/samples/optional-args),
+plus extended [`string-decoded`](https://github.com/olivierdevelops/capy/tree/main/samples/string-decoded),
+[`template-sugar`](https://github.com/olivierdevelops/capy/tree/main/samples/template-sugar),
+[`verbatim-pre`](https://github.com/olivierdevelops/capy/tree/main/samples/verbatim-pre).
 
 ---
 
@@ -244,7 +333,7 @@ Plus a few smaller correctness fixes (source-absolute column tracking,
 
 ## A flagship demo: math equation plots
 
-Every primitive composes in [`samples/math-plots/`](https://github.com/luowensheng/capy/tree/main/samples/math-plots).
+Every primitive composes in [`samples/math-plots/`](https://github.com/olivierdevelops/capy/tree/main/samples/math-plots).
 The library takes a one-line DSL —
 
 ```
@@ -999,7 +1088,7 @@ Adds one new keyword (`template`) at statement position. Any
 existing library function literally named `template` would conflict
 at call site — we grepped the in-tree samples and found none.
 
-See [`samples/template-sugar/`](https://github.com/luowensheng/capy/tree/main/samples/template-sugar)
+See [`samples/template-sugar/`](https://github.com/olivierdevelops/capy/tree/main/samples/template-sugar)
 for a complete worked example with `card`, `p`, `file_template`, and
 state accumulation in `context.cards`.
 
@@ -1078,9 +1167,9 @@ ambiguous ("make this HTML"? "treat this as HTML"?). Renamed to
 
 Every new feature has a regression sample under `samples/`:
 
-- [`samples/utf8-prose/`](https://github.com/luowensheng/capy/tree/main/samples/utf8-prose)
-- [`samples/verbatim-pre/`](https://github.com/luowensheng/capy/tree/main/samples/verbatim-pre)
-- [`samples/string-decoded/`](https://github.com/luowensheng/capy/tree/main/samples/string-decoded)
-- [`samples/multiline-strings/`](https://github.com/luowensheng/capy/tree/main/samples/multiline-strings)
-- [`samples/inline-markdown/`](https://github.com/luowensheng/capy/tree/main/samples/inline-markdown)
-- [`samples/template-sugar/`](https://github.com/luowensheng/capy/tree/main/samples/template-sugar)
+- [`samples/utf8-prose/`](https://github.com/olivierdevelops/capy/tree/main/samples/utf8-prose)
+- [`samples/verbatim-pre/`](https://github.com/olivierdevelops/capy/tree/main/samples/verbatim-pre)
+- [`samples/string-decoded/`](https://github.com/olivierdevelops/capy/tree/main/samples/string-decoded)
+- [`samples/multiline-strings/`](https://github.com/olivierdevelops/capy/tree/main/samples/multiline-strings)
+- [`samples/inline-markdown/`](https://github.com/olivierdevelops/capy/tree/main/samples/inline-markdown)
+- [`samples/template-sugar/`](https://github.com/olivierdevelops/capy/tree/main/samples/template-sugar)

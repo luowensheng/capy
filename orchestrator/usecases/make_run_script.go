@@ -1,9 +1,9 @@
 package orchusecases
 
 import (
-	"github.com/luowensheng/capy/domain"
-	"github.com/luowensheng/capy/io/cli"
-	"github.com/luowensheng/capy/usecases"
+	"github.com/olivierdevelops/capy/domain"
+	"github.com/olivierdevelops/capy/io/cli"
+	"github.com/olivierdevelops/capy/usecases"
 )
 
 type RunScriptImpl struct {

@@ -35,10 +35,10 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/luowensheng/capy/domain"
-	"github.com/luowensheng/capy/features"
-	"github.com/luowensheng/capy/infra"
-	orchfeatures "github.com/luowensheng/capy/orchestrator/features"
+	"github.com/olivierdevelops/capy/domain"
+	"github.com/olivierdevelops/capy/features"
+	"github.com/olivierdevelops/capy/infra"
+	orchfeatures "github.com/olivierdevelops/capy/orchestrator/features"
 )
 
 // Library is a compiled, ready-to-run Capy library. Safe to reuse across

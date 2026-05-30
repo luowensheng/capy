@@ -90,7 +90,7 @@ jobs:
         with: { go-version: '1.22', cache: true }
 
       - name: Install capy
-        run: go install github.com/luowensheng/capy/cmd/capy@latest
+        run: go install github.com/olivierdevelops/capy/cmd/capy@latest
 
       - name: Build
         env:
@@ -147,7 +147,7 @@ Best when you want to swap libraries at runtime (e.g. a playground).
 ```sh
 # 1. Build the engine for wasm.
 GOOS=js GOARCH=wasm go build -o engine.wasm \
-  github.com/luowensheng/capy/cmd/capy-wasm
+  github.com/olivierdevelops/capy/cmd/capy-wasm
 
 # 2. Copy Go's wasm loader.
 cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" .
@@ -283,7 +283,7 @@ container deployments.
 # ─── build stage ────────────────────────────────────────────
 FROM golang:1.22-alpine AS build
 RUN apk add --no-cache git
-RUN go install github.com/luowensheng/capy/cmd/capy@latest
+RUN go install github.com/olivierdevelops/capy/cmd/capy@latest
 WORKDIR /src
 COPY greet.capy .
 RUN GOFLAGS='-trimpath -ldflags=-s -w' capy build greet -o /out/greet
@@ -439,7 +439,7 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-go@v6
         with: { go-version: '1.22', cache: true }
-      - run: go install github.com/luowensheng/capy/cmd/capy@latest
+      - run: go install github.com/olivierdevelops/capy/cmd/capy@latest
       - run: capy check greet.capy
       - name: Parse every example script
         shell: bash

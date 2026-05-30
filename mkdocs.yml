@@ -1,8 +1,8 @@
 site_name: Capy
 site_description: A transpiler engine with zero default grammar. Define a tiny source language in a .capy library; get a code generator for any textual target — HTML, Python, Go, Terraform, and more.
-site_url: https://luowensheng.github.io/capy/
-repo_url: https://github.com/luowensheng/capy
-repo_name: luowensheng/capy
+site_url: https://olivierdevelops.github.io/capy/
+repo_url: https://github.com/olivierdevelops/capy
+repo_name: olivierdevelops/capy
 edit_uri: edit/main/docs/
 copyright: Copyright &copy; 2026 Capy authors
 
@@ -180,5 +180,5 @@ not_in_nav: |
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/luowensheng/capy
+      link: https://github.com/olivierdevelops/capy
   generator: false

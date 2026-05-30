@@ -102,10 +102,10 @@ Three options, in order of effort:
 
 ```sh
 # 1. Install (one-time, no admin permissions needed)
-go install github.com/luowensheng/capy/cmd/capy@latest
+go install github.com/olivierdevelops/capy/cmd/capy@latest
 
 # 2. Clone the samples
-git clone https://github.com/luowensheng/capy
+git clone https://github.com/olivierdevelops/capy
 cd capy/samples/recipe-card
 
 # 3. Edit script.capy in any text editor — replace with your recipe
@@ -116,7 +116,7 @@ open my-recipe.html
 
 That's it. The same five steps work for every other sample —
 substitute `event-invite/`, `weekly-meal-plan/`, `reading-log/`, or
-any of the 50+ samples in the [`samples/`](https://github.com/luowensheng/capy/tree/main/samples) directory.
+any of the 50+ samples in the [`samples/`](https://github.com/olivierdevelops/capy/tree/main/samples) directory.
 
 ## When Capy is overkill
 

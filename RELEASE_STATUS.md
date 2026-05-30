@@ -1,8 +1,8 @@
 # Release-readiness status (v0.1.0)
 
 A snapshot of where the repo stands against [RELEASE_PLAN.md](RELEASE_PLAN.md).
-**Repo: https://github.com/luowensheng/capy**
-**Docs site: https://luowensheng.github.io/capy/** (auto-deployed on push to main)
+**Repo: https://github.com/olivierdevelops/capy**
+**Docs site: https://olivierdevelops.github.io/capy/** (auto-deployed on push to main)
 
 ---
 
@@ -26,12 +26,12 @@ A snapshot of where the repo stands against [RELEASE_PLAN.md](RELEASE_PLAN.md).
 
 | # | Action | Done? |
 |---|--------|-------|
-| 1 | Replace `capyhq` placeholder org with `luowensheng` (~20 files) | ✅ |
-| 2 | Set Go module path to `github.com/luowensheng/capy` + fix all imports | ✅ |
+| 1 | Replace `capyhq` placeholder org with `olivierdevelops` (~20 files) | ✅ |
+| 2 | Set Go module path to `github.com/olivierdevelops/capy` + fix all imports | ✅ |
 | 3 | Update `SECURITY.md` reporting channel | ✅ (uses GitHub Security Advisories) |
 | 4 | Decide install URL + update README/install.sh | ✅ (uses raw.githubusercontent.com) |
 | 5 | MkDocs config + GitHub Pages workflow | ✅ |
-| 6 | Create `luowensheng/homebrew-tap` repo, uncomment `brews:` block | ⏳ optional, can defer |
+| 6 | Create `olivierdevelops/homebrew-tap` repo, uncomment `brews:` block | ⏳ optional, can defer |
 | 7 | Push to GitHub, enable Discussions | ⏳ on you |
 | 8 | Test `goreleaser release --snapshot --clean` locally | ⏳ on you |
 | 9 | `git tag v0.1.0 && git push --tags` → release workflow auto-publishes | ⏳ on you |
@@ -59,7 +59,7 @@ A snapshot of where the repo stands against [RELEASE_PLAN.md](RELEASE_PLAN.md).
 - **Source**: `mkdocs.yml` at repo root + everything in `docs/`
 - **Theme**: MkDocs Material (light + dark, instant nav, code copy, search)
 - **Workflow**: `.github/workflows/docs.yml` — triggers on push to main
-- **URL**: https://luowensheng.github.io/capy/
+- **URL**: https://olivierdevelops.github.io/capy/
 
 The nav structure follows the docs layout:
 
@@ -85,7 +85,7 @@ git push origin main
 
 # 2. wait for CI to go green (ci.yml + docs.yml)
 #    - CI: tests, lint, build
-#    - docs.yml: deploys to https://luowensheng.github.io/capy/
+#    - docs.yml: deploys to https://olivierdevelops.github.io/capy/
 
 # 3. enable GitHub Discussions in repo Settings
 
@@ -99,7 +99,7 @@ git push origin v0.1.0
 # → release.yml runs goreleaser, publishes binaries to Releases
 
 # 6. test install script against the new release
-curl -fsSL https://raw.githubusercontent.com/luowensheng/capy/main/scripts/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/olivierdevelops/capy/main/scripts/install.sh | sh
 
 # 7. publish launch material
 #    - blog post  → from docs/launch/blog-post.md
@@ -112,7 +112,7 @@ curl -fsSL https://raw.githubusercontent.com/luowensheng/capy/main/scripts/insta
 
 ## Open optional items (low priority)
 
-- **Homebrew tap.** Create `luowensheng/homebrew-tap` repo, then uncomment the `brews:` block in `.goreleaser.yaml`. Until then, install via `go install` or the release-binary script.
+- **Homebrew tap.** Create `olivierdevelops/homebrew-tap` repo, then uncomment the `brews:` block in `.goreleaser.yaml`. Until then, install via `go install` or the release-binary script.
 - **Logo + demo GIF.** Drop in `assets/`. Needs design / terminal recording.
 - **Publish VS Code extension to Marketplace.** Sources are ready in `editors/vscode/capy/`.
 - **`awesome-capy` repo.** Curated list of community libraries.

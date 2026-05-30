@@ -12,7 +12,7 @@ are the vocabulary of the *author*.
 Every keyword below is dispatched by the library parser in
 `infra/capy_lib_parser.go`; the canonical `if … end` example is mirrored
 by the CI-checked sample
-[`samples/library-keywords/`](https://github.com/luowensheng/capy/tree/main/samples/library-keywords).
+[`samples/library-keywords/`](https://github.com/olivierdevelops/capy/tree/main/samples/library-keywords).
 
 > **Maintenance rule.** This list must stay in lock-step with the
 > directive switches in `infra/capy_lib_parser.go`. Add/rename/remove a
@@ -226,4 +226,4 @@ See [Types](types.md) for the full treatment.
 - [Library authoring](library-authoring.md) — a guided walkthrough.
 - [Block functions](block-functions.md) — every body mode in depth.
 - [Built-in function cookbook](function-cookbook.md) — the `${ … }` template helpers.
-- [`samples/library-keywords/`](https://github.com/luowensheng/capy/tree/main/samples/library-keywords) — the runnable source for the `if … end` example.
+- [`samples/library-keywords/`](https://github.com/olivierdevelops/capy/tree/main/samples/library-keywords) — the runnable source for the `if … end` example.

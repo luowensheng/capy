@@ -12,6 +12,9 @@ asString:   "He said \"hi\" \u003cb\u003e"
 add:     7
 sub:     -1
 mul:     12
+div:     0
+mod:     3
+align:   4
 percent: 75
 stars:   ★★★☆☆
 trimSuffix: src/main

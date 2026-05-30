@@ -46,7 +46,7 @@ you a stub + a smoke test; replace both as you implement."
 
 ## The worked sample
 
-[`samples/backend-with-tests/`](https://github.com/luowensheng/capy/tree/main/samples/backend-with-tests)
+[`samples/backend-with-tests/`](https://github.com/olivierdevelops/capy/tree/main/samples/backend-with-tests)
 
 Source (4 lines, one per handler):
 
@@ -111,7 +111,7 @@ real, compileable, runnable Go.
 
 ## What the library is enforcing
 
-Read [`samples/backend-with-tests/lib.capy`](https://github.com/luowensheng/capy/tree/main/samples/backend-with-tests/lib.capy)
+Read [`samples/backend-with-tests/lib.capy`](https://github.com/olivierdevelops/capy/tree/main/samples/backend-with-tests/lib.capy)
 and you can see every convention:
 
 - **Directory layout** — `file "internal/handlers/handlers.go":`

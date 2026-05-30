@@ -27,8 +27,8 @@ landing "Capy — Pro"
     # A whole custom section the library doesn't model — write raw HTML.
     raw_section "<section style='background:rgba(167,139,250,0.06);border-radius:14px;padding:28px 32px;margin:36px 0;text-align:center;border:1px solid rgba(167,139,250,0.18);'><span class='badge'>Numbers that matter</span><div style='display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:12px;'><div><div style='font-size:30px;font-weight:700;color:#c4b5fd;'>55+</div><div style='font-size:12px;color:#94a3b8;'>curated samples</div></div><div><div style='font-size:30px;font-weight:700;color:#c4b5fd;'>6.2MB</div><div style='font-size:12px;color:#94a3b8;'>wasm bundle</div></div><div><div style='font-size:30px;font-weight:700;color:#c4b5fd;'>0</div><div style='font-size:12px;color:#94a3b8;'>built-in keywords</div></div><div><div style='font-size:30px;font-weight:700;color:#c4b5fd;'>MIT</div><div style='font-size:12px;color:#94a3b8;'>license</div></div></div></section>"
 
-    cta "Open the playground" "https://luowensheng.github.io/capy/playground/"
+    cta "Open the playground" "https://olivierdevelops.github.io/capy/playground/"
 
     # Replace the library's default footer entirely.
-    raw_footer "<span style='color:#94a3b8'>Open source under MIT · </span><a href='https://github.com/luowensheng/capy' style='color:#c4b5fd'>github.com/luowensheng/capy</a>"
+    raw_footer "<span style='color:#94a3b8'>Open source under MIT · </span><a href='https://github.com/olivierdevelops/capy' style='color:#c4b5fd'>github.com/olivierdevelops/capy</a>"
 end

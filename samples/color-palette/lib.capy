@@ -1,0 +1,25 @@
+# color-palette — a named-color map read back BY NAME to emit HTML.
+#
+# `def name color` records `context.palette[name]`. `swatch name` reads
+# `${context.palette[name]}` twice — once for the chip background, once
+# for the printed value. A dynamic map read keyed by a captured token is
+# what lets one `swatch` function serve any color the palette defines.
+extension palette
+context
+    palette {}
+end
+function def
+    arg literal "def"
+    arg capture name ident
+    arg capture color ident
+    set context.palette[name] color
+end
+function swatch
+    arg literal "swatch"
+    arg capture name ident
+    write `<div style="display:flex;align-items:center;gap:.6rem;font-family:system-ui">
+  <span style="width:28px;height:28px;border-radius:6px;background:${context.palette[name]};border:1px solid #0002"></span>
+  <code>${name}</code><small>${context.palette[name]}</small>
+</div>
+`
+end

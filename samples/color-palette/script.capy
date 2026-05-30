@@ -1,0 +1,8 @@
+def primary royalblue
+def success seagreen
+def danger crimson
+def warning goldenrod
+swatch primary
+swatch success
+swatch danger
+swatch warning

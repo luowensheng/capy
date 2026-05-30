@@ -21,6 +21,6 @@ post "Adopting Capy at Acme" date "2026-05-24" author "Alice Chen"
 
     h2 "Try it"
 
-    code sh "go install github.com/luowensheng/capy/cmd/capy@latest"
+    code sh "go install github.com/olivierdevelops/capy/cmd/capy@latest"
     code sh "capy run lib.capy script.capy"
 end

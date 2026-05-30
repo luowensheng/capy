@@ -47,7 +47,7 @@ The script picks how much of that surface to use.
 landing "Capy"
         tagline "Describe what you want. Capy produces what you need."
         cta_text "Open the playground"
-        cta_link "https://luowensheng.github.io/capy/playground/"
+        cta_link "https://olivierdevelops.github.io/capy/playground/"
 ```
 
 You declare **what**; the library decides **everything else** —
@@ -134,7 +134,7 @@ landing "Capy — Pro"
 
     cta "Open the playground" "..."
 
-    raw_footer "<a href='https://github.com/...'>github.com/luowensheng/capy</a>"
+    raw_footer "<a href='https://github.com/...'>github.com/olivierdevelops/capy</a>"
 end
 ```
 
@@ -221,4 +221,4 @@ under **Patterns** → "Progressive abstraction" (level 1 / 2 / 3
 each available individually). Edit any of them, hit Run, see the
 output change live.
 
-[Full sample → `samples/progressive-abstraction/`](https://github.com/luowensheng/capy/tree/main/samples/progressive-abstraction)
+[Full sample → `samples/progressive-abstraction/`](https://github.com/olivierdevelops/capy/tree/main/samples/progressive-abstraction)

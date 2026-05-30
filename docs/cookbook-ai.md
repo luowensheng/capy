@@ -13,7 +13,7 @@ self-contained and copy-pasteable.
 **Goal:** any tool-capable AI agent on this machine can call Capy.
 
 ```sh
-go install github.com/luowensheng/capy/cmd/capy-mcp@latest
+go install github.com/olivierdevelops/capy/cmd/capy-mcp@latest
 ```
 
 Add to your MCP config (Claude Desktop, Claude Code, Cursor, Zed all
@@ -181,7 +181,7 @@ error: function "log_level" arg "lvl": value "verbose" is not in
 The agent sees the error, picks `info` instead, retries. The library
 *is* the schema; the agent doesn't need a separate spec doc.
 
-[Full sample → `samples/typed-config-dsl/`](https://github.com/luowensheng/capy/tree/main/samples/typed-config-dsl)
+[Full sample → `samples/typed-config-dsl/`](https://github.com/olivierdevelops/capy/tree/main/samples/typed-config-dsl)
 
 ## Recipe 6 — One DSL, many target tools (game engines, 3D, web)
 
@@ -213,7 +213,7 @@ If you're building an agent in Go, skip MCP entirely — embed the
 engine:
 
 ```go
-import "github.com/luowensheng/capy"
+import "github.com/olivierdevelops/capy"
 
 const grammar = `
 extension html
@@ -257,7 +257,7 @@ For Claude Code specifically, you want both:
 
 ```sh
 # 1. Install the MCP server
-go install github.com/luowensheng/capy/cmd/capy-mcp@latest
+go install github.com/olivierdevelops/capy/cmd/capy-mcp@latest
 
 # 2. Register it with Claude Code
 claude mcp add --scope user capy capy-mcp

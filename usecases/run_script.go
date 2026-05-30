@@ -1,6 +1,6 @@
 package usecases
 
-import "github.com/luowensheng/capy/domain"
+import "github.com/olivierdevelops/capy/domain"
 
 type RunScript interface {
 	Execute(scriptPath, libraryPath string) (RunResult, error)

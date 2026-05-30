@@ -1,0 +1,33 @@
+# register-allocator — bind virtual registers to physical ones, then
+# read each assignment BACK BY NAME when an instruction uses it.
+#
+# `set context.reg[vreg] phys` records the mapping; the instruction
+# functions resolve `${context.reg[name]}` — a dynamic map read keyed by
+# the captured operand. Before value-position indexing this needed a
+# `for k,v in context.reg / if k == name` scan per operand.
+extension asm
+context
+    reg {}            # virtual register name -> physical register
+end
+function bind
+    arg literal "bind"
+    arg capture vreg ident
+    arg capture phys ident
+    set context.reg[vreg] phys
+    write `; ${vreg} := ${phys}
+`
+end
+function mov
+    arg literal "mov"
+    arg capture dst ident
+    arg capture src ident
+    write `    mov ${context.reg[dst]}, ${context.reg[src]}
+`
+end
+function add
+    arg literal "add"
+    arg capture dst ident
+    arg capture src ident
+    write `    add ${context.reg[dst]}, ${context.reg[src]}
+`
+end

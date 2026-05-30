@@ -1,0 +1,25 @@
+# symbol-types — a symbol table read by name, showing MISS TOLERANCE.
+#
+# `let name type` records `context.types[name]`. `check name` reads it
+# back with `${context.types[name]}`. A name that was never declared
+# resolves to empty (a missing map key is nil → renders ""), so the
+# lookup degrades cleanly instead of erroring — exactly what an `if`
+# guard like `if context.types[name]` relies on.
+extension chk
+context
+    types {}
+end
+function let
+    arg literal "let"
+    arg capture name ident
+    arg capture ty ident
+    set context.types[name] ty
+    write `declare ${name} : ${ty}
+`
+end
+function check
+    arg literal "check"
+    arg capture name ident
+    write `${name} has type "${context.types[name]}"
+`
+end

@@ -11,5 +11,5 @@ landing "Capy"
     feature "Browser playground"    "The compiler runs as WebAssembly. Edit + preview + download. No install."
     feature "MCP server included"   "Plug into Claude Desktop, Claude Code, Cursor, Zed with one config entry."
 
-    cta "Open the playground" "https://luowensheng.github.io/capy/playground/"
+    cta "Open the playground" "https://olivierdevelops.github.io/capy/playground/"
 end

@@ -27,6 +27,17 @@ may be:
 - Bare or dotted identifier paths — these resolve, in order, against:
   inner-DSL locals (loop variables), captures from the matched function,
   the root `context` map.
+- **Indexed reads:** a path may carry `[<expr>]` index steps —
+  `context.buf[i]`, `context.known[name]`, `context.grid[i][j]`,
+  `context.rows[i].name`, `context.buf[(sub n 1)]`, `context.buf[-1]`.
+  A **map** parent is keyed by the index's string form; a **list**
+  parent is keyed by an integer (negative counts from the end). This is
+  the read-side twin of the `set context.buf[i] …` write target, so a
+  value written by index reads back by the same index. A missing key or
+  out-of-range index is `nil` (falsy) in value position and renders empty
+  inside a `${…}` template — so `if context.seen[k]` guards cleanly
+  without a `for`-scan. See
+  [`samples/value-index-read/`](https://github.com/olivierdevelops/capy/tree/main/samples/value-index-read).
 - Lists `[...]` and objects `{...}`.
 - Comparison expressions: `a == b`, `a != b`, `a < b`, `a <= b`, `a > b`,
   `a >= b`.
@@ -65,16 +76,29 @@ Assigns a value to a field path on the context (or to a local).
 set context.name "Alice"
 set context.config.api.url "https://example.com"
 set context.scripts[key] cmd
+set context.buf[i] "    ; (rewritten in place)"   # list element by index
 ```
 
 Paths use:
 - `.<field>` for map field access.
-- `[<expr>]` for dynamic indexing — the expression is evaluated, then its
-  string form becomes the key.
+- `[<expr>]` for dynamic indexing. When the parent is a **map**, the
+  expression's string form becomes the key. When the parent is a
+  **list**, the expression must evaluate to an integer index and the
+  element is overwritten **in place** (negative indices count from the
+  end, so `-1` is the last element). Out-of-range indices error.
+
+Overwriting a list element by index is what enables *retroactive*
+rewrites of buffered output — e.g. an optimizer that buffers its
+instruction stream in `context.buf` and later nulls out a dead store, or
+back-patches a jump offset once the target is known. See
+[`samples/list-index-assign/`](https://github.com/olivierdevelops/capy/tree/main/samples/list-index-assign)
+for a dead-store eliminator built this way.
 
 ### `append <list-path> <value>`
 
-Appends to a list field. Creates the list if it doesn't exist yet.
+Appends to a list field. Creates the list if it doesn't exist yet. With
+an index target (`append context.rows[i] value`) it appends to the
+*nested* list stored at element `i`.
 
 ```
 append context.imports name
@@ -83,7 +107,8 @@ append context.errors {kind: "warn", msg: msg}
 
 ### `prepend <list-path> <value>`
 
-Like `append` but inserts at the front.
+Like `append` but inserts at the front (also works on an indexed nested
+list, `prepend context.rows[i] value`).
 
 ```
 prepend context.docstrings line
@@ -249,4 +274,4 @@ The inner DSL is intentionally small. It does not have:
 - Arithmetic operators (`+`, `-`, …). Compute at template time with helpers, or accumulate into a count.
 
 These omissions keep the runtime tiny and predictable. If you find yourself
-wanting them often, open a [feature request](https://github.com/luowensheng/capy/issues).
+wanting them often, open a [feature request](https://github.com/olivierdevelops/capy/issues).

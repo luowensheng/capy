@@ -75,7 +75,7 @@ a README, ship it with the library.
 ### Embedded in your Go program
 
 ```go
-import "github.com/luowensheng/capy"
+import "github.com/olivierdevelops/capy"
 
 lib, _ := capy.NewLibraryFromFile("lib.capy")
 md := capy.RenderLibraryDocs(lib)
@@ -132,13 +132,13 @@ source every time.
 ## Sample reference doc
 
 The recipe-card library ships its annotated source plus a generated
-[`LIB_REFERENCE.md`](https://github.com/luowensheng/capy/blob/main/samples/recipe-card/LIB_REFERENCE.md)
+[`LIB_REFERENCE.md`](https://github.com/olivierdevelops/capy/blob/main/samples/recipe-card/LIB_REFERENCE.md)
 — a side-by-side example of what your library's docs would look
 like after annotation.
 
-[Recipe library source →](https://github.com/luowensheng/capy/blob/main/samples/recipe-card/lib.capy)
+[Recipe library source →](https://github.com/olivierdevelops/capy/blob/main/samples/recipe-card/lib.capy)
 ·
-[Generated reference →](https://github.com/luowensheng/capy/blob/main/samples/recipe-card/LIB_REFERENCE.md)
+[Generated reference →](https://github.com/olivierdevelops/capy/blob/main/samples/recipe-card/LIB_REFERENCE.md)
 
 ## Tips for writing good descriptions
 

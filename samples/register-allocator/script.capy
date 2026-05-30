@@ -1,0 +1,5 @@
+bind a rax
+bind b rbx
+bind c rcx
+mov a b
+add a c

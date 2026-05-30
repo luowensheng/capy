@@ -24,7 +24,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/luowensheng/capy/orchestrator"
+	"github.com/olivierdevelops/capy/orchestrator"
 )
 
 // version is set at build time via -ldflags "-X main.version=v0.1.0".
@@ -198,5 +198,5 @@ Examples:
   capy recipe run examples/hello.recipe
   capy cake.recipe                       # auto-detects library by extension
 
-See https://luowensheng.github.io/capy/ for documentation.`)
+See https://olivierdevelops.github.io/capy/ for documentation.`)
 }

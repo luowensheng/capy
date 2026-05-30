@@ -1,0 +1,55 @@
+# value-index-read — reading a list/map element by computed index
+#
+# The write side has long supported `set context.buf[i] …`. This sample
+# exercises the READ side: a `[<expr>]` index in value position, both
+# inside the inner DSL and inside a `${…}` template.
+#
+# It's the same dead-store eliminator as samples/list-index-assign, but
+# the per-location side tables are read DIRECTLY by key instead of via a
+# linear `for k,v in … / if k == loc` scan — so the whole nested-loop
+# workaround collapses to two indexed reads. Output is byte-identical.
+#
+# Indexed reads demonstrated:
+#   - inner-DSL value position : `if context.readsince[loc] == 0`
+#   - index expression on a write target : context.buf[context.laststore[loc]]
+#   - map read by captured key : context.laststore[loc]
+#   - template list read by local index : `${context.buf[i]}`
+extension asm
+context
+    buf []            # buffered instruction stream (a list)
+    n 0               # next buffer index
+    laststore {}      # location -> buffer index of its last store
+    readsince {}      # location -> 1 if read since last store, else 0
+end
+function st
+    arg literal "st"
+    arg capture loc ident
+    arg capture v int
+    # Direct map lookups — no for-scan. If the previous store to loc was
+    # never read since (readsince == 0), it is dead: overwrite its slot.
+    # On the FIRST store to loc, readsince[loc] is unset (nil != 0), so
+    # the guard is false and nothing is rewritten.
+    if context.readsince[loc] == 0
+        set context.buf[context.laststore[loc]] `    ; (dead store to ${loc} eliminated)`
+    end
+    append context.buf `    mov [${loc}], ${v}`
+    set context.laststore[loc] context.n
+    set context.readsince[loc] 0
+    set context.n (add context.n 1)
+end
+function ld
+    arg literal "ld"
+    arg capture loc ident
+    append context.buf `    mov rax, [${loc}]`
+    set context.readsince[loc] 1
+    set context.n (add context.n 1)
+end
+function flush
+    arg literal "flush"
+    # `${context.buf[i]}` reads the list element by the loop index — the
+    # template-position counterpart of the inner-DSL index read above.
+    for i, line in context.buf
+        write `${context.buf[i]}
+`
+    end
+end

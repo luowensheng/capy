@@ -184,7 +184,7 @@ Minimal `index.html` host:
 
 The binary expects a real stdin/stdout — the simplest host wraps it
 the same way `capy-wasm` does. See
-[`cmd/capy-wasm/main.go`](https://github.com/luowensheng/capy/blob/main/cmd/capy-wasm/main.go)
+[`cmd/capy-wasm/main.go`](https://github.com/olivierdevelops/capy/blob/main/cmd/capy-wasm/main.go)
 in the repo for a complete browser-facing entry point that exposes
 `capyRun(libSrc, scriptSrc)` as a JS function — easier to integrate
 into a real page than wiring stdin by hand.
@@ -291,7 +291,7 @@ build every target in parallel share the cache too.
 
 ### Building inside the Capy source tree vs. from a release
 
-If you're working inside a clone of `github.com/luowensheng/capy`,
+If you're working inside a clone of `github.com/olivierdevelops/capy`,
 `capy build` automatically detects the local module and uses a
 `replace` directive — your changes to the engine flow into the
 output binary. If you installed `capy` via `go install` or downloaded
@@ -301,7 +301,7 @@ proxy instead.
 ### What if the agent / user wants the binary INSIDE the browser?
 
 For "I want a Capy library that runs in a browser tab" the cleanest
-path is to compile the **engine** ([`cmd/capy-wasm`](https://github.com/luowensheng/capy/tree/main/cmd/capy-wasm))
+path is to compile the **engine** ([`cmd/capy-wasm`](https://github.com/olivierdevelops/capy/tree/main/cmd/capy-wasm))
 to WASM and load your library source dynamically. That's exactly the
 playground's setup. `capy build greet -o greet.wasm` (i.e. embedding
 the library) also works but the entry point currently expects an

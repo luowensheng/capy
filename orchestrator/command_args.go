@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/luowensheng/capy/domain"
+	"github.com/olivierdevelops/capy/domain"
 )
 
 // ParseCommandArgs walks `args` once, consuming flags by name and

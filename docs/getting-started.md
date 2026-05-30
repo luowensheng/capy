@@ -11,10 +11,10 @@ Examples in this doc are all `.capy`.
 
 ```sh
 # Go users
-go install github.com/luowensheng/capy/cmd/capy@latest
+go install github.com/olivierdevelops/capy/cmd/capy@latest
 
 # Or download a binary from
-# https://github.com/luowensheng/capy/releases
+# https://github.com/olivierdevelops/capy/releases
 ```
 
 Verify:
@@ -28,7 +28,7 @@ capy version
 Clone the repo (samples live there) and run the Python transpiler:
 
 ```sh
-git clone https://github.com/luowensheng/capy
+git clone https://github.com/olivierdevelops/capy
 cd capy
 capy run samples/transpile-py/lib.capy samples/transpile-py/script.capy
 ```
@@ -116,4 +116,4 @@ to add your own functions, types, and file template.
 - [Library Authoring](library-authoring.md) — the reference walkthrough.
 - [Cookbook](cookbook.md) — short answers for common patterns.
 - [Tutorials](tutorials/01-hello-world.md) — four progressive walkthroughs.
-- The [samples/](https://github.com/luowensheng/capy/tree/main/samples) directory on GitHub — 50 end-to-end demos.
+- The [samples/](https://github.com/olivierdevelops/capy/tree/main/samples) directory on GitHub — 50 end-to-end demos.

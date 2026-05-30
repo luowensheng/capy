@@ -100,7 +100,7 @@ If you want to call Capy from Go code, the top-level package
 exposes a small embedding API:
 
 ```go
-import "github.com/luowensheng/capy"
+import "github.com/olivierdevelops/capy"
 
 lib, err := capy.NewLibraryFromFile("lib.capy")
 out, err := lib.Run(scriptSource)

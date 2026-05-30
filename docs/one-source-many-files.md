@@ -78,8 +78,8 @@ App/View structure, Info.plist, SPM manifest.
 
 **Add a `screen` line, regenerate, both platforms update.**
 
-[See the Android sample →](https://github.com/luowensheng/capy/tree/main/samples/android-app){ .md-button }
-[iOS sample →](https://github.com/luowensheng/capy/tree/main/samples/ios-app){ .md-button }
+[See the Android sample →](https://github.com/olivierdevelops/capy/tree/main/samples/android-app){ .md-button }
+[iOS sample →](https://github.com/olivierdevelops/capy/tree/main/samples/ios-app){ .md-button }
 
 </div>
 
@@ -184,7 +184,7 @@ Generated tree:
 <span class="file">README.md</span>                  <span class="muted">// auto-generated route catalog</span>
 </div>
 
-[See the backend sample →](https://github.com/luowensheng/capy/tree/main/samples/backend-with-tests){ .md-button }
+[See the backend sample →](https://github.com/olivierdevelops/capy/tree/main/samples/backend-with-tests){ .md-button }
 
 </div>
 
@@ -256,7 +256,7 @@ end
 The same architecture declaration could target PyTorch Python,
 Keras, ONNX, or TFLite — **write a new library, keep the source**.
 
-[See the libtorch sample →](https://github.com/luowensheng/capy/tree/main/samples/libtorch-train){ .md-button }
+[See the libtorch sample →](https://github.com/olivierdevelops/capy/tree/main/samples/libtorch-train){ .md-button }
 
 ---
 
@@ -289,7 +289,7 @@ end
 <span class="indent">&nbsp;&nbsp;&nbsp;└</span> <span class="gen">test_smoke.py</span>      <span class="muted">// route-mount tests</span>
 </div>
 
-[Full sample →](https://github.com/luowensheng/capy/tree/main/samples/multi-file-project){ .md-button }
+[Full sample →](https://github.com/olivierdevelops/capy/tree/main/samples/multi-file-project){ .md-button }
 
 ---
 

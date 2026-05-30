@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/luowensheng/capy/domain"
-	orchfeatures "github.com/luowensheng/capy/orchestrator/features"
+	"github.com/olivierdevelops/capy/domain"
+	orchfeatures "github.com/olivierdevelops/capy/orchestrator/features"
 )
 
 // resolveLibWithImpl resolves a library by name (or path) AND

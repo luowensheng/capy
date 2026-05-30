@@ -36,10 +36,10 @@ text (success) or the parser/type error message (`isError: true`).
 
 ```sh
 # Via Go (the simplest)
-go install github.com/luowensheng/capy/cmd/capy-mcp@latest
+go install github.com/olivierdevelops/capy/cmd/capy-mcp@latest
 
 # Or extract from a release tarball
-curl -sL https://github.com/luowensheng/capy/releases/download/v0.3.0/capy_0.3.0_darwin_arm64.tar.gz \
+curl -sL https://github.com/olivierdevelops/capy/releases/download/v0.3.0/capy_0.3.0_darwin_arm64.tar.gz \
   | tar -xz capy-mcp
 sudo mv capy-mcp /usr/local/bin/
 ```
@@ -93,7 +93,7 @@ form. Refer to your client's docs for the exact config-file location.
 ### Custom Go agent
 
 ```go
-import "github.com/luowensheng/capy"
+import "github.com/olivierdevelops/capy"
 
 lib, _ := capy.NewLibrary(libSrc)
 out, _ := lib.Run(scriptSrc)
@@ -158,9 +158,9 @@ why a client isn't seeing your tools.
 
 If your agent uses Claude Code skills:
 
-- [`skills/capy-mcp/SKILL.md`](https://github.com/luowensheng/capy/tree/main/skills/capy-mcp/SKILL.md) —
+- [`skills/capy-mcp/SKILL.md`](https://github.com/olivierdevelops/capy/tree/main/skills/capy-mcp/SKILL.md) —
   when to reach for Capy via MCP and how to operate the tools.
-- [`skills/capy-author/SKILL.md`](https://github.com/luowensheng/capy/tree/main/skills/capy-author/SKILL.md) —
+- [`skills/capy-author/SKILL.md`](https://github.com/olivierdevelops/capy/tree/main/skills/capy-author/SKILL.md) —
   when designing or extending a library (with or without MCP).
 
 Drop those directories into `~/.claude/skills/` (user-scope) or your

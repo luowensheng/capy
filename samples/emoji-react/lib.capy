@@ -1,0 +1,23 @@
+# emoji-react — a tiny key→glyph table read back by name in a template.
+#
+# `map name glyph` records `context.icon[name]`; `react name n` reads the
+# glyph with `${context.icon[name]}` and repeats it. The whole feature is
+# one dynamic map read — the reaction line just names a key the table
+# already holds.
+extension react
+context
+    icon {}
+end
+function map
+    arg literal "map"
+    arg capture name ident
+    arg capture glyph ident
+    set context.icon[name] glyph
+end
+function react
+    arg literal "react"
+    arg capture name ident
+    arg capture who tail
+    write `${who} reacted ${context.icon[name]}
+`
+end

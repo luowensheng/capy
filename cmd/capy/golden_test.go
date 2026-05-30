@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/luowensheng/capy/orchestrator"
+	"github.com/olivierdevelops/capy/orchestrator"
 )
 
 // TestGolden walks samples/ and runs each (lib.yaml, *.capy) pair through the

@@ -22,9 +22,9 @@ npx @vscode/vsce package
 code --install-extension capy-0.1.0.vsix
 ```
 
-Or, while developing, copy this folder into `~/.vscode/extensions/luowensheng.capy-0.1.0/`.
+Or, while developing, copy this folder into `~/.vscode/extensions/olivierdevelops.capy-0.1.0/`.
 
 ## Marketplace
 
 We'll publish once the schema URL is stable. Track
-[issue #1](https://github.com/luowensheng/capy/issues) for status.
+[issue #1](https://github.com/olivierdevelops/capy/issues) for status.

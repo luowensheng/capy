@@ -61,7 +61,14 @@ type StringLit struct{ Value string }
 type BoolLit struct{ Value bool }
 type NullLit struct{}
 
-type VarRef struct{ Path []string }
+// VarRef is a read-position access chain: a root name followed by any
+// mix of `.field` and `[expr]` index steps. Steps[0] is always a Field
+// step holding the root name (e.g. "context" or a local var); the rest
+// are field or index steps. This mirrors the write-side Path/PathStep
+// model so reads and writes navigate maps and lists identically —
+// `${context.buf[i]}` resolves the same element `set context.buf[i] …`
+// wrote.
+type VarRef struct{ Steps []PathStep }
 
 type CallExpr struct {
 	Name []string

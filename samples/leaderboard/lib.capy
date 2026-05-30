@@ -1,0 +1,24 @@
+# leaderboard — rank entries, then read podium places by index.
+#
+# `rank name` appends to `context.players` in finishing order. `podium`
+# reads the top three by absolute index (`[0]`/`[1]`/`[2]`) and last
+# place by negative index (`[-1]`). Mixing absolute and from-the-end
+# indexing in one template.
+extension lb
+context
+    players [ ]
+end
+function rank
+    arg literal "rank"
+    arg capture name tail
+    append context.players name
+end
+function podium
+    arg literal "podium"
+    write `🥇  ${context.players[0]}
+🥈  ${context.players[1]}
+🥉  ${context.players[2]}
+   …
+🐌  ${context.players[-1]} (last)
+`
+end

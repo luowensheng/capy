@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/luowensheng/capy/domain"
-	"github.com/luowensheng/capy/features"
+	"github.com/olivierdevelops/capy/domain"
+	"github.com/olivierdevelops/capy/features"
 )
 
 // MakeEvaluator builds the transpiler-driver outer evaluator. It walks the

@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	orchfeatures "github.com/luowensheng/capy/orchestrator/features"
+	orchfeatures "github.com/olivierdevelops/capy/orchestrator/features"
 )
 
 // printLibraryHelp loads a library and prints its declared commands.

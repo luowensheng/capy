@@ -13,7 +13,7 @@ While Capy is pre-1.0, only the latest released minor version is supported with 
 
 **Do not file a public GitHub issue for a security report.**
 
-Instead, email `the maintainer via a private GitHub Security Advisory at https://github.com/luowensheng/capy/security/advisories/new` with:
+Instead, email `the maintainer via a private GitHub Security Advisory at https://github.com/olivierdevelops/capy/security/advisories/new` with:
 
 - A description of the vulnerability.
 - Steps to reproduce, or a minimal `lib.yaml` + `script.capy` that triggers it.

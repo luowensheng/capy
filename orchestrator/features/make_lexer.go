@@ -6,8 +6,8 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/luowensheng/capy/domain"
-	"github.com/luowensheng/capy/features"
+	"github.com/olivierdevelops/capy/domain"
+	"github.com/olivierdevelops/capy/features"
 )
 
 // The lexer is purely lexical: it identifies words, numbers, strings, brackets,

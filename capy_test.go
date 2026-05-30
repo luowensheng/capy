@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/luowensheng/capy"
+	"github.com/olivierdevelops/capy"
 )
 
 func TestEmbed_InlineCapyLibrary(t *testing.T) {

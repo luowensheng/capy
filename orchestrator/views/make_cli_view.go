@@ -1,7 +1,7 @@
 package orchviews
 
 import (
-	"github.com/luowensheng/capy/io/cli"
+	"github.com/olivierdevelops/capy/io/cli"
 )
 
 func MakeCLIView(uc cli.RunScriptUseCase, scriptPath, libraryPath string) cli.CLIView {

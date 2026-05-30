@@ -606,13 +606,13 @@ selection — lives outside the agent.
 
 | Tool | Where | What it gives you |
 |------|-------|-------------------|
-| **Claude Code skill** | [`skills/capy-author/`](https://github.com/luowensheng/capy/tree/main/skills/capy-author) | A full skill with `SKILL.md` + instructions + 5 reference docs the model loads on demand. Triggers on "write a Capy library for …" or any `.capy` file in context. |
-| **Slash commands** | [`commands/capy/`](https://github.com/luowensheng/capy/tree/main/commands/capy) | `/capy-new <target>`, `/capy-add-function`, `/capy-add-type`, `/capy-explain`, `/capy-debug` |
+| **Claude Code skill** | [`skills/capy-author/`](https://github.com/olivierdevelops/capy/tree/main/skills/capy-author) | A full skill with `SKILL.md` + instructions + 5 reference docs the model loads on demand. Triggers on "write a Capy library for …" or any `.capy` file in context. |
+| **Slash commands** | [`commands/capy/`](https://github.com/olivierdevelops/capy/tree/main/commands/capy) | `/capy-new <target>`, `/capy-add-function`, `/capy-add-type`, `/capy-explain`, `/capy-debug` |
 | **One-page LLM brief** | [`CAPY_FOR_LLMS.md`](CAPY_FOR_LLMS.md) | Self-contained prompt for any model. Paste into Cursor/Continue/Aider/raw-API system message. |
-| **Cursor rule** | [`editors/cursor/`](https://github.com/luowensheng/capy/tree/main/editors/cursor) | Drop in `.cursor/rules/capy.md` |
-| **Continue config** | [`editors/continue/`](https://github.com/luowensheng/capy/tree/main/editors/continue) | Adds the LLM brief to context |
-| **Aider read** | [`editors/aider/`](https://github.com/luowensheng/capy/tree/main/editors/aider) | `aider --read docs/CAPY_FOR_LLMS.md` |
-| **Generic system prompt** | [`agents/capy-system-prompt.md`](https://github.com/luowensheng/capy/blob/main/agents/capy-system-prompt.md) | Drop-in for any tool not listed above |
+| **Cursor rule** | [`editors/cursor/`](https://github.com/olivierdevelops/capy/tree/main/editors/cursor) | Drop in `.cursor/rules/capy.md` |
+| **Continue config** | [`editors/continue/`](https://github.com/olivierdevelops/capy/tree/main/editors/continue) | Adds the LLM brief to context |
+| **Aider read** | [`editors/aider/`](https://github.com/olivierdevelops/capy/tree/main/editors/aider) | `aider --read docs/CAPY_FOR_LLMS.md` |
+| **Generic system prompt** | [`agents/capy-system-prompt.md`](https://github.com/olivierdevelops/capy/blob/main/agents/capy-system-prompt.md) | Drop-in for any tool not listed above |
 
 ---
 
@@ -726,9 +726,9 @@ here.
 
 - Read [CAPY_FOR_LLMS.md](CAPY_FOR_LLMS.md) — the single-page brief
   you can paste into any model's context.
-- Browse [the 50 sample demos](https://github.com/luowensheng/capy/tree/main/samples)
+- Browse [the 50 sample demos](https://github.com/olivierdevelops/capy/tree/main/samples)
   — each is a tiny grammar producing a complete target file.
-- Install the [Claude Code skill](https://github.com/luowensheng/capy/tree/main/skills/capy-author)
+- Install the [Claude Code skill](https://github.com/olivierdevelops/capy/tree/main/skills/capy-author)
   if you use Claude Code.
 - See [getting started](getting-started.md) and
   [library authoring](library-authoring.md) to design your own library.

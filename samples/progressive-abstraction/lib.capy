@@ -187,7 +187,7 @@ file_template
         write `    ${context.extra_footer}
 `
     else
-        write `    Built with <a href="https://github.com/luowensheng/capy" style="color:var(--accent)">Capy</a>.
+        write `    Built with <a href="https://github.com/olivierdevelops/capy" style="color:var(--accent)">Capy</a>.
 `
     end
     write `  </footer>

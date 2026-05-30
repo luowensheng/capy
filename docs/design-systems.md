@@ -44,7 +44,7 @@ encodes:
 
 ## A worked example
 
-[`samples/design-system-components/`](https://github.com/luowensheng/capy/tree/main/samples/design-system-components)
+[`samples/design-system-components/`](https://github.com/olivierdevelops/capy/tree/main/samples/design-system-components)
 ships ONE source and THREE libraries.
 
 The source (8 lines):
@@ -134,7 +134,7 @@ the library; all three consumers pick it up at the next regen.
 
 ## Where to go from here
 
-- Browse [`samples/design-system-components/`](https://github.com/luowensheng/capy/tree/main/samples/design-system-components) — three libraries side by side.
+- Browse [`samples/design-system-components/`](https://github.com/olivierdevelops/capy/tree/main/samples/design-system-components) — three libraries side by side.
 - Write a 4th library targeting your own framework (Lit, Solid,
   Astro). The DSL stays the same.
 - Add new component declarations (badge, modal, accordion, tooltip).

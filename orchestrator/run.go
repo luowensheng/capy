@@ -5,9 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/luowensheng/capy/domain"
-	"github.com/luowensheng/capy/infra"
-	orchfeatures "github.com/luowensheng/capy/orchestrator/features"
+	"github.com/olivierdevelops/capy/domain"
+	"github.com/olivierdevelops/capy/infra"
+	orchfeatures "github.com/olivierdevelops/capy/orchestrator/features"
 )
 
 // Run loads a library from disk, reads a script, and produces the transpiled

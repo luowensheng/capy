@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/luowensheng/capy/domain"
-	"github.com/luowensheng/capy/features"
-	"github.com/luowensheng/capy/infra"
+	"github.com/olivierdevelops/capy/domain"
+	"github.com/olivierdevelops/capy/features"
+	"github.com/olivierdevelops/capy/infra"
 )
 
 // MakeLibraryLoader compiles a library file into a domain.Library. It accepts

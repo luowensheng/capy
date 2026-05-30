@@ -22,8 +22,8 @@ import (
 	_ "embed"
 	"syscall/js"
 
-	"github.com/luowensheng/capy"
-	"github.com/luowensheng/capy/domain"
+	"github.com/olivierdevelops/capy"
+	"github.com/olivierdevelops/capy/domain"
 )
 
 //go:embed pages.capy

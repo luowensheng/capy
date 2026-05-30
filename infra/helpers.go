@@ -265,6 +265,43 @@ var funcs = map[string]any{
 	"add": func(a, b any) int64 { return toInt(a) + toInt(b) },
 	"sub": func(a, b any) int64 { return toInt(a) - toInt(b) },
 	"mul": func(a, b any) int64 { return toInt(a) * toInt(b) },
+	// div returns the integer quotient a / b (truncated toward zero),
+	// or 0 when b == 0 so a template never panics on bad input. Pairs
+	// with `mod` for the arithmetic that running-total bookkeeping (add)
+	// alone can't express — most importantly alignment rounding in code
+	// generators (see `align`).
+	"div": func(a, b any) int64 {
+		d := toInt(b)
+		if d == 0 {
+			return 0
+		}
+		return toInt(a) / d
+	},
+	// mod returns the remainder a % b (Go's truncated remainder), or 0
+	// when b == 0. With `div` this completes the four integer ops a
+	// back-end needs: `mod off a` tells you how far past an a-byte
+	// boundary an offset sits.
+	"mod": func(a, b any) int64 {
+		d := toInt(b)
+		if d == 0 {
+			return 0
+		}
+		return toInt(a) % d
+	},
+	// align rounds n UP to the next multiple of a (the classic
+	// `(n + a - 1) / a * a`), or returns n unchanged when a <= 0. This is
+	// the single op that struct-field layout and stack-frame sizing need
+	// and that `add`/`sub`/`mul` couldn't reach: `align 9 4` → 12,
+	// `align 13 8` → 16. Having it as a named helper means a Capy library
+	// can emit ABI-correct offsets without open-coding the formula.
+	"align": func(n, a any) int64 {
+		al := toInt(a)
+		if al <= 0 {
+			return toInt(n)
+		}
+		v := toInt(n)
+		return (v + al - 1) / al * al
+	},
 	// percent returns (numerator / denominator) * 100 as an int, clamped
 	// to [0, 100]. Handy for progress bars in HTML output.
 	"percent": func(n, d any) int64 {

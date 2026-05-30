@@ -29,7 +29,7 @@
     <p>Capy is a tiny engine that turns a YAML file into a working code generator.</p>
     <div class="ctas">
       <a href="/docs/getting-started">Get started</a>
-      <a href="https://github.com/luowensheng/capy">GitHub</a>
+      <a href="https://github.com/olivierdevelops/capy">GitHub</a>
     </div>
   </section>
 

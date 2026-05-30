@@ -47,7 +47,7 @@ That entire LLM output (10 lines) renders as a complete weather
 widget in the host's iframe. The library handles colors,
 typography, responsive layout, and any JS interactivity.
 
-**Live preview from [`samples/mcp-widgets/`](https://github.com/luowensheng/capy/tree/main/samples/mcp-widgets):**
+**Live preview from [`samples/mcp-widgets/`](https://github.com/olivierdevelops/capy/tree/main/samples/mcp-widgets):**
 
 <iframe src="../assets/demos/mcp-widgets.html" sandbox="allow-scripts allow-same-origin" style="width: 100%; height: 580px; border: 0; border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.18); display: block; margin: 18px 0 24px;" title="MCP widgets rendered live from a Capy source"></iframe>
 
@@ -110,7 +110,7 @@ engine; pair it with your library:
 
 ```sh
 GOOS=js GOARCH=wasm go build -o widgets.wasm \
-  github.com/luowensheng/capy/cmd/capy-wasm
+  github.com/olivierdevelops/capy/cmd/capy-wasm
 ```
 
 The iframe wrapper then does:
@@ -201,7 +201,7 @@ Three principles that match how LLMs actually emit content:
 
 ## A complete worked example
 
-Library: [`samples/mcp-widgets/lib.capy`](https://github.com/luowensheng/capy/tree/main/samples/mcp-widgets/lib.capy)
+Library: [`samples/mcp-widgets/lib.capy`](https://github.com/olivierdevelops/capy/tree/main/samples/mcp-widgets/lib.capy)
 (≈140 lines including the page template and styles).
 
 LLM-side DSL (this is everything the LLM emits):
@@ -236,7 +236,7 @@ animations, all emitted by the library.
 Render locally to inspect the output:
 
 ```sh
-git clone https://github.com/luowensheng/capy
+git clone https://github.com/olivierdevelops/capy
 cd capy/samples/mcp-widgets
 capy run lib.capy script.capy        # writes widget.html
 open widget.html
@@ -254,6 +254,6 @@ open widget.html
 - [Group types](types.md#group-types) — the primitive that makes
   delimited inline DSL syntax (`[link](url)`, `**bold**`) feel
   native.
-- [`samples/mcp-widgets/`](https://github.com/luowensheng/capy/tree/main/samples/mcp-widgets) —
+- [`samples/mcp-widgets/`](https://github.com/olivierdevelops/capy/tree/main/samples/mcp-widgets) —
   the complete library + script driving the live preview at the
   top of this page.

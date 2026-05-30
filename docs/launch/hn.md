@@ -6,7 +6,7 @@
 
 **URL**
 
-`https://github.com/luowensheng/capy`
+`https://github.com/olivierdevelops/capy`
 
 **Comment (first)**
 

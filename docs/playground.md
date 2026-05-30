@@ -50,12 +50,12 @@ and the MCP server, compiled with `GOOS=js GOARCH=wasm`. It exposes
 a single function `capyRun(lib, format, script)` returning the
 rendered output and (for multi-file libraries) the full file map.
 
-Source: [`cmd/capy-wasm/main.go`](https://github.com/luowensheng/capy/blob/main/cmd/capy-wasm/main.go).
+Source: [`cmd/capy-wasm/main.go`](https://github.com/olivierdevelops/capy/blob/main/cmd/capy-wasm/main.go).
 
 ## Run the playground locally
 
 ```sh
-git clone https://github.com/luowensheng/capy
+git clone https://github.com/olivierdevelops/capy
 cd capy
 scripts/build-playground.sh        # builds capy.wasm + bundles samples.json
 python3 -m http.server -d docs/assets/playground 8000

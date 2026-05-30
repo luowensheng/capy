@@ -58,7 +58,7 @@ landing "Capy — Pro"
 
     raw_section "<section style='...'>...custom HTML...</section>"
     cta "Open the playground" "..."
-    raw_footer "<a href='https://github.com/luowensheng/capy'>...</a>"
+    raw_footer "<a href='https://github.com/olivierdevelops/capy'>...</a>"
 end
 ```
 

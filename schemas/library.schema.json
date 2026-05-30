@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://luowensheng.github.io/capy/schemas/library.schema.json",
+  "$id": "https://olivierdevelops.github.io/capy/schemas/library.schema.json",
   "title": "Capy Library",
   "description": "Schema for a Capy library YAML file (capy v0.1.x).",
   "type": "object",

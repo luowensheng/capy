@@ -28,7 +28,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/luowensheng/capy"
+	"github.com/olivierdevelops/capy"
 )
 
 const (

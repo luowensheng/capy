@@ -135,9 +135,9 @@ the server up by adding to their MCP config:
 }
 ```
 
-…and installing the binary via `go install github.com/luowensheng/capy/cmd/capy-mcp@latest`
+…and installing the binary via `go install github.com/olivierdevelops/capy/cmd/capy-mcp@latest`
 or by downloading a release archive from
-<https://github.com/luowensheng/capy/releases>.
+<https://github.com/olivierdevelops/capy/releases>.
 
-See [docs/mcp.md](https://luowensheng.github.io/capy/mcp/) for the
+See [docs/mcp.md](https://olivierdevelops.github.io/capy/mcp/) for the
 full setup guide.

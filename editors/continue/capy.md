@@ -4,7 +4,7 @@ Add this to your `~/.continue/config.json` to teach Continue about Capy.
 
 ```json
 {
-  "systemMessage": "...existing system message...\n\nWhen the project contains a `lib.yaml` or `.capy` file, treat it as a Capy project (https://github.com/luowensheng/capy). Capy is a transpiler engine driven by a YAML library. Args entries MUST have an explicit `kind:` discriminator (`literal` or `capture`). See docs/CAPY_FOR_LLMS.md in the repo for the full schema.",
+  "systemMessage": "...existing system message...\n\nWhen the project contains a `lib.yaml` or `.capy` file, treat it as a Capy project (https://github.com/olivierdevelops/capy). Capy is a transpiler engine driven by a YAML library. Args entries MUST have an explicit `kind:` discriminator (`literal` or `capture`). See docs/CAPY_FOR_LLMS.md in the repo for the full schema.",
   "contextProviders": [
     {
       "name": "file",
